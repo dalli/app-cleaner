@@ -4,6 +4,7 @@ import Foundation
 ///
 /// Command Line Tools의 SwiftPM은 String Catalog(`.xcstrings`)를 컴파일하지 못하므로
 /// (`xcstringstool` 없음) `ko.lproj` / `en.lproj`의 `Localizable.strings`를 쓴다.
+/// 영어 단·복수는 `en.lproj/Localizable.stringsdict`, 엔진 문구(`EngineText`)는 `en.lproj/Engine.strings`가 맡는다.
 /// 형식 인자가 있는 문구는 키에 `%lld`(정수) · `%@`(문자열)를 직접 쓴다 — `LocalizationTests`가
 /// 소스의 모든 L 호출 키가 영어 파일에 있는지 검사한다.
 enum L10n {
@@ -16,7 +17,12 @@ enum L10n {
     ).first ?? "ko"
 
     /// 고른 언어의 `.lproj` (문자열은 항상 여기서 찾아 날짜·조사 처리와 언어가 어긋나지 않게 한다)
-    static let table: Bundle = bundle.path(forResource: language, ofType: "lproj").flatMap(Bundle.init(path:)) ?? bundle
+    static let table: Bundle = lproj(language) ?? bundle
+
+    /// 언어별 `.lproj` 번들 (테스트는 이것으로 언어를 고정해 확인한다)
+    static func lproj(_ language: String) -> Bundle? {
+        bundle.path(forResource: language, ofType: "lproj").flatMap(Bundle.init(path:))
+    }
 
     /// 날짜·숫자 형식에 쓰는 로케일 (UI 언어와 맞춘다)
     static let locale: Locale = {
@@ -34,6 +40,14 @@ func L(_ key: String) -> String {
 }
 
 /// 형식 인자가 있는 문구 (`%lld`, `%@`).
+/// 개수에 따라 영어 단·복수가 갈리는 문구는 `en.lproj/Localizable.stringsdict`가 `.strings`보다 우선한다.
 func L(_ key: String, _ args: any CVarArg...) -> String {
-    String(format: L(key), locale: L10n.locale, arguments: args)
+    L10n.format(key, args)
+}
+
+extension L10n {
+    /// `L(_:_:)`의 본체. 테스트는 `table`·`locale`을 바꿔 다른 언어의 결과를 확인한다.
+    static func format(_ key: String, _ args: [any CVarArg], table: Bundle = L10n.table, locale: Locale = L10n.locale) -> String {
+        String(format: table.localizedString(forKey: key, value: nil, table: nil), locale: locale, arguments: args)
+    }
 }

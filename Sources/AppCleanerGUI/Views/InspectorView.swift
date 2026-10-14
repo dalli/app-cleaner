@@ -453,7 +453,7 @@ private struct InfoPanel: View {
         InfoRow(title: L("크기"), value: sizeLine(c))
         if let m = c.lastModified { InfoRow(title: L("마지막 수정"), value: "\(Fmt.dateTime(m)) (\(Fmt.relative(m)))") }
         if !c.evidence.isEmpty {
-            InfoRow(title: L("판정 근거"), value: c.evidence.map(\.detail).joined(separator: "\n"))
+            InfoRow(title: L("판정 근거"), value: c.evidence.map(\.detail.localized).joined(separator: "\n"))
             InfoRow(title: L("정보원"), value: orderedSources(c).joined(separator: ", "))
         }
         if let svc = c.launchService {
@@ -490,12 +490,12 @@ private struct InfoPanel: View {
 
     private func sizeLine(_ c: Candidate) -> String {
         var s = Fmt.size(c.size)
-        if let n = c.fileCount { s += " · " + L("파일 %@개", Fmt.number(n)) }
+        if let n = c.fileCount { s += " · " + L("파일 %lld개", n) }
         return s
     }
 
     private func shareReason(_ c: Candidate) -> String? {
-        if case .shared(_, let reason) = c.share, !reason.isEmpty { return reason }
+        if case .shared(_, let reason) = c.share, !reason.text.isEmpty { return reason.localized }
         return nil
     }
 

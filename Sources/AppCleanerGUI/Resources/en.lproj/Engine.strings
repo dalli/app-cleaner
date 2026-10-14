@@ -1,0 +1,96 @@
+/*
+  App Cleaner — 엔진 문구 (판정 근거·메모·공유 사유) 영어 번역
+  키는 CleanerCore `EngineText.Key.rawValue`, 한국어 원문은 `EngineText.Key.koreanFormat`.
+  `%@` 자리에는 번들 ID·경로·앱 이름 등 번역하지 않는 값이 순서대로 들어간다 (`%1$@`처럼 위치 지정 가능).
+  한국어 UI는 엔진이 만든 문장을 그대로 쓰므로 ko.lproj에는 이 파일이 없다.
+*/
+
+/* 판정 근거 — 앱 제거 정보원 */
+"appBundle" = "The app itself (%@)";
+"bundleIDMatch" = "Bundle ID %@ matches";
+"nameMatch" = "Name '%@' matches (case-insensitive)";
+"vendorFolder" = "Shared vendor folder '%@' — other apps from the same developer may use it";
+"bundleIDMatchInVendorFolder" = "Bundle ID %@ matches (inside the %@ folder)";
+"nameMatchInVendorFolder" = "Name '%2$@' matches inside the %1$@ folder";
+"appGroupEntitlement" = "App Group %@ (code signature entitlements)";
+"appGroup" = "App Group %@";
+"groupNameContainsBundleID" = "Group name contains bundle ID %@";
+"teamIDPrefix" = "Team ID %@ prefix — may be shared by the same developer";
+"iCloudContainer" = "iCloud container (bundle ID %@)";
+"diagnosticReportPrefix" = "Diagnostic report file name starts with '%@'";
+"hiddenSettingsByName" = "Hidden settings '~/%2$@' based on the name '%1$@'";
+"settingsByName" = "Settings '~/%@/%@' based on the name";
+"pluginBundleIDMatch" = "Plug-in bundle ID %@ matches";
+"kernelExtensionBundleID" = "Kernel extension bundle ID %@";
+"installReceipt" = "Install receipt %@";
+"installReceiptSoleOwner" = "Owned only by install receipt %@";
+"homebrewZapRule" = "Homebrew cask '%@' zap rule: %@";
+"homebrewLaunchctl" = "launchctl entry %2$@ of Homebrew cask '%1$@'";
+"helperNameMatchesBundleID" = "Privileged helper name matches bundle ID %@";
+"launchFileNameMatchesBundleID" = "File name matches bundle ID %@ (couldn't read the plist)";
+"launchExecutableInsideApp" = "Executable points inside the app bundle: %@";
+"launchRunsAppHelper" = "Runs this app's privileged helper %@";
+"launchLabelMatchesBundleID" = "File name or Label matches bundle ID %@";
+"embeddedServiceLabel" = "Service Label %@ embedded in the app bundle";
+"associatedBundleIdentifiers" = "This app is listed in AssociatedBundleIdentifiers";
+"helperRunByDaemon" = "Privileged helper run by LaunchDaemon %@";
+
+/* 판정 근거 — 고아 스캔 */
+"promotedBySibling" = "Strong evidence found in another item of the same app";
+"bundleIDAppOffline" = "The app with bundle ID %@ may be on a disconnected external volume";
+"bundleIDAppNotInstalled" = "No installed app has bundle ID %@";
+"bundleIDAppNotInstalledNoMetadata" = "No installed app has bundle ID %@ (no container metadata)";
+"containerOwnerOffline" = "The container's owner app %@ may be on a disconnected external volume";
+"containerOwnerNotInstalled" = "The container's owner app %@ isn't installed (including extensions and helpers)";
+"appGroupAppOffline" = "The app for group %@ may be on a disconnected external volume";
+"appGroupNoInstalledApp" = "No installed app uses group %@";
+"vendorFolderNoInstalledApp" = "Shared vendor folder '%@' — no installed app from that developer";
+"noInstalledAppNamed" = "No installed app is named '%@'";
+"noInstalledAppNamedDotfile" = "No installed app is named '%@' (hidden settings folder)";
+"serviceAppOffline" = "The app for service %@ may be on a disconnected external volume";
+"launchTargetUnknown" = "Runs through a shell or interpreter, so the target can't be determined";
+"executableLocationUnknown" = "Can't determine the location of executable '%@'";
+"serviceExecutableUnknown" = "Service %@ has no executable information and its owner app isn't installed";
+"executableOnOfflineVolume" = "Executable %@ is on a disconnected external volume";
+"executableMissing" = "Executable %@ is missing";
+"homebrewRecordWithoutApp" = "Homebrew cask '%@' is recorded, but %@ is missing";
+"packageAppMissing" = "App %2$@ from installer package %1$@ is missing";
+"packageInstalledFile" = "Installed by package %@ (the app bundle has been deleted)";
+
+/* 메모 — 앱 제거 */
+"launchViaShell" = "Runs through a shell or script, so the actual target couldn't be determined";
+"syncedData" = "Synced with iCloud, so it won't be moved — deleting it would remove it from your other devices too";
+"kernelExtensionNotRemoved" = "Kernel extensions aren't removed automatically — see the guidance after cleanup";
+"movedWithParent" = "Moved together with the parent folder %@";
+"inventoryUnknown" = "Not selected by default because installed apps haven't been checked yet, so sharing with other apps couldn't be determined";
+"lowConfidenceNameOnly" = "Not selected by default because only the name matches";
+"lowConfidence" = "Not selected by default because confidence is low";
+"userData" = "Not selected by default because it contains user data";
+"lastAppOfVendor" = "Cleaned up together because this is the developer's last app";
+"usedBy" = "Also used by %@";
+"usedByMore" = "Also used by %@ and %@ more";
+"mayBeUsedByVendorService" = "May also be used by %@ — a background service shared by the same developer";
+"mayBeUsedByMoreVendorService" = "May also be used by %@ and %@ more — a background service shared by the same developer";
+"mayBeUsedByVendorItem" = "May also be used by %@ — shared by the same developer";
+"mayBeUsedByMoreVendorItem" = "May also be used by %@ and %@ more — shared by the same developer";
+
+/* 메모 — 고아 스캔 */
+"spotlightDemoted" = "Confidence lowered because the Spotlight index is incomplete";
+"spotlightDemotedSome" = "Confidence of some items lowered because the Spotlight index is incomplete";
+"recentlyModified" = "Recently modified — may still be in use";
+"vendorAppsInstalled" = "Apps from the same developer are installed (%@)";
+"vendorAppsInstalledMore" = "Apps from the same developer are installed (%@ and %@ more)";
+"maybeOnExternalVolume" = "The app may be on an external volume";
+"vendorFolderMaybeShared" = "May be a developer folder shared by several apps";
+"commonName" = "Common name — may belong to another program";
+"maybeCLIData" = "May be data from a command-line tool or runtime";
+"brewZapRecommended" = "Cleaning up with brew uninstall --zap --cask %@ is recommended";
+"homebrewRecordOnly" = "Only the Homebrew record remains — brew uninstall --zap --cask %@ is recommended";
+"serviceExecutableRemains" = "The service executable still exists — another program may be using it";
+
+/* 공유 사유 */
+"sharedAppGroup" = "Other apps also use the same App Group (%@)";
+"sharedExternalLaunchService" = "A background service shared by the same developer, with its executable (%@) outside the app";
+"sharedVendorItem" = "A shared item while other apps from the same developer are installed";
+"sharedVendorAppInstalled" = "Apps from the same developer are installed";
+"sharedTeamAppInstalled" = "Apps from the same developer (Team ID %@) are installed";

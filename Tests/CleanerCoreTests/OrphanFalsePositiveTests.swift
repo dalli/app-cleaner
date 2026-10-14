@@ -73,9 +73,9 @@ import CleanerTestSupport
             let item = try #require(report.item(url))
             #expect(item.confidence == .low)
             #expect(!item.isSelected)
-            #expect(item.notes.contains("앱이 외장 볼륨에 있을 수 있음"))
+            #expect(item.notes.contains(EngineText(.maybeOnExternalVolume)))
         }
-        #expect(report.group(containing: caches)?.notes.contains("앱이 외장 볼륨에 있을 수 있음") == true)
+        #expect(report.group(containing: caches)?.notes.contains(EngineText(.maybeOnExternalVolume)) == true)
     }
 
     @Test func launchExecutableOnDisconnectedVolumeIsLow() async throws {
@@ -88,8 +88,8 @@ import CleanerTestSupport
         #expect(item.confidence == .low)
         #expect(!item.isSelected)
         #expect(item.launchService?.label == "com.example.render.agent")
-        #expect(item.notes.contains("앱이 외장 볼륨에 있을 수 있음"))
-        #expect(item.evidence.contains { $0.detail.contains("연결 해제된 외장 볼륨") })
+        #expect(item.notes.contains(EngineText(.maybeOnExternalVolume)))
+        #expect(item.evidence.contains { $0.detail.text.contains("연결 해제된 외장 볼륨") })
     }
 
     @Test func offlineVolumeAppRememberedByInventory() async throws {
@@ -122,11 +122,11 @@ import CleanerTestSupport
         let driveItem = try #require(report.item(drive))
         #expect(driveItem.confidence == .low)
         #expect(!driveItem.isSelected)
-        #expect(driveItem.notes.contains { $0.contains("Google Chrome") })
+        #expect(driveItem.notes.contains { $0.key == .vendorAppsInstalled && $0.text.contains("Google Chrome") })
         let adobeItem = try #require(report.item(adobe))
         #expect(adobeItem.confidence == .low)
         #expect(!adobeItem.isSelected)
-        #expect(adobeItem.notes.contains("여러 앱이 함께 쓰는 개발사 폴더일 수 있음"))
+        #expect(adobeItem.notes.contains(EngineText(.vendorFolderMaybeShared)))
     }
 
     @Test func groupContainerOfSameTeamIsSharedAndUnselected() async throws {
@@ -207,7 +207,7 @@ import CleanerTestSupport
         let item = try #require(report.item(container))
         #expect(item.confidence == .medium)
         #expect(!item.isSelected)
-        #expect(item.notes.contains { $0.contains("최근에 수정됨") })
+        #expect(item.notes.contains { $0.key == .recentlyModified })
 
         // 7일 창 밖이면 그대로 High
         let later = try await h.scan()
@@ -225,8 +225,8 @@ import CleanerTestSupport
         #expect(!report.spotlight.indexingEnabled)
         let p = try #require(report.item(prefs))
         #expect(p.confidence == .low)
-        #expect(p.notes.contains("Spotlight 색인이 불완전해 신뢰도를 낮춤"))
-        #expect(report.group(containing: prefs)?.notes.contains { $0.contains("Spotlight") } == true)
+        #expect(p.notes.contains(EngineText(.spotlightDemoted)))
+        #expect(report.group(containing: prefs)?.notes.contains(EngineText(.spotlightDemotedSome)) == true)
         let a = try #require(report.item(agent))
         #expect(a.confidence == .high)
         #expect(a.isSelected)
@@ -257,7 +257,7 @@ import CleanerTestSupport
         let item = try #require(report.item(code))
         #expect(item.confidence == .low)
         #expect(!item.isSelected)
-        #expect(item.notes.contains("흔한 이름이라 다른 프로그램의 데이터일 수 있음"))
+        #expect(item.notes.contains(EngineText(.commonName)))
     }
 
     @Test func liveLaunchAgentOfCLIToolIsNotOrphan() async throws {

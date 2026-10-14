@@ -13,8 +13,8 @@ import CleanerTestSupport
 
     @Test func candidatesMergeByPath() {
         let url = URL(fileURLWithPath: "/tmp/x/com.foo.bar")
-        let a = Candidate(url: url, category: .caches, confidence: .medium, evidence: [Evidence(.homebrewZap, "zap")])
-        let b = Candidate(url: url, category: .caches, confidence: .high, evidence: [Evidence(.bundleIdentifier, "bid")])
+        let a = Candidate(url: url, category: .caches, confidence: .medium, evidence: [Evidence(.homebrewZap, .verbatim("zap"))])
+        let b = Candidate(url: url, category: .caches, confidence: .high, evidence: [Evidence(.bundleIdentifier, .verbatim("bid"))])
         let merged = [a, b].mergedByPath()
         #expect(merged.count == 1)
         #expect(merged[0].confidence == .high)

@@ -144,7 +144,7 @@ import CleanerTestSupport
         let p = try #require(report.candidates.item(appleish))
         #expect(p.protection == .appleBundle)
         #expect(!p.isSelected)
-        #expect(p.notes.contains("Apple 항목이라 옮기지 않습니다"))
+        #expect(p.notes.contains(.verbatim("Apple 항목이라 옮기지 않습니다")))
         #expect(report.candidates.item(fine)?.isSelected == true)
     }
 
@@ -193,7 +193,7 @@ import CleanerTestSupport
         let out = AppScanner.deselectNestedSelections([parent, child])
         #expect(out[0].isSelected)
         #expect(!out[1].isSelected)
-        #expect(out[1].notes.first?.contains("Vendor") == true)
+        #expect(out[1].notes.first == EngineText(.movedWithParent, "Vendor"))
 
         let low = Candidate(url: parent.url, category: .applicationSupport, confidence: .low)
         let kept = AppScanner.removeCoveredDescendants([low, child])

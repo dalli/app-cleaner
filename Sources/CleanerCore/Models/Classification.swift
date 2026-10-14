@@ -28,7 +28,8 @@ public enum DataNature: String, Codable, Sendable, CaseIterable {
 public enum ShareStatus: Codable, Sendable, Hashable {
     case exclusive
     /// 다른 설치 앱이 사용 중. `usedBy`는 사용 중인 앱의 표시 이름.
-    case shared(usedBy: [String], reason: String)
+    /// `reason`은 삭제 기록에도 저장된다 (이전 버전 기록은 평문 문자열 → `EngineText.verbatim`).
+    case shared(usedBy: [String], reason: EngineText)
 
     public var isShared: Bool {
         if case .shared = self { return true }
@@ -142,10 +143,10 @@ public enum EvidenceSource: String, Codable, Sendable {
 
 public struct Evidence: Codable, Sendable, Hashable {
     public var source: EvidenceSource
-    /// 사람이 읽는 근거 (예: "실행 파일 /Applications/Foo.app/... 없음")
-    public var detail: String
+    /// 사람이 읽는 근거 (예: `.executableMissing` → "실행 파일 /Applications/Foo.app/... 없음")
+    public var detail: EngineText
 
-    public init(_ source: EvidenceSource, _ detail: String) {
+    public init(_ source: EvidenceSource, _ detail: EngineText) {
         self.source = source
         self.detail = detail
     }

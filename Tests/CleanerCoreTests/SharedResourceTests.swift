@@ -36,13 +36,13 @@ import CleanerTestSupport
         let o = try #require(c.item(office))
         #expect(!o.isSelected)
         #expect(o.share.usedBy == ["Microsoft Excel", "Microsoft PowerPoint"])
-        #expect(o.notes.contains("Microsoft Excel 외 1개 앱이 함께 사용 중"))
+        #expect(o.notes.contains(EngineText(.usedByMore, "Microsoft Excel", "1")))
         #expect(o.children.allSatisfy { !$0.isSelected && $0.share.isShared })
 
         let m = try #require(c.item(ms))
         #expect(!m.isSelected)
         #expect(m.share.usedBy == ["Microsoft Excel"])
-        #expect(m.notes.contains("Microsoft Excel이 함께 사용 중"))
+        #expect(m.notes.contains(EngineText(.usedBy, "Microsoft Excel")))
 
         // Word만 쓰는 그룹은 단독 소유
         let w = try #require(c.item(wordOnly))
@@ -121,7 +121,7 @@ import CleanerTestSupport
         let v = try #require(report.candidates.item(vendor))
         #expect(v.share.isShared)
         #expect(!v.isSelected)
-        #expect(v.notes.contains { $0.contains("Google Drive가 함께 사용 중일 수 있습니다") })
+        #expect(v.notes.contains { $0.text.contains("Google Drive가 함께 사용 중일 수 있습니다") })
         #expect(report.candidates.item(chromeDir)?.isSelected == true)
 
         // Team ID가 달라도 BID 벤더 접두사(com.google.)가 같은 앱이 있으면 공유로 본다

@@ -16,7 +16,7 @@ struct OrphanItem {
     var packageID: String?
     var confidence: Confidence
     var evidence: [Evidence]
-    var notes: [String] = []
+    var notes: [EngineText] = []
     var launchService: LaunchServiceRef?
     var preferencesDomain: String?
     var share: ShareStatus = .exclusive
@@ -30,7 +30,7 @@ struct OrphanItem {
 
     var standardizedPath: String { url.standardizedFileURL.path }
 
-    mutating func addNote(_ note: String) {
+    mutating func addNote(_ note: EngineText) {
         if !notes.contains(note) { notes.append(note) }
     }
 }

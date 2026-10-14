@@ -56,7 +56,7 @@ private func sampleEngine() -> RecordingEngine {
         Candidate(url: url("/Applications/Foo.app"), category: .appBundle, confidence: .high, isSelected: true, size: 100),
         Candidate(url: url("/u/Library/Caches/com.example.foo"), category: .caches, confidence: .high, isSelected: true, size: 10),
         Candidate(url: url("/u/Library/Group Containers/T.shared"), category: .groupContainer, confidence: .high,
-                  share: .shared(usedBy: ["Bar"], reason: "group"), isSelected: false),
+                  share: .shared(usedBy: ["Bar"], reason: .verbatim("group")), isSelected: false),
         Candidate(url: url("/u/.foo"), category: .dotfile, confidence: .low, isSelected: false),
     ]
     let report = ScanReport(identity: identity, candidates: candidates, ruleDataVersion: "t")
@@ -106,6 +106,21 @@ private func sampleEngine() -> RecordingEngine {
         #expect(status == 0)
         #expect(engine.executedPlans.isEmpty)
         #expect(output.contains("\"itemCount\" : 2"))
+    }
+
+    /// 엔진 문구가 키 기반이어도 CLI는 예전과 같은 한국어 문장을 출력한다
+    @Test func engineTextPrintsKoreanSentences() async {
+        let engine = sampleEngine()
+        engine.report.candidates[2].notes = [EngineText(.usedBy, "Bar")]
+        engine.orphanReport.groups[0].notes = [EngineText(.maybeOnExternalVolume)]
+        engine.orphanReport.groups[0].items[0].evidence = [Evidence(.inventory, EngineText(.bundleIDAppNotInstalled, "com.gone"))]
+        var output = ""
+        let cli = CLI(engine: engine, out: { output += $0 + "\n" }, err: { _ in })
+        _ = await cli.run(.scan(app: "Foo", json: false, showAll: true))
+        _ = await cli.run(.orphans(options: OrphanScanOptions(), json: false))
+        #expect(output.contains("      Bar가 함께 사용 중\n"))
+        #expect(output.contains("   앱이 외장 볼륨에 있을 수 있음\n"))
+        #expect(output.contains("근거: 번들 ID com.gone인 앱이 설치 목록에 없음\n"))
     }
 
     @Test func removeRequiresConfirmation() async {

@@ -43,8 +43,8 @@ public struct Candidate: Codable, Sendable, Hashable, Identifiable {
     public var preferencesDomain: String?
     /// Container 하위 항목 (4.3.3: 컨테이너는 펼쳐서 보여준다)
     public var children: [Candidate]
-    /// 남겨두는 이유 등 사람이 읽는 설명 ("Excel이 함께 사용 중")
-    public var notes: [String]
+    /// 남겨두는 이유 등 사람이 읽는 설명 (`.usedBy` → "Excel이 함께 사용 중")
+    public var notes: [EngineText]
 
     public var id: String { url.path }
     public var path: String { url.path }
@@ -67,7 +67,7 @@ public struct Candidate: Codable, Sendable, Hashable, Identifiable {
         launchService: LaunchServiceRef? = nil,
         preferencesDomain: String? = nil,
         children: [Candidate] = [],
-        notes: [String] = []
+        notes: [EngineText] = []
     ) {
         self.url = url
         self.category = category
