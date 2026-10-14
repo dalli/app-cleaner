@@ -43,6 +43,8 @@ appcleaner restore <session ID>                  # undo
 
 The CLI is `Contents/Helpers/appcleaner` inside the `.app` bundle.
 
+The output language (Korean, English, Japanese) is chosen from `--lang <ko|en|ja>` → `APPCLEANER_LANG` → `LC_ALL`/`LC_MESSAGES`/`LANG` → the system language, falling back to English for unsupported languages. `--json` output is the same in every language.
+
 ## Safety principles
 
 - Nothing is permanently deleted: user files go to the Trash, root-owned files go to a holding folder (`/Library/Application Support/AppCleaner/Holding`), and everything can be restored from the removal history.
@@ -56,4 +58,4 @@ Covers Phases 1a, 1b, and 2 of plan.md. Remaining work is tracked in [issues lab
 - Phase 3: replace the admin path with a privileged helper — resolving the TOCTOU limitation of the current path (#17); Trash monitoring and scheduled orphan scans (#18)
 - Phase 4: Developer ID signing and notarization, Sparkle (#19), Homebrew tap and cask (#15, #16), rotating the rule-data signing key (#20)
 - VM and real-device QA matrix (#21), GUI gaps (#22)
-- Localization: the GUI supports Korean and English; the CLI is Korean only. Japanese support and CLI localization are in progress in #27
+- Localization: the GUI and CLI support Korean, English, and Japanese (English for any other language). Japanese UI review and translation proofreading: #27

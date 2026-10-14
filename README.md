@@ -43,6 +43,8 @@ appcleaner restore <세션 ID>                     # 되돌리기
 
 `.app` 번들 안의 `Contents/Helpers/appcleaner`가 CLI다.
 
+출력 언어(한국어·영어·일본어)는 `--lang <ko|en|ja>` → `APPCLEANER_LANG` → `LC_ALL`·`LC_MESSAGES`·`LANG` → 시스템 언어 순으로 정하고, 지원하지 않는 언어면 영어로 표시한다. `--json` 출력은 언어와 관계없이 같다.
+
 ## 안전 원칙
 
 - 영구 삭제하지 않는다: 사용자 파일은 휴지통, root 소유 파일은 보류 폴더(`/Library/Application Support/AppCleaner/Holding`)로 옮기고 삭제 기록으로 되돌린다.
@@ -56,4 +58,4 @@ plan.md의 Phase 1a·1b·2 범위. 남은 작업은 [`backlog` 라벨 이슈](ht
 - Phase 3: 권한 헬퍼로 관리자 경로 교체 — 현재 경로의 TOCTOU 제한 해소 (#17), 휴지통 감시·정기 고아 스캔 (#18)
 - Phase 4: Developer ID 서명·공증, Sparkle (#19), Homebrew tap·cask (#15, #16), 규칙 데이터 서명 키 교체 (#20)
 - VM·실기기 QA 매트릭스 (#21), GUI 미비점 (#22)
-- 다국어: GUI는 한국어·영어, CLI는 한국어만 지원. 일본어 추가와 CLI 현지화는 #27에서 진행 중
+- 다국어: GUI·CLI 모두 한국어·영어·일본어 지원 (그 밖의 언어는 영어). 일본어 화면 확인·번역 검수는 #27
