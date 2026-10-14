@@ -59,7 +59,7 @@ public enum Caskroom {
 
     static func record(at dir: URL, paths: SystemPaths, fallback: [HomebrewCask]) -> CaskRecord {
         let token = dir.lastPathComponent
-        var rec = CaskRecord(token: token, caskroomURL: dir)
+        var rec = CaskRecord(token: token, caskroomURL: dir.standardizedFileURL)
         let receipt = dir.appendingPathComponent(".metadata/INSTALL_RECEIPT.json")
         if let data = try? Data(contentsOf: receipt),
            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

@@ -9,7 +9,7 @@ enum BundleIDHeuristics {
         "cz", "es", "br", "so", "sh", "ly", "to", "is", "xyz", "pro", "biz", "tech", "cloud", "group", "systemgroup",
     ]
 
-    /// BID의 두 번째 구성요소가 이 목록이면 벤더가 아니라 호스팅·프레임워크이므로 세 번째까지 벤더로 본다.
+    /// BID의 두 번째 구성요소가 이 목록이면 벤더가 아니라 호스팅·프레임워크·템플릿 기본값이므로 세 번째까지 벤더로 본다.
     /// (plan.md 2.1 #4: `com.todesktop.*`은 ToDesktop 기반 모든 앱이 공유)
     static let genericHosts: Set<String> = [
         "github", "gitlab", "sourceforge", "googlecode", "bitbucket", "todesktop", "electron", "electronjs", "example",
