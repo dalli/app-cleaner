@@ -71,13 +71,13 @@ public struct OrphanGroup: Codable, Sendable, Hashable, Identifiable {
     /// 그룹 내 가장 강한 근거
     public var confidence: Confidence
     public var share: ShareStatus
-    /// 그룹 메모 (예: "앱이 외장 볼륨에 있을 수 있음")
-    public var notes: [String]
+    /// 그룹 메모 (예: `.maybeOnExternalVolume` → "앱이 외장 볼륨에 있을 수 있음")
+    public var notes: [EngineText]
     /// 정리 후 안내 (예: Homebrew 기록만 남은 앱 → `brew uninstall --zap --cask`)
     public var advisories: [Advisory] = []
 
     public init(id: String, displayName: String, nameIsGuess: Bool, bundleID: String? = nil, teamID: String? = nil,
-                items: [Candidate], confidence: Confidence, share: ShareStatus = .exclusive, notes: [String] = [],
+                items: [Candidate], confidence: Confidence, share: ShareStatus = .exclusive, notes: [EngineText] = [],
                 advisories: [Advisory] = []) {
         self.id = id
         self.displayName = displayName

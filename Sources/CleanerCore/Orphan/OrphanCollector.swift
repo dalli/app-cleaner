@@ -164,9 +164,9 @@ struct OrphanCollector {
         case .offline:
             item.offline = true
             item.confidence = .low
-            item.evidence.append(Evidence(.inventory, "번들 ID \(bid)인 앱이 연결 해제된 외장 볼륨에 있을 수 있음"))
+            item.evidence.append(Evidence(.inventory, EngineText(.bundleIDAppOffline, bid)))
         case .notFound:
-            item.evidence.append(Evidence(.inventory, "번들 ID \(bid)인 앱이 설치 목록에 없음"))
+            item.evidence.append(Evidence(.inventory, EngineText(.bundleIDAppNotInstalled, bid)))
         }
         return item
     }
@@ -185,13 +185,13 @@ struct OrphanCollector {
         case .offline:
             item.offline = true
             item.confidence = .low
-            item.evidence.append(Evidence(.containerMetadata, "컨테이너 소유 앱 \(bid)이(가) 연결 해제된 외장 볼륨에 있을 수 있음"))
+            item.evidence.append(Evidence(.containerMetadata, EngineText(.containerOwnerOffline, bid)))
         case .notFound:
             if metaID != nil {
                 item.confidence = .high
-                item.evidence.append(Evidence(.containerMetadata, "컨테이너 소유 앱 \(bid)이(가) 설치되어 있지 않음 (확장·헬퍼 포함)"))
+                item.evidence.append(Evidence(.containerMetadata, EngineText(.containerOwnerNotInstalled, bid)))
             } else {
-                item.evidence.append(Evidence(.inventory, "번들 ID \(bid)인 앱이 설치 목록에 없음 (컨테이너 메타데이터 없음)"))
+                item.evidence.append(Evidence(.inventory, EngineText(.bundleIDAppNotInstalledNoMetadata, bid)))
             }
         }
         return item
@@ -222,15 +222,15 @@ struct OrphanCollector {
             case .offline:
                 item.offline = true
                 item.confidence = .low
-                item.evidence.append(Evidence(.appGroup, "그룹 \(identifier)의 앱이 연결 해제된 외장 볼륨에 있을 수 있음"))
+                item.evidence.append(Evidence(.appGroup, EngineText(.appGroupAppOffline, identifier)))
                 return item
             case .notFound:
                 break
             }
         }
-        item.evidence.append(Evidence(.appGroup, "그룹 \(identifier)을(를) 쓰는 설치 앱이 없음"))
+        item.evidence.append(Evidence(.appGroup, EngineText(.appGroupNoInstalledApp, identifier)))
         if let team, let users = index.teams[team], !users.isEmpty {
-            item.share = .shared(usedBy: users, reason: "같은 개발자(Team ID \(team))의 앱이 설치되어 있음")
+            item.share = .shared(usedBy: users, reason: EngineText(.sharedTeamAppInstalled, team))
         }
         return item
     }
@@ -249,11 +249,11 @@ struct OrphanCollector {
            index.vendorNames.contains(BundleIDHeuristics.normalizedName(String(first))) { return nil }
         var item = OrphanItem(url: url, category: root.category, domain: root.domain, name: name, confidence: .low, evidence: [])
         if exclusions.isVendorFolder(name) {
-            item.evidence.append(Evidence(.name, "개발사 공용 폴더 '\(name)' — 같은 개발사의 설치 앱이 없음"))
-            item.addNote("여러 앱이 함께 쓰는 개발사 폴더일 수 있음")
+            item.evidence.append(Evidence(.name, EngineText(.vendorFolderNoInstalledApp, name)))
+            item.addNote(EngineText(.vendorFolderMaybeShared))
         } else {
-            item.evidence.append(Evidence(.name, "이름이 '\(name)'인 설치 앱이 없음"))
-            if rules.isWeakName(name) { item.addNote("흔한 이름이라 다른 프로그램의 데이터일 수 있음") }
+            item.evidence.append(Evidence(.name, EngineText(.noInstalledAppNamed, name)))
+            if rules.isWeakName(name) { item.addNote(EngineText(.commonName)) }
         }
         return item
     }
@@ -276,13 +276,13 @@ struct OrphanCollector {
         if labelOwnership == .offline {
             item.offline = true
             item.confidence = .low
-            item.evidence.append(Evidence(.launchPlist, "서비스 \(label)의 앱이 연결 해제된 외장 볼륨에 있을 수 있음"))
+            item.evidence.append(Evidence(.launchPlist, EngineText(.serviceAppOffline, label)))
             return item
         }
 
         if plist.targetExtractionFailed {
             item.confidence = .low
-            item.evidence.append(Evidence(.launchPlist, "셸·인터프리터로 실행되어 실행 대상을 확인할 수 없음"))
+            item.evidence.append(Evidence(.launchPlist, EngineText(.launchTargetUnknown)))
             return item
         }
         // `open -a /Applications/Foo.app`처럼 상대 경로 실행 파일이면 인자의 절대 경로를 대상으로 본다
@@ -291,13 +291,13 @@ struct OrphanCollector {
             executable = plist.arguments.dropFirst().first { $0.hasPrefix("/") }
             if executable == nil {
                 item.confidence = .low
-                item.evidence.append(Evidence(.launchPlist, "실행 파일 '\(e)'의 위치를 확인할 수 없음"))
+                item.evidence.append(Evidence(.launchPlist, EngineText(.executableLocationUnknown, e)))
                 return item
             }
         }
         guard let exe = executable else {
             guard labelIsBID else { return nil }
-            item.evidence.append(Evidence(.launchPlist, "서비스 \(label)의 실행 파일 정보가 없고 소유 앱이 설치 목록에 없음"))
+            item.evidence.append(Evidence(.launchPlist, EngineText(.serviceExecutableUnknown, label)))
             return item
         }
         let resolved = paths.resolveRecorded(exe)
@@ -307,11 +307,11 @@ struct OrphanCollector {
         if let vol = VolumePaths.volumeRoot(of: resolved, paths: paths), !isMounted(vol) {
             item.offline = true
             item.confidence = .low
-            item.evidence.append(Evidence(.launchPlist, "실행 파일 \(exe)이(가) 연결 해제된 외장 볼륨에 있음"))
+            item.evidence.append(Evidence(.launchPlist, EngineText(.executableOnOfflineVolume, exe)))
             return item
         }
         item.confidence = .high
-        item.evidence.append(Evidence(.launchPlist, "실행 파일 \(exe) 없음"))
+        item.evidence.append(Evidence(.launchPlist, EngineText(.executableMissing, exe)))
         return item
     }
 
@@ -341,8 +341,8 @@ struct OrphanCollector {
             if exclusions.isExcludedPath(url) { return }
             if exclusions.isAppleSystemName(stem) || index.matchesInstalledName(stem) { return }
             var item = OrphanItem(url: url, category: .dotfile, domain: .user, name: stem, confidence: .low,
-                                  evidence: [Evidence(.name, "이름이 '\(stem)'인 설치 앱이 없음 (숨김 설정 폴더)")])
-            item.addNote("CLI 도구·런타임 데이터일 수 있음")
+                                  evidence: [Evidence(.name, EngineText(.noInstalledAppNamedDotfile, stem))])
+            item.addNote(EngineText(.maybeCLIData))
             out.append(item)
         }
         for child in fm.children(of: paths.home).map(\.standardizedFileURL).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
@@ -380,8 +380,8 @@ struct OrphanCollector {
             var item = OrphanItem(url: record.caskroomURL, category: .other, domain: .user, bundleID: record.bundleIDs.first,
                                   appNameHint: record.appNames.first.map { String($0.dropLast($0.hasSuffix(".app") ? 4 : 0)) },
                                   caskToken: record.token, confidence: .high,
-                                  evidence: [Evidence(.homebrewRecord, "Homebrew cask '\(record.token)' 기록은 있으나 \(apps) 없음")])
-            item.addNote("brew uninstall --zap --cask \(record.token) 로 정리하는 것을 권장")
+                                  evidence: [Evidence(.homebrewRecord, EngineText(.homebrewRecordWithoutApp, record.token, apps))])
+            item.addNote(EngineText(.brewZapRecommended, record.token))
             out.append(item)
         }
         return out
@@ -434,7 +434,7 @@ struct OrphanCollector {
             let receiptURL = paths.system("private/var/db/receipts/\(pkg).plist").standardizedFileURL
             out.append(OrphanItem(url: receiptURL, category: .receipt, domain: .system, appNameHint: hint, packageID: pkg,
                                   confidence: .high,
-                                  evidence: [Evidence(.receipt, "설치 패키지 \(pkg)의 앱 \(apps.map { "/" + $0 }.joined(separator: ", ")) 없음")]))
+                                  evidence: [Evidence(.receipt, EngineText(.packageAppMissing, pkg, apps.map { "/" + $0 }.joined(separator: ", ")))]))
             var seen = Set<String>()
             for f in files {
                 guard let top = Self.categoryLevelPath(f), seen.insert(top).inserted, owners[top] == [pkg] else { continue }
@@ -449,7 +449,7 @@ struct OrphanCollector {
                 let (category, launchDomain) = Self.systemCategory(of: top)
                 var item = OrphanItem(url: url, category: category, domain: .system, appNameHint: hint, packageID: pkg,
                                       confidence: .high,
-                                      evidence: [Evidence(.receipt, "설치 패키지 \(pkg)가 설치한 파일 (앱 번들은 삭제됨)")])
+                                      evidence: [Evidence(.receipt, EngineText(.packageInstalledFile, pkg))])
                 if let launchDomain, let plist = LaunchPlist.read(at: url), let label = plist.label {
                     if index.launchLabels.contains(label.lowercased())
                         || (BundleIDHeuristics.isBundleIDShaped(label) && index.ownership(of: label) == .installed) { continue }
@@ -459,7 +459,7 @@ struct OrphanCollector {
                     if let exe = plist.effectiveExecutable, exe.hasPrefix("/"), fm.itemExists(paths.resolveRecorded(exe)) {
                         item.confidence = .medium
                         item.promotable = false
-                        item.addNote("서비스 실행 파일이 아직 남아 있음 — 다른 프로그램이 쓰고 있을 수 있음")
+                        item.addNote(EngineText(.serviceExecutableRemains))
                     }
                 }
                 out.append(item)

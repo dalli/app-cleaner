@@ -23,12 +23,12 @@ public struct SelectionPolicy: SelectionPolicing {
     }
 
     enum Notes {
-        static let inventoryUnknown = "설치된 앱 목록을 확인하기 전이라 다른 앱과 함께 쓰는지 판단하지 못해 기본 선택하지 않았습니다"
-        static let lowName = "이름만 일치해 확실하지 않아 기본 선택하지 않았습니다"
-        static let low = "신뢰도가 낮아 기본 선택하지 않았습니다"
-        static let userData = "사용자 데이터가 들어 있어 기본 선택하지 않았습니다"
-        static let synced = "iCloud에 동기화되는 데이터라 옮기지 않습니다 — 지우면 다른 기기에서도 사라집니다"
-        static let lastOfVendor = "이 개발사의 마지막 앱이라 함께 정리합니다"
+        static let inventoryUnknown = EngineText(.inventoryUnknown)
+        static let lowName = EngineText(.lowConfidenceNameOnly)
+        static let low = EngineText(.lowConfidence)
+        static let userData = EngineText(.userData)
+        static let synced = EngineText(.syncedData)
+        static let lastOfVendor = EngineText(.lastAppOfVendor)
     }
 
     struct Context {
@@ -141,7 +141,7 @@ public struct SelectionPolicy: SelectionPolicing {
             let users = ctx.others.filter { app in app.appGroups.contains { $0.caseInsensitiveCompare(group) == .orderedSame } }
             if !users.isEmpty {
                 let names = Self.uniqueNames(users)
-                c.share = .shared(usedBy: names, reason: "같은 App Group(\(group))을 다른 앱도 사용")
+                c.share = .shared(usedBy: names, reason: EngineText(.sharedAppGroup, group))
                 add(Self.usageNote(names), to: &c)
             } else if !own {
                 // 이 앱 entitlements에 없는 `<TEAM>.` 그룹 — 벤더 공용 규칙
@@ -152,9 +152,8 @@ public struct SelectionPolicy: SelectionPolicing {
         case .externalLaunch(let exe):
             if !ctx.sameVendor.isEmpty {
                 let names = Self.uniqueNames(ctx.sameVendor)
-                c.share = .shared(usedBy: names,
-                                  reason: "실행 파일(\(exe))이 앱 밖에 있는 같은 개발사 공용 백그라운드 서비스")
-                add(Self.usageNote(names, maybe: true) + " — 같은 개발사 공용 백그라운드 서비스", to: &c)
+                c.share = .shared(usedBy: names, reason: EngineText(.sharedExternalLaunchService, exe))
+                add(Self.usageNote(names, vendor: .backgroundService), to: &c)
             }
         }
     }
@@ -162,8 +161,8 @@ public struct SelectionPolicy: SelectionPolicing {
     func judgeVendor(_ c: inout Candidate, _ ctx: Context) {
         if !ctx.sameVendor.isEmpty {
             let names = Self.uniqueNames(ctx.sameVendor)
-            c.share = .shared(usedBy: names, reason: "같은 개발사의 다른 앱이 설치되어 있는 공용 항목")
-            add(Self.usageNote(names, maybe: true) + " — 같은 개발사 공용 항목", to: &c)
+            c.share = .shared(usedBy: names, reason: EngineText(.sharedVendorItem))
+            add(Self.usageNote(names, vendor: .item), to: &c)
         } else if c.confidence < .medium {
             // 이 개발사의 마지막 앱 → Medium으로 제시 (plan.md 4.3.2)
             c.confidence = .medium
@@ -241,7 +240,7 @@ public struct SelectionPolicy: SelectionPolicing {
         }
     }
 
-    func add(_ note: String, to c: inout Candidate) {
+    func add(_ note: EngineText, to c: inout Candidate) {
         if !c.notes.contains(note) { c.notes.append(note) }
     }
 
@@ -250,12 +249,29 @@ public struct SelectionPolicy: SelectionPolicing {
         return apps.map(\.name).filter { seen.insert($0).inserted }
     }
 
+    /// 같은 개발사 공용으로 본 항목의 종류 (메모 꼬리말)
+    enum VendorUsage {
+        case backgroundService
+        case item
+    }
+
     /// "Excel이 함께 사용 중" / "Excel 외 1개 앱이 함께 사용 중"
-    static func usageNote(_ names: [String], maybe: Bool = false) -> String {
-        let tail = maybe ? "함께 사용 중일 수 있습니다" : "함께 사용 중"
-        guard let first = names.first else { return tail }
-        if names.count == 1 { return "\(KoreanText.withSubjectParticle(first)) \(tail)" }
-        return "\(first) 외 \(names.count - 1)개 앱이 \(tail)"
+    /// 같은 개발사 공용이면 "… 함께 사용 중일 수 있습니다 — 같은 개발사 공용 항목"
+    static func usageNote(_ names: [String], vendor: VendorUsage? = nil) -> EngineText {
+        let first = names.first ?? ""
+        guard names.count > 1 else {
+            switch vendor {
+            case nil: return EngineText(.usedBy, first)
+            case .backgroundService: return EngineText(.mayBeUsedByVendorService, first)
+            case .item: return EngineText(.mayBeUsedByVendorItem, first)
+            }
+        }
+        let more = String(names.count - 1)
+        switch vendor {
+        case nil: return EngineText(.usedByMore, first, more)
+        case .backgroundService: return EngineText(.mayBeUsedByMoreVendorService, first, more)
+        case .item: return EngineText(.mayBeUsedByMoreVendorItem, first, more)
+        }
     }
 }
 

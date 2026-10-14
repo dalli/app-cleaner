@@ -46,7 +46,7 @@ public struct LaunchPlistSource: CandidateSource {
             guard let bid = bids.match(child.lastPathComponent) else { continue }
             helpers[child.standardizedFileURL.path] = Candidate(
                 url: child, category: .privilegedHelper, domain: .system, confidence: bids.confidence(forMatched: bid),
-                evidence: [Evidence(.bundleIdentifier, "권한 헬퍼 이름이 번들 ID \(bid)와 일치")])
+                evidence: [Evidence(.bundleIdentifier, EngineText(.helperNameMatchesBundleID, bid))])
         }
 
         // 2. Launch plist
@@ -58,7 +58,7 @@ public struct LaunchPlistSource: CandidateSource {
                     // 읽을 수 없는 plist: 파일명만으로 판단 → Low
                     if let bid = bids.match(stem) {
                         out.append(Candidate(url: url, category: loc.category, domain: loc.domain, confidence: .low,
-                                             evidence: [Evidence(.bundleIdentifier, "파일명이 번들 ID \(bid)와 일치 (plist를 읽지 못함)")],
+                                             evidence: [Evidence(.bundleIdentifier, EngineText(.launchFileNameMatchesBundleID, bid))],
                                              launchService: LaunchServiceRef(label: stem, domain: loc.serviceDomain, plistURL: url)))
                     }
                     continue
@@ -76,35 +76,35 @@ public struct LaunchPlistSource: CandidateSource {
                 }
                 if intoBundle {
                     confidence = .high
-                    evidence.append(Evidence(.launchPlist, "실행 파일이 앱 번들 안을 가리킴: \(plist.effectiveExecutable ?? "")"))
+                    evidence.append(Evidence(.launchPlist, EngineText(.launchExecutableInsideApp, plist.effectiveExecutable ?? "")))
                 } else if let pairedHelper {
                     confidence = .high
-                    evidence.append(Evidence(.launchPlist, "이 앱의 권한 헬퍼 \(pairedHelper.lastPathComponent)를 실행"))
+                    evidence.append(Evidence(.launchPlist, EngineText(.launchRunsAppHelper, pairedHelper.lastPathComponent)))
                 }
 
                 var nameMatched = false
                 if let bid = bids.match(stem) ?? bids.match(label) {
                     nameMatched = true
-                    evidence.append(Evidence(.bundleIdentifier, "파일명/Label이 번들 ID \(bid)와 일치"))
+                    evidence.append(Evidence(.bundleIdentifier, EngineText(.launchLabelMatchesBundleID, bid)))
                     confidence = max(confidence ?? .low, bids.confidence(forMatched: bid))
                 }
                 if embeddedLabels.contains(label.lowercased()) {
                     nameMatched = true
-                    evidence.append(Evidence(.embeddedLaunchPlist, "앱 번들에 내장된 서비스 Label \(label)"))
+                    evidence.append(Evidence(.embeddedLaunchPlist, EngineText(.embeddedServiceLabel, label)))
                     confidence = .high
                 }
                 if associatedBundleIDs(at: url).contains(where: { bids.match($0) != nil }) {
                     nameMatched = true
-                    evidence.append(Evidence(.launchPlist, "AssociatedBundleIdentifiers에 이 앱이 등록됨"))
+                    evidence.append(Evidence(.launchPlist, EngineText(.associatedBundleIdentifiers)))
                     confidence = max(confidence ?? .low, .high)
                 }
                 guard var conf = confidence else { continue }
 
-                var notes: [String] = []
+                var notes: [EngineText] = []
                 if nameMatched && !intoBundle && pairedHelper == nil && plist.targetExtractionFailed {
                     // 셸·인터프리터 경유인데 실제 대상을 알 수 없음 (plan.md 4.2 #4)
                     conf = .low
-                    notes.append("셸·스크립트를 거쳐 실행돼 실제 실행 대상을 확인하지 못했습니다")
+                    notes.append(EngineText(.launchViaShell))
                 }
                 let ref = LaunchServiceRef(label: label, domain: loc.serviceDomain, plistURL: url)
                 out.append(Candidate(url: url, category: loc.category, domain: loc.domain, confidence: conf, evidence: evidence,
@@ -118,7 +118,7 @@ public struct LaunchPlistSource: CandidateSource {
                     let key = helperURL.standardizedFileURL.path
                     var h = helpers[key] ?? Candidate(url: helperURL, category: .privilegedHelper, domain: .system, confidence: conf,
                                                       evidence: [])
-                    h.evidence.append(Evidence(.launchPlist, "LaunchDaemon \(label)이 실행하는 권한 헬퍼"))
+                    h.evidence.append(Evidence(.launchPlist, EngineText(.helperRunByDaemon, label)))
                     h.launchService = h.launchService ?? ref
                     helpers[key] = h
                 }

@@ -100,6 +100,21 @@ extension ShareStatus {
     }
 }
 
+extension EngineText {
+    /// 현재 UI 언어의 문장 (판정 근거·메모·공유 사유)
+    var localized: String { localized(language: L10n.language) }
+
+    /// 한국어는 엔진이 만든 문장(조사 처리 포함)을 그대로 쓰고, 그 밖의 언어는
+    /// `<언어>.lproj/Engine.strings`에서 키(`key.rawValue`)로 형식 문자열을 찾는다.
+    /// 키 없는 문구(`verbatim`)나 번역이 없는 키는 한국어 문장으로 보여 준다.
+    func localized(language: String) -> String {
+        guard !language.hasPrefix("ko"), !isVerbatim, let table = L10n.lproj(language) else { return text }
+        let missing = "\u{1}"
+        let format = table.localizedString(forKey: key.rawValue, value: missing, table: "Engine")
+        return format == missing ? text : EngineText.format(format, args)
+    }
+}
+
 extension EvidenceSource {
     /// 정보원 이름. 내부 용어는 이 칸에만 쓴다 (ui-ux.md 4.3).
     var title: String {
@@ -171,8 +186,9 @@ extension Candidate {
 
     /// 보조 설명 줄 (남겨두는 이유 등)
     var secondaryText: String? {
-        if let protection { return notes.first ?? protection.explanation }
-        if !notes.isEmpty { return notes.joined(separator: " · ") }
+        // 보호 항목의 SafetyGuard 메시지(verbatim)는 진단용이라 현지화된 보호 사유 설명을 대신 쓴다
+        if let protection { return notes.first(where: { !$0.isVerbatim })?.localized ?? protection.explanation }
+        if !notes.isEmpty { return notes.map(\.localized).joined(separator: " · ") }
         if let usage = share.usageText { return usage }
         return nil
     }

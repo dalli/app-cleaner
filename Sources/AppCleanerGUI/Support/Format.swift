@@ -44,15 +44,6 @@ enum Fmt {
         return f.string(from: Measurement(value: amount, unit: unit))
     }
 
-    // MARK: 숫자
-
-    static func number(_ value: Int) -> String {
-        let f = NumberFormatter()
-        f.locale = L10n.locale
-        f.numberStyle = .decimal
-        return f.string(from: NSNumber(value: value)) ?? "\(value)"
-    }
-
     // MARK: 날짜
 
     /// "오늘", "어제", "2주 전", "3개월 전"
