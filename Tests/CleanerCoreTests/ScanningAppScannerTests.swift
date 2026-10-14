@@ -53,7 +53,11 @@ import CleanerTestSupport
         let started = Date()
         let report = try await scanner.scan(appAt: app, inventory: inventory)
         let elapsed = Date().timeIntervalSince(started)
-        #expect(elapsed < 5.0, "앱 1개 검사 2초 목표 (8.3) — 병렬 테스트 부하를 감안한 상한")
+        // 성능 목표(plan.md 8.3, 앱 1개 2초)는 병렬 테스트 부하에서 벽시계로 판정하면 흔들린다.
+        // `APPCLEANER_PERF=1 ./scripts/test.sh --filter slackLikeEndToEnd`처럼 단독 실행할 때만 확인한다.
+        if ProcessInfo.processInfo.environment["APPCLEANER_PERF"] == "1" {
+            #expect(elapsed < 2.0, "앱 1개 검사 2초 목표 (plan.md 8.3)")
+        }
         let c = report.candidates
 
         func expectItem(_ url: URL, _ category: ItemCategory, _ confidence: Confidence, selected: Bool,
