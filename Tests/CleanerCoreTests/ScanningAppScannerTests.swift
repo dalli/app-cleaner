@@ -198,3 +198,41 @@ import CleanerTestSupport
         #expect(AppScanner.removeCoveredDescendants([high, child]).count == 1)
     }
 }
+
+@Suite struct ScanningWithSafetyGuardTests {
+    /// 실제 SafetyGuard와 조립했을 때: 일반 항목·영수증 허용, iCloud는 보호 항목으로 남고, 링크 우회는 제외
+    @Test func realSafetyGuardVerdicts() async throws {
+        let fx = try Fixture()
+        let app = try fx.makeApp(name: "Foo", bundleID: "com.example.foo")
+        let caches = try fx.dir(fx.home("Library/Caches/com.example.foo"))
+        let icloud = try fx.dir(fx.home("Library/Mobile Documents/iCloud~com~example~foo"))
+        try fx.dir(fx.root("System/Library/Secret/com.example.foo"))
+        // 상위 구성요소가 링크라 실제로는 보호 위치(/System) 안을 가리키는 후보
+        try fx.symlink(fx.home("Library/Application Support/Vendorish"), to: fx.root("System/Library/Secret"))
+        let escaped = fx.home("Library/Application Support/Vendorish/com.example.foo")
+        let receipt = try fx.file(fx.root("private/var/db/receipts/com.example.foo.pkg.bom"))
+        let runner = StubCommandRunner()
+        runner.on("pkgutil") { args in
+            switch args.first {
+            case "--file-info": return CommandOutput(status: 0, stdout: Data("pkgid: com.example.foo.pkg\n".utf8))
+            case "--pkg-info": return CommandOutput(status: 0, stdout: Data("volume: /\nlocation: \n".utf8))
+            case "--files": return CommandOutput(status: 0, stdout: Data("Applications/Foo.app\n".utf8))
+            default: return CommandOutput(status: 1, stdout: Data())
+            }
+        }
+        let cask = HomebrewCask(token: "foo", apps: ["Foo.app"], bundleIDs: ["com.example.foo"],
+                                zap: ["~/Library/Application Support/Vendorish/com.example.foo"])
+        let report = try await ScanKit.scanner(fx, runner: runner, casks: [cask], safety: SafetyGuard(paths: fx.paths))
+            .scan(appAt: app, inventory: InventorySnapshot(apps: []))
+        let c = report.candidates
+        #expect(c.item(app)?.isSelected == true)
+        #expect(c.item(caches)?.isSelected == true)
+        let i = try #require(c.item(icloud))
+        #expect(i.protection == .iCloudData)
+        #expect(!i.isSelected)
+        #expect(c.item(escaped) == nil, "링크를 따라가면 보호 위치인 후보는 제외")
+        let r = try #require(c.item(receipt))
+        #expect(r.category == .receipt)
+        #expect(r.isSelected)
+    }
+}
