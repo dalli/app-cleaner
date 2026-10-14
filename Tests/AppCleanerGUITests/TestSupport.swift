@@ -23,7 +23,8 @@ func candidate(_ path: String, _ confidence: Confidence = .high, nature: DataNat
 
 /// 조건이 참이 될 때까지 기다린다 (MainActor 작업이 돌 수 있게 양보)
 @MainActor
-func waitUntil(timeout: Duration = .seconds(5), _ condition: () -> Bool) async -> Bool {
+/// CI 러너는 병렬 테스트 부하로 느릴 수 있어 넉넉히 기다린다.
+func waitUntil(timeout: Duration = .seconds(30), _ condition: () -> Bool) async -> Bool {
     let clock = ContinuousClock()
     let deadline = clock.now.advanced(by: timeout)
     while !condition() {

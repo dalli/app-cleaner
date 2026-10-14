@@ -94,15 +94,15 @@ final class OrphanViewModel {
         let engine = self.engine
         let options = OrphanScanOptions(includeDotfiles: includeDotfiles)
         let (stream, continuation) = AsyncStream<OrphanScanEvent>.makeStream()
-        Task { [weak self] in
+        let consumer = Task { [weak self] in
             for await event in stream { self?.handle(event) }
         }
         scanTask = Task {
             do {
                 let r = try await engine.scanOrphans(options: options) { continuation.yield($0) }
                 continuation.finish()
-                // 마지막 진행 이벤트를 먼저 반영한 뒤 결과를 적용한다
-                await Task.yield()
+                // 마지막 진행 이벤트를 모두 반영한 뒤 결과를 적용한다
+                await consumer.value
                 self.apply(r)
             } catch {
                 continuation.finish()

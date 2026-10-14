@@ -53,7 +53,7 @@ struct OrphanViewModelTests {
         vm.toastDuration = .zero
         #expect(vm.badgeCount == nil)
         vm.startScan(includeDotfiles: false)
-        _ = await waitUntil { vm.phase == .finished }
+        #expect(await waitUntil { vm.phase == .finished }, "고아 스캔이 끝나지 않음")
         return vm
     }
 
