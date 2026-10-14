@@ -25,7 +25,8 @@ let package = Package(
         ),
         .executableTarget(
             name: "AppCleanerGUI",
-            dependencies: ["CleanerCore"]
+            dependencies: ["CleanerCore"],
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "CleanerCoreTests",
@@ -34,6 +35,10 @@ let package = Package(
         .testTarget(
             name: "CLITests",
             dependencies: ["appcleaner", "CleanerCore"]
+        ),
+        .testTarget(
+            name: "AppCleanerGUITests",
+            dependencies: ["AppCleanerGUI", "CleanerCore"]
         ),
     ]
 )
