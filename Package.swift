@@ -31,5 +31,9 @@ let package = Package(
             name: "CleanerCoreTests",
             dependencies: ["CleanerCore", "CleanerTestSupport"]
         ),
+        .testTarget(
+            name: "CLITests",
+            dependencies: ["appcleaner", "CleanerCore"]
+        ),
     ]
 )
