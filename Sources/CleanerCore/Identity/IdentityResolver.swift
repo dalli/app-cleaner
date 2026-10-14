@@ -187,10 +187,7 @@ public struct IdentityResolver: IdentityResolving {
         let fm = FileManager.default
         let installed = Set(caskrooms.flatMap { fm.children(of: $0) }.filter { fm.isDirectory($0) }.map(\.lastPathComponent))
         guard !installed.isEmpty else { return nil }
-        let data = rules.current()
-        var tokens: [String] = []
-        for bid in identity.allBundleIDs { tokens += data.casks(matchingBundleID: bid).map(\.token) }
-        tokens += data.casks(matchingAppName: identity.bundleURL.lastPathComponent).map(\.token)
+        let tokens = rules.current().casks.filter { HomebrewZapSource.caskMatches($0, identity) }.map(\.token)
         if let t = tokens.first(where: installed.contains) { return t }
         // 규칙 데이터에 없는 cask: 관례적인 토큰 (`Google Chrome.app` → `google-chrome`)
         let guess = identity.bundleURL.deletingPathExtension().lastPathComponent.lowercased()

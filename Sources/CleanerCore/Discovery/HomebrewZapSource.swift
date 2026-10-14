@@ -26,7 +26,7 @@ public struct HomebrewZapSource: CandidateSource {
         let fm = FileManager.default
         var out: [Candidate] = []
         for cask in matchingCasks(identity, data) {
-            for zap in cask.zap {
+            for zap in cask.zap where !Self.mentionsForeignBundleID(zap, ours: bids.bundleIDs) {
                 for (url, wildcard) in expand(zap, bundleIDs: bids.bundleIDs) where !url.isInside(identity.bundleURL) {
                     var c = categorizer.candidate(url, confidence: wildcard ? .low : .medium,
                                                   evidence: [Evidence(.homebrewZap, "Homebrew cask '\(cask.token)' zap 규칙: \(zap)")])
@@ -52,20 +52,69 @@ public struct HomebrewZapSource: CandidateSource {
         return out.mergedByPath()
     }
 
-    /// 설치 기록 토큰 → BID → 앱 파일명 순으로 cask를 찾는다.
-    /// 앱 파일명만 같고 cask의 BID가 이 앱과 다르면 다른 앱이므로 쓰지 않는다.
+    /// 설치 기록 토큰이 있으면 그 cask, 없으면 `caskMatches`를 만족하는 cask.
     func matchingCasks(_ identity: AppIdentity, _ data: RuleData) -> [HomebrewCask] {
         if let token = identity.homebrewCask, let c = data.casks.first(where: { $0.token == token }) { return [c] }
-        var seen = Set<String>()
-        var found: [HomebrewCask] = []
-        for bid in identity.allBundleIDs {
-            for c in data.casks(matchingBundleID: bid) where seen.insert(c.token).inserted { found.append(c) }
+        return data.casks.filter { Self.caskMatches($0, identity) }
+    }
+
+    /// cask가 이 앱의 것인지 판단한다.
+    /// - `apps`에 앱 파일명이 있으면: cask에 BID 정보가 없거나, 이 앱의 BID를 선언·zap에서 언급할 때
+    /// - `apps`가 비어 있으면(.pkg 설치 cask): zap이 이 앱 BID의 Preferences·Saved State·Container를 지울 때
+    /// uninstall의 `launchctl`/`quit`에 BID가 나온다는 것만으로는 매칭하지 않는다
+    /// (예: Office 각 앱 cask가 모두 `com.microsoft.autoupdate2`를 언급 — AutoUpdate 제거 시 Word zap을 쓰면 안 됨).
+    public static func caskMatches(_ cask: HomebrewCask, _ identity: AppIdentity) -> Bool {
+        let bids = identity.allBundleIDs.filter(BundleIDRules.isSafeComponent)
+        let appName = identity.bundleURL.lastPathComponent
+        if cask.apps.contains(where: { $0.caseInsensitiveCompare(appName) == .orderedSame }) {
+            if cask.bundleIDs.isEmpty { return true }
+            if bids.contains(where: { b in cask.bundleIDs.contains { $0.caseInsensitiveCompare(b) == .orderedSame } }) { return true }
+            return bids.contains { zapMentions(cask, $0, strongOnly: false) }
         }
-        if !found.isEmpty { return found }
-        let bids = BundleIDMatcher(identity: identity)
-        return data.casks(matchingAppName: identity.bundleURL.lastPathComponent).filter { c in
-            c.bundleIDs.isEmpty || c.bundleIDs.contains { bids.match($0) != nil }
+        if cask.apps.isEmpty {
+            return bids.contains { zapMentions(cask, $0, strongOnly: true) }
         }
+        return false
+    }
+
+    /// zap 경로 구성요소 중 `bid`(또는 `bid.` 하위)를 가리키는 것이 있는지.
+    /// `strongOnly`: Preferences·Saved Application State·Containers 바로 아래 항목만 인정 (앱 소유가 분명한 위치)
+    static func zapMentions(_ cask: HomebrewCask, _ bid: String, strongOnly: Bool) -> Bool {
+        let strongParents: Set<String> = ["Preferences", "Saved Application State", "Containers"]
+        for path in cask.zap {
+            let comps = path.split(separator: "/").map(String.init)
+            for (i, comp) in comps.enumerated() {
+                if strongOnly && (i == 0 || !strongParents.contains(comps[i - 1])) { continue }
+                if BundleIDRules.matches(coreName(comp), bundleID: bid) { return true }
+            }
+        }
+        return false
+    }
+
+    /// 경로 구성요소에서 와일드카드·확장자를 걷어 낸 이름 (`*.com.foo.app*` → `com.foo.app`, `com.foo.plist` → `com.foo`)
+    static func coreName(_ comp: String) -> String {
+        var s = Substring(comp)
+        while let f = s.first, "*?.[".contains(f) { s = s.dropFirst() }
+        while let l = s.last, "*?.]".contains(l) { s = s.dropLast() }
+        var core = String(s)
+        for ext in [".plist", ".savedState", ".binarycookies", ".sfl", ".sfl2", ".sfl3", ".sfl4", ".app", ".appex", ".bundle",
+                    ".plugin", ".kext", ".lockfile"] where core.lowercased().hasSuffix(ext.lowercased()) {
+            core = String(core.dropLast(ext.count))
+            break
+        }
+        return core
+    }
+
+    /// zap 경로에 이 앱이 아닌 다른 BID(구성요소 3개 이상의 역도메인 이름)가 들어 있는지.
+    /// 묶음 cask(예: Office)의 zap에는 다른 앱의 컨테이너가 함께 있으므로 그런 경로는 쓰지 않는다.
+    static func mentionsForeignBundleID(_ path: String, ours: [String]) -> Bool {
+        for comp in path.split(separator: "/").map(String.init) {
+            let core = coreName(comp)
+            guard core.contains("."), BundleIDRules.looksLikeBundleID(core), core.split(separator: ".").count >= 3 else { continue }
+            if ours.contains(where: { BundleIDRules.matches(core, bundleID: $0) }) { continue }
+            return true
+        }
+        return false
     }
 
     // MARK: - 경로 펼치기
