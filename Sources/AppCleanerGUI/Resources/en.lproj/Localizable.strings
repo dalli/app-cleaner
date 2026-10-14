@@ -377,7 +377,7 @@
 "허용됨" = "Allowed";
 "헬퍼 설치…" = "Install Helper…";
 "현재 위치" = "Current Location";
-"확보 용량" = "Space freed";
+"확보 용량" = "Space to free";
 "확인하지 못한 앱: %@" = "Apps not checked: %@";
 "환경설정" = "Preferences";
 "환경설정 도메인" = "Preferences domain";

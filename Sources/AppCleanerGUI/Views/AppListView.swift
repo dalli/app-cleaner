@@ -206,6 +206,8 @@ private struct AppTable: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             Text(app.source.title)
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .frame(width: sourceWidth, alignment: .leading)
             Group {
                 if app.size == nil {

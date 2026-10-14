@@ -313,7 +313,7 @@
 	<key>보관 기간(%lld일)이 지난 보류 항목이 작업 %lld개에 있습니다.</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
-		<string>保管期間 (%1$#@days@) を過ぎた保留項目が %2$#@cleanups@ にあります。</string>
+		<string>保管期間 (%1$#@days@) を過ぎた保留項目を含む整理が %2$#@cleanups@ あります。</string>
 		<key>cleanups</key>
 		<dict>
 			<key>NSStringFormatSpecTypeKey</key>
@@ -321,7 +321,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>%lld 件の整理</string>
+			<string>%lld 件</string>
 		</dict>
 		<key>days</key>
 		<dict>
@@ -336,7 +336,7 @@
 	<key>보관 기간이 지난 작업 %lld개의 보류 항목을 영구 삭제합니다. 영구 삭제한 항목은 되돌릴 수 없습니다.</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
-		<string>保管期間を過ぎた %#@cleanups@ の保留項目を完全に削除します。完全に削除した項目は復元できません。</string>
+		<string>保管期間を過ぎた整理 %#@cleanups@ の保留項目を完全に削除します。完全に削除した項目は復元できません。</string>
 		<key>cleanups</key>
 		<dict>
 			<key>NSStringFormatSpecTypeKey</key>
@@ -344,7 +344,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lld</string>
 			<key>other</key>
-			<string>%lld 件の整理</string>
+			<string>%lld 件</string>
 		</dict>
 	</dict>
 	<key>보류 폴더 %@ · 가장 오래된 항목 %lld일 경과</key>
