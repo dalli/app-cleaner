@@ -110,6 +110,12 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
         return result
     }
 
+    public func restorePreview(sessionID: UUID, itemPaths: Set<String>?) async -> RestorePreview? {
+        await journal.restorePreview(sessionID: sessionID, itemPaths: itemPaths)
+    }
+
+    public var holdingFolderURL: URL { paths.holdingDir }
+
     public func holdingUsage(retentionDays: Int) async -> HoldingUsage { await journal.holdingUsage(retentionDays: retentionDays) }
     public func purgeHolding(sessionIDs: [UUID]) async -> [CleanupFailure] { await journal.purgeHolding(sessionIDs: sessionIDs) }
     public func exportSession(id: UUID) async -> Data? { await journal.exportJSON(sessionID: id) }

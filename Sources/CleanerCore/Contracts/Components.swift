@@ -60,6 +60,8 @@ public protocol JournalStoring: Sendable {
     func session(id: UUID) async -> JournalSession?
     /// `itemPaths`가 nil이면 전체 복원
     func restore(sessionID: UUID, itemPaths: Set<String>?, options: RestoreOptions) async -> RestoreResult
+    /// 복원하지 않고 항목별 예상 결과(충돌·복원 불가)만 조회. 세션이 없으면 nil.
+    func restorePreview(sessionID: UUID, itemPaths: Set<String>?) async -> RestorePreview?
     func holdingUsage(retentionDays: Int) async -> HoldingUsage
     /// 보류 기간이 지난 세션의 보류 폴더 항목을 영구 삭제 (사용자 확인 후 호출)
     func purgeHolding(sessionIDs: [UUID]) async -> [CleanupFailure]

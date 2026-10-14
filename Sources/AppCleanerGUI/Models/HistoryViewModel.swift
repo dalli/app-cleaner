@@ -11,7 +11,7 @@ final class HistoryViewModel {
         let id = UUID()
         var session: JournalSession
         var items: [JournalItem]
-        /// 원래 위치에 같은 이름이 이미 있는 항목
+        /// 원래 위치에 같은 이름이 이미 있는 항목 (엔진의 복원 미리보기 기준)
         var conflicts: Set<String>
         /// 항목별 충돌 처리 (기본: 이름 바꿔 복원)
         var policies: [String: RestoreOptions.ConflictPolicy]
@@ -21,8 +21,6 @@ final class HistoryViewModel {
     }
 
     @ObservationIgnored private let engine: any CleanerEngine
-    /// 원래 위치에 같은 이름이 있는지 (읽기 전용 확인)
-    @ObservationIgnored private let pathExists: @Sendable (String) -> Bool
 
     private(set) var sessions: [JournalSession] = []
     private(set) var usage: HoldingUsage?
@@ -37,9 +35,8 @@ final class HistoryViewModel {
     var restoreRequest: RestoreRequest?
     var confirmPurge = false
 
-    init(engine: any CleanerEngine, pathExists: @escaping @Sendable (String) -> Bool) {
+    init(engine: any CleanerEngine) {
         self.engine = engine
-        self.pathExists = pathExists
     }
 
     /// 화면을 열 때마다 호출: 엔진이 이동 위치 존재를 확인해 상태를 갱신한다
@@ -81,50 +78,55 @@ final class HistoryViewModel {
 
     // MARK: 되돌리기
 
-    func requestRestoreAll() {
+    func requestRestoreAll() async {
         guard let s = selectedSession else { return }
-        prepareRestore(session: s, items: restorableItems(of: s))
+        await prepareRestore(session: s, items: restorableItems(of: s))
     }
 
-    func requestRestoreChecked() {
+    func requestRestoreChecked() async {
         guard let s = selectedSession else { return }
-        prepareRestore(session: s, items: restorableItems(of: s).filter { checkedItems.contains($0.originalPath) })
+        await prepareRestore(session: s, items: restorableItems(of: s).filter { checkedItems.contains($0.originalPath) })
     }
 
     /// ⌘Z: 가장 최근에 되돌릴 수 있는 작업
-    func requestUndoLatest() {
+    func requestUndoLatest() async {
         guard let s = sessions.first(where: { !restorableItems(of: $0).isEmpty }) else { return }
         selectedSessionID = s.id
-        prepareRestore(session: s, items: restorableItems(of: s))
+        await prepareRestore(session: s, items: restorableItems(of: s))
     }
 
-    func prepareRestore(session: JournalSession, items: [JournalItem]) {
+    /// 엔진에 충돌·복원 불가를 미리 조회해 확인 시트를 만든다 (실제 복원과 같은 판정)
+    func prepareRestore(session: JournalSession, items: [JournalItem]) async {
         guard !items.isEmpty else { return }
-        let conflicts = Set(items.map(\.originalPath).filter(pathExists))
+        guard let preview = await engine.restorePreview(sessionID: session.id, itemPaths: Set(items.map(\.originalPath))) else {
+            sessions = await engine.sessions()
+            return
+        }
+        // 화면을 연 뒤 휴지통을 비우는 등 상태가 바뀌었으면 목록을 갱신하고 남은 항목만 묻는다
+        var session = session
+        if !preview.missing.isEmpty || !preview.alreadyRestored.isEmpty {
+            sessions = await engine.sessions()
+            session = sessions.first { $0.id == session.id } ?? session
+        }
+        let restorable = Set(preview.restorable)
+        let items = items.filter { restorable.contains($0.originalPath) }
+        guard !items.isEmpty else { return }
         let policies = Dictionary(uniqueKeysWithValues: items.map { ($0.originalPath, RestoreOptions.ConflictPolicy.renameRestored) })
-        restoreRequest = RestoreRequest(session: session, items: items, conflicts: conflicts, policies: policies)
+        restoreRequest = RestoreRequest(session: session, items: items, conflicts: Set(preview.conflicts), policies: policies)
     }
 
-    /// 항목별 충돌 선택을 지키기 위해 정책별로 나눠 엔진을 호출한다
+    /// 항목별 충돌 선택을 담아 한 번에 엔진을 호출한다 (관리자 인증 1회, 기록 역순 유지).
+    /// 미리보기 뒤에 새로 생긴 충돌은 기본 정책(이름 바꿔 복원)을 따른다 — 덮어쓰지 않는다.
     func performRestore() async {
         guard let req = restoreRequest else { return }
         restoreRequest = nil
         isRestoring = true
-        var total = RestoreResult()
-        let grouped = Dictionary(grouping: req.items.map(\.originalPath)) { req.policies[$0] ?? .renameRestored }
-        for policy in [RestoreOptions.ConflictPolicy.renameRestored, .skip] {
-            guard let paths = grouped[policy], !paths.isEmpty else { continue }
-            let r = await engine.restore(
-                sessionID: req.session.id,
-                itemPaths: Set(paths),
-                options: RestoreOptions(conflictPolicy: policy, reregisterServices: req.reregisterServices)
-            )
-            total.restored += r.restored
-            total.skipped += r.skipped
-            total.missing += r.missing
-            total.failures += r.failures
-        }
-        lastRestore = total
+        lastRestore = await engine.restore(
+            sessionID: req.session.id,
+            itemPaths: Set(req.items.map(\.originalPath)),
+            options: RestoreOptions(conflictPolicy: .renameRestored, reregisterServices: req.reregisterServices,
+                                    itemPolicies: req.policies)
+        )
         isRestoring = false
         checkedItems = []
         sessions = await engine.sessions()
@@ -150,18 +152,8 @@ final class HistoryViewModel {
         return await engine.exportSession(id: id)
     }
 
-    /// 보류 폴더 위치 (기록에서 찾고, 없으면 기본 위치)
-    var holdingFolderPath: String {
-        for s in sessions {
-            if let item = s.items.first(where: { $0.destination == .holding }) {
-                // .../Holding/<sessionID>/<원래 경로> → .../Holding
-                if let r = item.movedTo.range(of: "/Holding/") {
-                    return String(item.movedTo[..<r.upperBound].dropLast())
-                }
-            }
-        }
-        return "/Library/Application Support/App Cleaner/Holding"
-    }
+    /// 보류 폴더 위치 (엔진이 실제로 쓰는 경로)
+    var holdingFolderPath: String { engine.holdingFolderURL.path }
 
     /// 단계 기록 문구
     static func stepText(_ raw: String) -> String {

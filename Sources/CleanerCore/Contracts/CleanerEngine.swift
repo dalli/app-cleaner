@@ -56,6 +56,10 @@ public protocol CleanerEngine: Sendable {
     // S6
     func sessions() async -> [JournalSession]
     func restore(sessionID: UUID, itemPaths: Set<String>?, options: RestoreOptions) async -> RestoreResult
+    /// 되돌리기 확인 전에 충돌·복원 불가 항목을 미리 조회 (`restore`와 같은 판정). 세션이 없으면 nil.
+    func restorePreview(sessionID: UUID, itemPaths: Set<String>?) async -> RestorePreview?
+    /// 관리자 권한 항목을 옮겨 두는 보류 폴더 위치 ("Finder에서 보기")
+    var holdingFolderURL: URL { get }
     func holdingUsage(retentionDays: Int) async -> HoldingUsage
     func purgeHolding(sessionIDs: [UUID]) async -> [CleanupFailure]
     func exportSession(id: UUID) async -> Data?
