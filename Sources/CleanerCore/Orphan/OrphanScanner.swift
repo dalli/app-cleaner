@@ -137,7 +137,7 @@ public struct OrphanScanner: OrphanScanning {
         let hasHigh = g.items.contains { $0.confidence == .high && !$0.offline }
         for i in g.items.indices {
             var item = g.items[i]
-            if hasHigh && item.confidence == .medium && !item.offline {
+            if hasHigh && item.confidence == .medium && !item.offline && item.promotable {
                 item.confidence = .high
                 item.promoted = true
                 item.evidence.append(Evidence(.inventory, "같은 앱의 다른 항목에서 높은 근거 발견"))
@@ -265,6 +265,7 @@ public struct OrphanScanner: OrphanScanning {
             existing.launchService = existing.launchService ?? item.launchService
             existing.preferencesDomain = existing.preferencesDomain ?? item.preferencesDomain
             existing.offline = existing.offline && item.offline
+            existing.promotable = existing.promotable && item.promotable
             byPath[key] = existing
         }
         return order.compactMap { byPath[$0] }

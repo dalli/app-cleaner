@@ -135,7 +135,8 @@ import CleanerTestSupport
         let h = try OrphanHarness()
         try h.addPackage("com.example.tool.pkg", files: [
             "Applications/Tool.app", "Applications/Tool.app/Contents", "Applications/Tool.app/Contents/Info.plist",
-            "Library/LaunchDaemons/com.example.tool.helper.plist",
+            "Library/LaunchDaemons/com.example.tool.helper.plist", "Library/LaunchDaemons/com.example.tool.broken.plist",
+            "Library/Application Support/Adobe/shared.db",
             "Library/Application Support/ToolCo", "Library/Application Support/ToolCo/data.db",
             "Library/Application Support/SharedVendor/common.db",
         ])
@@ -147,6 +148,9 @@ import CleanerTestSupport
         let daemon = try h.fx.makeLaunchPlist(at: h.fx.root("Library/LaunchDaemons/com.example.tool.helper.plist"),
                                               label: "com.example.tool.helper", program: "/usr/local/bin/still-here")
         try h.fx.file(h.fx.root("usr/local/bin/still-here"))
+        let broken = try h.fx.makeLaunchPlist(at: h.fx.root("Library/LaunchDaemons/com.example.tool.broken.plist"),
+                                              label: "com.example.tool.broken", program: "/Applications/Tool.app/Contents/MacOS/b")
+        let adobe = try h.fx.file(h.fx.root("Library/Application Support/Adobe/shared.db")).deletingLastPathComponent()
         let support = try h.fx.file(h.fx.root("Library/Application Support/ToolCo/data.db")).deletingLastPathComponent()
         let shared = try h.fx.file(h.fx.root("Library/Application Support/SharedVendor/common.db")).deletingLastPathComponent()
         let report = try await h.scan()
@@ -157,10 +161,17 @@ import CleanerTestSupport
         #expect(r.confidence == .high)
         #expect(r.isSelected)
         #expect(r.evidence.contains { $0.source == .receipt && $0.detail.contains("/Applications/Tool.app") })
+        // 실행 파일이 아직 있는 서비스는 보통 + 미선택 (승격하지 않음)
         let d = try #require(report.item(daemon))
-        #expect(d.confidence == .high)
+        #expect(d.confidence == .medium)
+        #expect(!d.isSelected)
         #expect(d.launchService == LaunchServiceRef(label: "com.example.tool.helper", domain: .system, plistURL: daemon))
+        #expect(report.item(broken)?.confidence == .high)
+        #expect(report.item(broken)?.isSelected == true)
         #expect(report.item(support)?.confidence == .high)
+        // 벤더 공용 폴더는 영수증 근거로 High가 되지 않는다
+        #expect(report.item(adobe)?.evidence.contains { $0.source == .receipt } != true)
+        #expect(report.item(adobe)?.isSelected != true)
         // 다른 패키지와 공유하는 파일은 영수증 근거로 잡지 않는다
         #expect(report.item(shared)?.evidence.contains { $0.source == .receipt } != true)
         // 앱이 남아 있는 패키지는 판정하지 않는다

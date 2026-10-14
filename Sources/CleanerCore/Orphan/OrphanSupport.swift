@@ -24,6 +24,8 @@ struct OrphanItem {
     var offline = false
     /// 같은 그룹의 High 근거로 승격됨
     var promoted = false
+    /// 같은 그룹의 High 근거로 승격할 수 있는지 (살아 있는 서비스 등은 false)
+    var promotable = true
     var lastModified: Date?
 
     var standardizedPath: String { url.standardizedFileURL.path }
