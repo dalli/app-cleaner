@@ -73,9 +73,12 @@ public struct OrphanGroup: Codable, Sendable, Hashable, Identifiable {
     public var share: ShareStatus
     /// 그룹 메모 (예: "앱이 외장 볼륨에 있을 수 있음")
     public var notes: [String]
+    /// 정리 후 안내 (예: Homebrew 기록만 남은 앱 → `brew uninstall --zap --cask`)
+    public var advisories: [Advisory] = []
 
     public init(id: String, displayName: String, nameIsGuess: Bool, bundleID: String? = nil, teamID: String? = nil,
-                items: [Candidate], confidence: Confidence, share: ShareStatus = .exclusive, notes: [String] = []) {
+                items: [Candidate], confidence: Confidence, share: ShareStatus = .exclusive, notes: [String] = [],
+                advisories: [Advisory] = []) {
         self.id = id
         self.displayName = displayName
         self.nameIsGuess = nameIsGuess
@@ -85,6 +88,7 @@ public struct OrphanGroup: Codable, Sendable, Hashable, Identifiable {
         self.confidence = confidence
         self.share = share
         self.notes = notes
+        self.advisories = advisories
     }
 
     public var totalSize: Int64 { items.reduce(0) { $0 + ($1.size ?? 0) } }
