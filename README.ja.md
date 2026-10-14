@@ -43,6 +43,8 @@ appcleaner restore <セッション ID>                # 元に戻す
 
 `.app` バンドル内の `Contents/Helpers/appcleaner` が CLI です。
 
+出力言語（韓国語・英語・日本語）は `--lang <ko|en|ja>` → `APPCLEANER_LANG` → `LC_ALL`・`LC_MESSAGES`・`LANG` → システムの言語の順に決まり、対応していない言語では英語で表示します。`--json` の出力は言語によらず同じです。
+
 ## 安全方針
 
 - 完全には削除しません。ユーザのファイルはゴミ箱へ、root 所有のファイルは保留フォルダ（`/Library/Application Support/AppCleaner/Holding`）へ移動し、削除履歴から元に戻せます。
@@ -56,4 +58,4 @@ plan.md の Phase 1a・1b・2 の範囲です。残りの作業は [`backlog` �
 - Phase 3: 管理者権限の経路を権限ヘルパーに置き換え — 現行経路の TOCTOU の制約を解消（#17）、ゴミ箱の監視・定期的な孤立ファイルスキャン（#18）
 - Phase 4: Developer ID 署名・公証、Sparkle（#19）、Homebrew tap・cask（#15, #16）、ルールデータ署名鍵の更新（#20）
 - VM・実機での QA マトリクス（#21）、GUI の未対応事項（#22）
-- 多言語対応: GUI は韓国語・英語、CLI は韓国語のみ対応。日本語の追加と CLI のローカライズは #27 で進行中
+- 多言語対応: GUI・CLI ともに韓国語・英語・日本語に対応（その他の言語では英語）。日本語画面の確認と翻訳の校正は #27
