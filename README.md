@@ -1,3 +1,5 @@
+**한국어** | [English](README.en.md) | [日本語](README.ja.md)
+
 # App Cleaner (가칭)
 
 macOS 앱을 잔여물까지 **안전하게, 되돌릴 수 있게** 제거하는 도구. 이미 지운 앱의 고아 잔여물도 따로 찾아 정리한다.
@@ -54,3 +56,4 @@ plan.md의 Phase 1a·1b·2 범위. 남은 작업은 [`backlog` 라벨 이슈](ht
 - Phase 3: 권한 헬퍼로 관리자 경로 교체 — 현재 경로의 TOCTOU 제한 해소 (#17), 휴지통 감시·정기 고아 스캔 (#18)
 - Phase 4: Developer ID 서명·공증, Sparkle (#19), Homebrew tap·cask (#15, #16), 규칙 데이터 서명 키 교체 (#20)
 - VM·실기기 QA 매트릭스 (#21), GUI 미비점 (#22)
+- 다국어: GUI는 한국어·영어, CLI는 한국어만 지원. 일본어 추가와 CLI 현지화는 #27에서 진행 중
