@@ -40,15 +40,14 @@ final class AppModel {
     var settingsAnchor: String?
 
     init(engine: any CleanerEngine, settings: AppSettings, isDemo: Bool = false,
-         system: SystemActions = SystemActions(),
-         pathExists: (@Sendable (String) -> Bool)? = nil) {
+         system: SystemActions = SystemActions()) {
         self.engine = engine
         self.settings = settings
         self.isDemo = isDemo
         self.system = system
         self.appList = AppListViewModel(engine: engine)
         self.orphans = OrphanViewModel(engine: engine)
-        self.history = HistoryViewModel(engine: engine, pathExists: pathExists ?? { FileManager.default.fileExists(atPath: $0) })
+        self.history = HistoryViewModel(engine: engine)
         self.route = settings.lastRoute
         self.permissions = engine.permissions()
         self.ruleInfo = engine.ruleDataInfo()
@@ -191,7 +190,7 @@ final class AppModel {
     /// 직전 정리 되돌리기 (완료 화면·삭제 기록)
     func undoLastCleanup() {
         if isCompletionVisible { undoCompletion() }
-        else if route == .history { history.requestUndoLatest() }
+        else if route == .history { Task { await history.requestUndoLatest() } }
     }
 
     // MARK: ⌘R

@@ -151,7 +151,7 @@ private struct SessionDetail: View {
             steps
             itemTable
             HStack(spacing: 10) {
-                Button(L("선택한 항목만 되돌리기 (%lld)", vm.checkedItems.count)) { vm.requestRestoreChecked() }
+                Button(L("선택한 항목만 되돌리기 (%lld)", vm.checkedItems.count)) { Task { await vm.requestRestoreChecked() } }
                     .disabled(vm.checkedItems.isEmpty || vm.isRestoring)
                 Spacer()
                 Button {
@@ -180,7 +180,7 @@ private struct SessionDetail: View {
             }
             Spacer()
             Button {
-                vm.requestRestoreAll()
+                Task { await vm.requestRestoreAll() }
             } label: {
                 if vm.isRestoring { ProgressView().controlSize(.small) } else { Text(L("모두 되돌리기")) }
             }
