@@ -21,7 +21,7 @@ public struct FileManagerTrash: TrashProviding {
     public func trash(_ url: URL) async throws -> URL {
         var resulting: NSURL?
         try FileManager.default.trashItem(at: url, resultingItemURL: &resulting)
-        guard let moved = resulting as URL? else { throw CleanupError("휴지통 위치를 확인하지 못했습니다") }
+        guard let moved = resulting as URL? else { throw CleanupError(.trashLocationUnknown) }
         return moved
     }
 

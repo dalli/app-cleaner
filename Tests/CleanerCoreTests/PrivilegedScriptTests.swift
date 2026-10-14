@@ -235,13 +235,16 @@ import CleanerTestSupport
         #expect(!source.joined().contains("pwned"))
         #expect(source.contains { $0.contains("quoted form of") })
         let positional = Array(call.arguments[i...])
-        #expect(positional.count == 4)
-        #expect(positional[0] == PrivilegedScript.launcherShell)
-        #expect(positional[1] == Self.sourceScriptURL.path)
-        #expect(positional[2] == PrivilegedScript.sha256)
+        #expect(positional.count == 5)
+        // 인증 창 안내 문구도 argv로만 넘긴다 (현지화된 문구가 소스에 섞이지 않음)
+        #expect(positional[0] == PrivilegedScript.authorizationPrompt())
+        #expect(source.contains { $0.contains("with prompt (item 1 of argv)") })
+        #expect(positional[1] == PrivilegedScript.launcherShell)
+        #expect(positional[2] == Self.sourceScriptURL.path)
+        #expect(positional[3] == PrivilegedScript.sha256)
         #expect(captured.value == "move-to-holding\t\(Self.session.uuidString)\t\(evil)\n"
                 + "move-to-holding\t\(Self.session.uuidString)\t/Library/Caches/Evil/x\n")
-        #expect(!FileManager.default.fileExists(atPath: positional[3]))   // 실행 후 정리
+        #expect(!FileManager.default.fileExists(atPath: positional[4]))   // 실행 후 정리
     }
 
     @Test func appleScriptExecutorRefusesTamperedScript() async throws {
@@ -262,6 +265,8 @@ import CleanerTestSupport
         let results = await exec.run([.pkgForget(id: "com.example.pkg"), .purgeHolding(session: Self.session)])
         #expect(results.allSatisfy { !$0.succeeded && $0.message == "auth-cancelled" })
         #expect(results[0].localizedReason == "관리자 인증이 취소되었습니다")
+        #expect(results[0].reason.localized(.en) == "Administrator authentication was canceled")
+        #expect(results[0].reason.localized(.ja) == "管理者認証がキャンセルされました")
     }
 
     @Test func directLauncherRunsRealScriptInTestMode() async throws {

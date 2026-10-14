@@ -121,11 +121,11 @@ public struct SafetyGuard: SafetyChecking {
 
     public func verdict(for url: URL, bundleID: String?) -> SafetyVerdict {
         if let bid = bundleID?.lowercased(), !bid.isEmpty {
-            if let reason = bundleReason(bid) { return .blocked(reason, "보호된 번들 ID: \(bundleID!)") }
+            if let reason = bundleReason(bid) { return .blocked(reason, EngineText(.protectedBundleID, bundleID!)) }
         }
 
         let lexical = Self.normalize(url.path)
-        if lexical == "/" { return .blocked(.protectedPath, "루트 디렉토리") }
+        if lexical == "/" { return .blocked(.protectedPath, EngineText(.rootDirectory)) }
 
         if let hit = check(lexical) { return .blocked(hit.0, hit.1) }
 
@@ -135,13 +135,13 @@ public struct SafetyGuard: SafetyChecking {
         let realParent = Self.realpathOfExistingPrefix(parent)
         let real = Self.join(realParent, name)
         if real != lexical, let hit = check(real) {
-            return .blocked(.symlinkEscape, "심볼릭 링크를 따라가면 보호된 위치입니다: \(real) (\(hit.1))")
+            return .blocked(.symlinkEscape, EngineText(.symlinkToProtected, real, parts: [hit.1]))
         }
 
         // 앱 번들이면 번들 ID 확인 (Apple 앱·본 앱)
         if name.lowercased().hasSuffix(".app"), let bid = BundleInfo.read(bundleAt: URL(fileURLWithPath: real))?.bundleID?.lowercased(),
            let reason = bundleReason(bid) {
-            return .blocked(reason, "보호된 앱: \(bid)")
+            return .blocked(reason, EngineText(.protectedApp, bid))
         }
         return .allowed(resolved: URL(fileURLWithPath: real))
     }
@@ -155,14 +155,14 @@ public struct SafetyGuard: SafetyChecking {
     }
 
     /// 보호 대상이면 (이유, 설명)
-    private func check(_ path: String) -> (ProtectionReason, String)? {
+    private func check(_ path: String) -> (ProtectionReason, EngineText)? {
         let key = Self.key(path)
         let name = (key as NSString).lastPathComponent
         if name.hasPrefix("com.apple.") || name.hasPrefix("group.com.apple.") {
-            return (.appleBundle, "Apple 데이터는 정리하지 않습니다: \(path)")
+            return (.appleBundle, EngineText(.appleData, path))
         }
         if name == selfBundleID || name.hasPrefix(selfBundleID + ".") {
-            return (.selfApp, "App Cleaner 자신의 데이터: \(path)")
+            return (.selfApp, EngineText(.selfAppData, path))
         }
 
         var ancestorHit: Rule?
@@ -170,16 +170,16 @@ public struct SafetyGuard: SafetyChecking {
             let rp = Self.key(rule.path)
             switch rule.scope {
             case .exact:
-                if key == rp { return (rule.reason, "보호된 폴더: \(rule.path)") }
+                if key == rp { return (rule.reason, EngineText(.protectedFolder, rule.path)) }
             case .subtree:
                 if key == rp || key.hasPrefix(rp == "/" ? "/" : rp + "/") {
-                    if !isException(key, rule) { return (rule.reason, "보호된 위치: \(rule.path)") }
+                    if !isException(key, rule) { return (rule.reason, EngineText(.protectedLocation, rule.path)) }
                 }
             }
             // 보호 경로를 품고 있는 상위 폴더 자체를 옮기면 보호 경로도 함께 옮겨진다.
             if ancestorHit == nil, rp.hasPrefix(key + "/") { ancestorHit = rule }
         }
-        if let a = ancestorHit { return (.protectedPath, "보호된 위치를 포함하는 폴더: \(a.path)") }
+        if let a = ancestorHit { return (.protectedPath, EngineText(.containsProtectedLocation, a.path)) }
         return nil
     }
 

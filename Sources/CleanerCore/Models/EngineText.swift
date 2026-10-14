@@ -2,24 +2,35 @@ import Foundation
 
 /// 엔진이 만드는 사람이 읽는 문구 (판정 근거·메모·공유 사유).
 ///
-/// 문장 대신 안정된 키와 인자로 들고 다닌다. `text`는 한국어 기본 문장(CLI 출력)이고,
-/// GUI는 `key.rawValue`로 현재 언어의 형식 문자열을 찾아 `EngineText.format`으로 채운다.
-/// 키가 없는 문구(예전 삭제 기록의 공유 사유, SafetyGuard 메시지, 데모 데이터)는 `verbatim`으로 감싼다.
+/// 문장 대신 안정된 키와 인자로 들고 다닌다. `text`는 한국어 기본 문장(저장·JSON용)이고,
+/// GUI·CLI는 `localized(_:)`로 선택한 언어의 문장을 만든다 — 번역은 CleanerCore 리소스
+/// `Localization/<언어>.lproj/Engine.strings`에 키(`key.rawValue`)로 있다.
+/// 키가 없는 문구(예전 삭제 기록의 공유 사유, 시스템 오류 설명)는 `verbatim`으로 감싼다.
 ///
-/// JSON: 키 문구는 `{"key", "args", "text"}`, `verbatim`은 평문 문자열.
-/// 평문 문자열도 읽을 수 있어 이전 버전 기록(`reason: "…"`)이 그대로 열린다.
+/// JSON: 키 문구는 `{"key", "args", "text"}` (+ 안에 든 문구가 있으면 `parts`), `verbatim`은 평문 문자열.
+/// 평문 문자열도 읽을 수 있어 이전 버전 기록(`reason: "…"`)이 그대로 열린다. `text`는 언어와 무관하게 항상 한국어다.
 public struct EngineText: Sendable, Hashable, CustomStringConvertible {
     public var key: Key
     /// 형식 문자열의 `%@`를 차례로 채우는 값 (번들 ID, 경로, 앱 이름 등 — 번역하지 않는다)
     public var args: [String]
+    /// 문장 안에 들어가는 다른 엔진 문구. `args` 다음 `%@` 자리에 같은 언어로 만든 문장이 차례로 들어간다.
+    /// 예: `.holdingMoveFailed` + `.adminAuthCancelled` → "보류 폴더로 옮기지 못했습니다: 관리자 인증이 취소되었습니다"
+    public var parts: [EngineText]
 
-    public init(_ key: Key, _ args: String...) {
-        self.init(key, args: args)
+    public init(_ key: Key, _ args: String..., parts: [EngineText] = []) {
+        self.init(key, args: args, parts: parts)
     }
 
-    public init(_ key: Key, args: [String]) {
+    public init(_ key: Key, args: [String], parts: [EngineText] = []) {
         self.key = key
         self.args = args
+        self.parts = parts
+    }
+
+    /// 오류를 문구로: 엔진 오류는 키 문구, 그 밖의 오류는 시스템이 현지화한 설명(`localizedDescription`)
+    public static func describing(_ error: any Error) -> EngineText {
+        if let e = error as? any EngineTextError { return e.text }
+        return .verbatim(error.localizedDescription)
     }
 
     /// 키 없이 문장 그대로 (번역되지 않는다)
@@ -36,10 +47,19 @@ public struct EngineText: Sendable, Hashable, CustomStringConvertible {
         if key.subjectParticleOnFirstArg, let first = values.first, !first.isEmpty {
             values[0] = KoreanText.withSubjectParticle(first)
         }
-        return Self.format(key.koreanFormat, values)
+        return Self.format(key.koreanFormat, values + parts.map(\.text))
     }
 
     public var description: String { text }
+
+    /// `language`의 문장. 한국어는 `text`(조사 처리 포함), 그 밖의 언어는 `Engine.strings`의 형식 문자열을 쓴다.
+    /// 번역이 없는 키는 영어, 영어도 없으면 한국어 문장. `verbatim`은 그대로.
+    public func localized(_ language: AppLanguage) -> String {
+        guard language != .ko, !isVerbatim else { return text }
+        guard let format = Translations.string(key.rawValue, table: "Engine", language: language)
+                ?? Translations.string(key.rawValue, table: "Engine", language: .en) else { return text }
+        return Self.format(format, args + parts.map { $0.localized(language) })
+    }
 
     /// `%@`·`%1$@`·`%%`만 해석하는 안전한 치환. 인자가 모자라면 빈 문자열로 채운다 (저장된 값이 깨져도 멈추지 않도록).
     public static func format(_ format: String, _ args: [String]) -> String {
@@ -193,6 +213,114 @@ extension EngineText {
         case sharedVendorAppInstalled
         case sharedTeamAppInstalled
 
+        // MARK: 고아 그룹 이름
+
+        /// 앱 이름을 알 수 없고 Team ID만 있는 그룹
+        case developerGroup
+        case unknownName
+
+        // MARK: 보호 판정 (SafetyGuard 진단 — GUI는 보호 사유 설명을 대신 보여 준다)
+
+        case protectedBundleID
+        case rootDirectory
+        /// `args[0]`은 링크를 따라간 실제 경로, `parts[0]`은 그 경로의 보호 판정
+        case symlinkToProtected
+        case protectedApp
+        case appleData
+        case selfAppData
+        case protectedFolder
+        case protectedLocation
+        case containsProtectedLocation
+
+        // MARK: 검사 오류 (ScanError)
+
+        case notAnApp
+        case missingBundleID
+        case appleApp
+        case cannotRemoveSelf
+
+        // MARK: 정리 실패 사유
+
+        case serviceStopFailed
+        case unresponsiveSkipped
+        /// `parts[0]`은 보호 판정
+        case protectedNotMoved
+        /// `parts[0]`은 오류 설명
+        case prefsCopyTrashFailed
+        case itemMissing
+        case trashFailed
+        case trashLocationUnknown
+        /// `parts[0]`은 관리자 작업 사유
+        case holdingMoveFailed
+        case noResult
+        case cancelledNotMoved
+        case receiptForgetFailed
+        case privacyResetFailed
+        case outsideSystemRootItem
+
+        // MARK: 환경설정 캐시
+
+        case prefsDomainInvalid
+        case prefsDomainInvalidNoName
+        case prefsDomainProtected
+        case prefsFlushFailed
+        case prefsBackupMissing
+        case prefsRestoreFailed
+
+        // MARK: 복원
+
+        case sessionNotFound
+        case restoreFailed
+        case outsideSystemRootPath
+        case holdingRestoreFailed
+        case noAdminForHoldingRestore
+        case serviceReregisterFailed
+        case noAdminExecutor
+        case resultNotReceived
+        /// 이름을 바꿔 복원할 때 붙이는 표시 ("Foo (복원됨).plist")
+        case restoredSuffix
+
+        // MARK: 백그라운드 서비스
+
+        case serviceLabelInvalid
+        case serviceStopFailedCode
+        case serviceStopFailedError
+        case systemServiceStopFailed
+        case plistLocationUnknown
+        case serviceReregisterFailedCode
+        case serviceReregisterFailedError
+        case plistOutsideSystemRoot
+        case systemServiceReregisterFailed
+
+        // MARK: 명령 실행 (CommandError)
+
+        case commandLaunchFailed
+        case commandNonZeroExit
+
+        // MARK: 관리자 작업 (privileged-op.sh 사유 코드 — `PrivilegedScript.reason(_:)`)
+
+        case adminDone
+        case adminOutsideAllowedRoot
+        case adminBadPath
+        case adminBadChar
+        case adminSymlink
+        case adminProtected
+        case adminExists
+        case adminBadIdentifier
+        case adminBadSession
+        case adminHoldingUnsafe
+        case adminScriptTampered
+        case adminAuthCancelled
+        case adminNotRoot
+        case adminLaunchFailed
+        case adminFileOperationFailed
+        case adminNoResult
+        case adminLaunchctlFailed
+        case adminPkgutilFailed
+        case adminFailed
+        /// 관리자 인증 창(osascript `with prompt`)의 안내 문구
+        case adminPrompt
+
         /// 한국어 형식 문자열 (`%@` 자리에 `args`가 들어간다)
         public var koreanFormat: String {
             switch self {
@@ -282,6 +410,100 @@ extension EngineText {
             case .sharedVendorItem: return "같은 개발사의 다른 앱이 설치되어 있는 공용 항목"
             case .sharedVendorAppInstalled: return "같은 개발사의 앱이 설치되어 있음"
             case .sharedTeamAppInstalled: return "같은 개발자(Team ID %@)의 앱이 설치되어 있음"
+
+            case .developerGroup: return "개발자 %@"
+            case .unknownName: return "알 수 없음"
+
+            case .protectedBundleID: return "보호된 번들 ID: %@"
+            case .rootDirectory: return "루트 디렉토리"
+            case .symlinkToProtected: return "심볼릭 링크를 따라가면 보호된 위치입니다: %@ (%@)"
+            case .protectedApp: return "보호된 앱: %@"
+            case .appleData: return "Apple 데이터는 정리하지 않습니다: %@"
+            case .selfAppData: return "App Cleaner 자신의 데이터: %@"
+            case .protectedFolder: return "보호된 폴더: %@"
+            case .protectedLocation: return "보호된 위치: %@"
+            case .containsProtectedLocation: return "보호된 위치를 포함하는 폴더: %@"
+
+            case .notAnApp: return "%@은(는) 앱 번들(.app)이 아니거나 찾을 수 없습니다."
+            case .missingBundleID: return "%@의 번들 ID를 읽을 수 없어 검사할 수 없습니다."
+            case .appleApp: return "Apple 앱(%@)은 제거 대상에서 제외됩니다."
+            case .cannotRemoveSelf: return "App Cleaner 자신은 제거할 수 없습니다."
+
+            case .serviceStopFailed: return "서비스를 중지하지 못했습니다"
+            case .unresponsiveSkipped: return "응답하지 않는 프로세스를 종료하지 않고 계속했습니다 (pid %@)"
+            case .protectedNotMoved: return "보호된 항목이라 옮기지 않았습니다 (%@)"
+            case .prefsCopyTrashFailed: return "환경설정 사본을 휴지통에 넣지 못했습니다: %@"
+            case .itemMissing: return "항목을 찾을 수 없습니다"
+            case .trashFailed: return "휴지통으로 옮기지 못했습니다: %@"
+            case .trashLocationUnknown: return "휴지통 위치를 확인하지 못했습니다"
+            case .holdingMoveFailed: return "보류 폴더로 옮기지 못했습니다: %@"
+            case .noResult: return "결과 없음"
+            case .cancelledNotMoved: return "취소되어 옮기지 않았습니다"
+            case .receiptForgetFailed: return "설치 기록(pkgutil)을 지우지 못했습니다: %@"
+            case .privacyResetFailed: return "개인정보 보호 권한 기록을 초기화하지 못했습니다"
+            case .outsideSystemRootItem: return "시스템 루트 밖의 항목이라 관리자 권한으로 옮길 수 없습니다"
+
+            case .prefsDomainInvalid: return "환경설정 도메인 이름이 올바르지 않습니다: %@"
+            case .prefsDomainInvalidNoName: return "환경설정 도메인 이름이 올바르지 않습니다"
+            case .prefsDomainProtected: return "보호된 환경설정 도메인입니다: %@"
+            case .prefsFlushFailed: return "환경설정 캐시를 비우지 못했습니다 (%@, 코드 %@)"
+            case .prefsBackupMissing: return "보관한 환경설정 사본이 없습니다: %@"
+            case .prefsRestoreFailed: return "환경설정을 되살리지 못했습니다 (%@, 코드 %@)"
+
+            case .sessionNotFound: return "작업 기록을 찾을 수 없습니다"
+            case .restoreFailed: return "되돌리지 못했습니다: %@"
+            case .outsideSystemRootPath: return "시스템 루트 밖의 경로입니다"
+            case .holdingRestoreFailed: return "보류 폴더에서 되돌리지 못했습니다: %@"
+            case .noAdminForHoldingRestore: return "관리자 권한 실행기가 없어 보류 폴더 항목을 되돌리지 못했습니다"
+            case .serviceReregisterFailed: return "서비스를 다시 등록하지 못했습니다"
+            case .noAdminExecutor: return "관리자 권한 실행기가 없습니다"
+            case .resultNotReceived: return "결과를 받지 못했습니다"
+            case .restoredSuffix: return "복원됨"
+
+            case .serviceLabelInvalid: return "서비스 레이블이 올바르지 않아 중지하지 않았습니다: %@"
+            case .serviceStopFailedCode: return "서비스를 중지하지 못했습니다 (%@, 코드 %@)"
+            case .serviceStopFailedError: return "서비스를 중지하지 못했습니다 (%@): %@"
+            case .systemServiceStopFailed: return "시스템 서비스를 중지하지 못했습니다 (%@): %@"
+            case .plistLocationUnknown: return "plist 위치를 몰라 다시 등록하지 못했습니다 (%@)"
+            case .serviceReregisterFailedCode: return "서비스를 다시 등록하지 못했습니다 (%@, 코드 %@)"
+            case .serviceReregisterFailedError: return "서비스를 다시 등록하지 못했습니다 (%@): %@"
+            case .plistOutsideSystemRoot: return "시스템 루트 밖의 plist입니다 (%@)"
+            case .systemServiceReregisterFailed: return "시스템 서비스를 다시 등록하지 못했습니다 (%@): %@"
+
+            case .commandLaunchFailed: return "%@ 실행 실패: %@"
+            case .commandNonZeroExit: return "%@ 종료 코드 %@: %@"
+
+            case .adminDone: return "완료"
+            case .adminOutsideAllowedRoot: return "관리자 권한으로 옮길 수 있는 위치가 아닙니다"
+            case .adminBadPath: return "경로 형식이 올바르지 않습니다"
+            case .adminBadChar: return "지원하지 않는 문자가 포함된 경로입니다"
+            case .adminSymlink: return "경로에 심볼릭 링크가 있어 옮기지 않았습니다"
+            case .adminProtected: return "보호된 항목이라 옮기지 않았습니다"
+            case .adminExists: return "같은 이름의 항목이 이미 있습니다"
+            case .adminBadIdentifier: return "레이블 또는 패키지 ID 형식이 올바르지 않습니다"
+            case .adminBadSession: return "작업 기록 ID가 올바르지 않습니다"
+            case .adminHoldingUnsafe: return "보류 폴더가 안전하지 않아 중단했습니다"
+            case .adminScriptTampered: return "관리자 작업 스크립트가 변조되어 실행하지 않았습니다"
+            case .adminAuthCancelled: return "관리자 인증이 취소되었습니다"
+            case .adminNotRoot: return "관리자 권한을 얻지 못했습니다"
+            case .adminLaunchFailed: return "관리자 작업을 시작하지 못했습니다"
+            case .adminFileOperationFailed: return "파일 작업에 실패했습니다"
+            case .adminNoResult: return "관리자 작업 결과를 받지 못했습니다"
+            case .adminLaunchctlFailed: return "launchctl 실행에 실패했습니다 (%@)"
+            case .adminPkgutilFailed: return "pkgutil 실행에 실패했습니다 (%@)"
+            case .adminFailed: return "관리자 작업에 실패했습니다 (%@)"
+            case .adminPrompt: return "App Cleaner가 변경하려고 합니다."
+            }
+        }
+
+        /// SafetyGuard 보호 판정 문구 (진단용 — GUI는 보호 사유 설명을 대신 보여 준다)
+        public var isProtectionDetail: Bool {
+            switch self {
+            case .protectedBundleID, .rootDirectory, .symlinkToProtected, .protectedApp, .appleData, .selfAppData,
+                 .protectedFolder, .protectedLocation, .containsProtectedLocation:
+                return true
+            default:
+                return false
             }
         }
 
@@ -299,7 +521,7 @@ extension EngineText {
 
 extension EngineText: Codable {
     private enum CodingKeys: String, CodingKey {
-        case key, args, text
+        case key, args, parts, text
     }
 
     public init(from decoder: any Decoder) throws {
@@ -310,8 +532,9 @@ extension EngineText: Codable {
         }
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let args = try c.decodeIfPresent([String].self, forKey: .args) ?? []
+        let parts = try c.decodeIfPresent([EngineText].self, forKey: .parts) ?? []
         if let raw = try c.decodeIfPresent(String.self, forKey: .key), let key = Key(rawValue: raw) {
-            self.init(key, args: args)
+            self.init(key, args: args, parts: parts)
         } else {
             // 모르는 키 (새 버전이 쓴 기록) → 함께 저장된 한국어 문장
             self = .verbatim(try c.decodeIfPresent(String.self, forKey: .text) ?? "")
@@ -327,6 +550,12 @@ extension EngineText: Codable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(key.rawValue, forKey: .key)
         try c.encode(args, forKey: .args)
+        if !parts.isEmpty { try c.encode(parts, forKey: .parts) }
         try c.encode(text, forKey: .text)
     }
+}
+
+/// 사용자에게 보여 줄 문구를 키 문구로 가진 엔진 오류 (`ScanError`, `CleanupError`, `CommandError`)
+public protocol EngineTextError: Error {
+    var text: EngineText { get }
 }

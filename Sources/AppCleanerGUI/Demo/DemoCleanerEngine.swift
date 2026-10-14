@@ -89,9 +89,9 @@ final class DemoCleanerEngine: CleanerEngine, @unchecked Sendable {
         let groupsWithItems = report.groups.filter { g in g.items.contains { selectedPaths.contains($0.path) } }
         let name: String
         switch groupsWithItems.count {
-        case 0: name = "고아 잔여물"
-        case 1: name = groupsWithItems[0].displayName
-        default: name = "\(groupsWithItems[0].displayName) 외 \(groupsWithItems.count - 1)개"
+        case 0: name = CleanupPlanner.orphanTargetName
+        case 1: name = groupsWithItems[0].title
+        default: name = L("%@ 외 %lld개", groupsWithItems[0].title, groupsWithItems.count - 1)
         }
         return CleanupPlan(kind: .orphanCleanup, targetName: name, items: items, keptItems: kept,
                            servicesToStop: items.compactMap(\.launchService),
@@ -146,7 +146,7 @@ final class DemoCleanerEngine: CleanerEngine, @unchecked Sendable {
                 for item in plan.items {
                     try? await pause(0.15)
                     if item.category == .privilegedHelper {
-                        let f = CleanupFailure(path: item.path, reason: "관리자 권한 요청이 거부되었습니다")
+                        let f = CleanupFailure(path: item.path, reason: EngineText(.adminAuthCancelled))
                         failures.append(f)
                         progress(.itemFailed(path: f.path, reason: f.reason))
                     } else {

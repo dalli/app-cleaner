@@ -13,35 +13,29 @@ enum Command: Equatable {
     case version
 }
 
+/// 사용법 오류. 문구는 키(한국어 원문) + `%@` 인자로 들고 있다가 출력할 때 언어를 고른다.
 struct UsageError: Error, CustomStringConvertible {
-    var description: String
-    init(_ message: String) { description = message }
+    var key: String
+    var args: [String]
+
+    init(_ key: String, _ args: String...) {
+        self.key = key
+        self.args = args
+    }
+
+    func message(_ language: AppLanguage) -> String {
+        CLIText(language: language).format(key, args)
+    }
+
+    /// 한국어 문장
+    var description: String { message(.ko) }
 }
 
 enum ArgumentParser {
-    static let usage = """
-    사용법: appcleaner <명령> [옵션]
-
-    명령:
-      scan <앱 경로|이름>          앱과 잔여물을 검사만 한다 (아무것도 지우지 않음)
-          --all                     남겨두는 항목까지 모두 표시
-          --json                    JSON 출력
-      remove <앱 경로|이름>        기본 선택 항목을 휴지통/보류 폴더로 이동
-          --dry-run                 실제로 옮기지 않고 정리 계획만 출력 (JSON)
-          --yes                     확인 없이 진행
-          --reset-privacy           개인정보 보호 권한 기록(TCC) 초기화
-      orphans                       이미 삭제된 앱의 고아 잔여물 스캔
-          --min-confidence <high|medium|low>
-          --include-dotfiles        숨김 설정 폴더 포함 (~/.ssh, ~/.gnupg는 항상 제외)
-          --json
-      orphans clean                 고아 잔여물 정리 (기본: 높음 + 사용자 데이터 아님)
-          --dry-run | --yes | --json
-          --include-medium          보통 신뢰도 항목도 포함
-      history [--json]              삭제 기록
-      restore <세션 ID> [--yes]     세션 되돌리기
-
-      --demo                        (개발용) 가짜 데이터 엔진 사용
-    """
+    /// 사용법 (긴 문단이라 영문 키 "usage" — 한국어는 `ko.lproj/CLI.strings`)
+    static func usage(_ language: AppLanguage) -> String {
+        CLIText(language: language)("usage")
+    }
 
     static func parse(_ args: [String]) throws -> Command {
         var rest = args.filter { $0 != "--demo" }
@@ -65,7 +59,7 @@ enum ArgumentParser {
 
         func allow(_ allowed: Set<String>) throws {
             let unknown = flags.subtracting(allowed)
-            if let u = unknown.sorted().first { throw UsageError("알 수 없는 옵션: \(u)") }
+            if let u = unknown.sorted().first { throw UsageError("알 수 없는 옵션: %@", u) }
         }
 
         func orphanOptions() throws -> OrphanScanOptions {
@@ -102,7 +96,7 @@ enum ArgumentParser {
                                      yes: flags.contains("--yes"), json: flags.contains("--json"),
                                      includeMedium: flags.contains("--include-medium"))
             }
-            if let p = positionals.first { throw UsageError("알 수 없는 하위 명령: orphans \(p)") }
+            if let p = positionals.first { throw UsageError("알 수 없는 하위 명령: orphans %@", p) }
             try allow(["--json", "--include-dotfiles"])
             return .orphans(options: try orphanOptions(), json: flags.contains("--json"))
         case "history":
@@ -115,7 +109,7 @@ enum ArgumentParser {
             }
             return .restore(sessionID: id, yes: flags.contains("--yes"))
         default:
-            throw UsageError("알 수 없는 명령: \(first)")
+            throw UsageError("알 수 없는 명령: %@", first)
         }
     }
 }

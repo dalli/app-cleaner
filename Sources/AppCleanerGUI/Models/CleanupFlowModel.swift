@@ -74,7 +74,7 @@ final class CleanupFlowModel: Identifiable {
     func stepTitle(_ step: CleanupStep) -> String {
         switch step {
         case .stopServices: return L("백그라운드 서비스 %lld개 중지", plan.servicesToStop.count)
-        case .terminateApps: return L("%@ 종료 요청", plan.targetName)
+        case .terminateApps: return L("%@ 종료 요청", plan.targetTitle)
         case .flushPreferences: return L("환경설정 캐시 비우기")
         case .moveItems: return L("%lld개 항목을 휴지통으로 이동", moveCount)
         case .postProcess:
@@ -187,7 +187,7 @@ final class CompletionModel {
 
     var title: String {
         if result.cancelled { return L("정리를 취소했습니다") }
-        return origin == .orphans ? L("고아 잔여물을 정리했습니다") : L("%@ 정리했습니다", Josa.eulReul(plan.targetName))
+        return origin == .orphans ? L("고아 잔여물을 정리했습니다") : L("%@ 정리했습니다", Josa.eulReul(plan.targetTitle))
     }
 
     var summary: String {

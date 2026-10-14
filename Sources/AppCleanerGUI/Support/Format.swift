@@ -1,15 +1,13 @@
+import CleanerCore
 import Foundation
 
 /// 크기·날짜·경로 표시 형식
 enum Fmt {
     // MARK: 크기
 
+    /// 크기. 단위·소수점은 UI 언어의 로케일을 따른다 (`ByteCountFormatter`는 로케일을 지정할 수 없어 쓰지 않는다)
     static func bytes(_ value: Int64) -> String {
-        let f = ByteCountFormatter()
-        f.countStyle = .file
-        f.allowedUnits = [.useKB, .useMB, .useGB, .useTB]
-        f.includesActualByteCount = false
-        return f.string(fromByteCount: value)
+        value.formatted(.byteCount(style: .file, allowedUnits: [.kb, .mb, .gb, .tb]).locale(L10n.locale))
     }
 
     /// 크기를 모르면 "계산 중…"
@@ -125,27 +123,27 @@ enum Fmt {
 // MARK: - 한국어 조사
 
 enum Josa {
-    /// 받침 여부에 따라 "이"/"가"를 붙인다 ("Excel이", "Word가"). 영어 UI에서는 그대로 돌려준다.
-    static func iGa(_ word: String) -> String {
-        guard L10n.isKorean else { return word }
+    /// 받침 여부에 따라 "이"/"가"를 붙인다 ("Excel이", "Word가"). 한국어가 아닌 UI에서는 그대로 돌려준다.
+    static func iGa(_ word: String, language: AppLanguage = L10n.appLanguage) -> String {
+        guard language == .ko else { return word }
         return word + (hasFinalConsonant(word) ? "이" : "가")
     }
 
     /// "을"/"를" ("Word를", "Slack을")
-    static func eulReul(_ word: String) -> String {
-        guard L10n.isKorean else { return word }
+    static func eulReul(_ word: String, language: AppLanguage = L10n.appLanguage) -> String {
+        guard language == .ko else { return word }
         return word + (hasFinalConsonant(word) ? "을" : "를")
     }
 
     /// "은"/"는"
-    static func eunNeun(_ word: String) -> String {
-        guard L10n.isKorean else { return word }
+    static func eunNeun(_ word: String, language: AppLanguage = L10n.appLanguage) -> String {
+        guard language == .ko else { return word }
         return word + (hasFinalConsonant(word) ? "은" : "는")
     }
 
     /// "으로"/"로" (받침이 없거나 ㄹ 받침이면 "로")
-    static func euRo(_ word: String) -> String {
-        guard L10n.isKorean else { return word }
+    static func euRo(_ word: String, language: AppLanguage = L10n.appLanguage) -> String {
+        guard language == .ko else { return word }
         return word + (hasFinalConsonant(word) && !endsWithRieul(word) ? "으로" : "로")
     }
 

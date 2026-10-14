@@ -19,8 +19,8 @@ public actor JournalStore: JournalStoring, JournalRecording {
 
     /// 보류 폴더를 영구 삭제한 세션에 남기는 단계 이름
     public static let purgedStep = "purgeHolding"
-    /// 이름을 바꿔 복원할 때 붙이는 표시
-    public static let restoredSuffix = "복원됨"
+    /// 이름을 바꿔 복원할 때 붙이는 표시 (파일 이름에 들어가므로 `AppLanguage.current`를 따른다 — ko "복원됨")
+    public static var restoredSuffix: String { EngineText(.restoredSuffix).localized(.current) }
 
     public init(paths: SystemPaths, admin: AdminExecuting? = nil, services: ServiceControlling? = nil,
                 preferences: PreferencesFlushing? = nil) {
@@ -73,7 +73,7 @@ public actor JournalStore: JournalStoring, JournalRecording {
 
     public func restore(sessionID: UUID, itemPaths: Set<String>?, options: RestoreOptions) async -> RestoreResult {
         guard var session = load(sessionID) else {
-            return RestoreResult(failures: [CleanupFailure(path: sessionID.uuidString, reason: "작업 기록을 찾을 수 없습니다")])
+            return RestoreResult(failures: [CleanupFailure(path: sessionID.uuidString, reason: EngineText(.sessionNotFound))])
         }
         let fm = FileManager.default
         var result = RestoreResult()
@@ -117,12 +117,12 @@ public actor JournalStore: JournalStoring, JournalRecording {
                     result.restored.append(target.path)
                     if target == original { restoredInPlace.insert(item.originalPath) }
                 } catch {
-                    result.failures.append(CleanupFailure(path: item.originalPath, reason: "되돌리지 못했습니다: \(error.localizedDescription)"))
+                    result.failures.append(CleanupFailure(path: item.originalPath, reason: EngineText(.restoreFailed, parts: [.describing(error)])))
                 }
             case .holding:
                 guard let logicalOriginal = AdminPaths.logicalPath(of: original, root: paths.root),
                       let logicalTarget = AdminPaths.logicalPath(of: target, root: paths.root) else {
-                    result.failures.append(CleanupFailure(path: item.originalPath, reason: "시스템 루트 밖의 경로입니다"))
+                    result.failures.append(CleanupFailure(path: item.originalPath, reason: EngineText(.outsideSystemRootPath)))
                     continue
                 }
                 let op = AdminOperation.restoreFromHolding(session: session.id, originalPath: logicalOriginal,
@@ -141,14 +141,14 @@ public actor JournalStore: JournalStoring, JournalRecording {
                         result.restored.append(entry.target)
                         if entry.inPlace { restoredInPlace.insert(original) }
                     } else {
-                        let reason = k < results.count ? results[k].localizedReason : "관리자 작업 결과를 받지 못했습니다"
-                        result.failures.append(CleanupFailure(path: original, reason: "보류 폴더에서 되돌리지 못했습니다: \(reason)"))
+                        let reason = k < results.count ? results[k].reason : EngineText(.adminNoResult)
+                        result.failures.append(CleanupFailure(path: original, reason: EngineText(.holdingRestoreFailed, parts: [reason])))
                     }
                 }
             } else {
                 for entry in holdingOps {
                     result.failures.append(CleanupFailure(path: session.items[entry.index].originalPath,
-                                                          reason: "관리자 권한 실행기가 없어 보류 폴더 항목을 되돌리지 못했습니다"))
+                                                          reason: EngineText(.noAdminForHoldingRestore)))
                 }
             }
         }
@@ -161,7 +161,7 @@ public actor JournalStore: JournalStoring, JournalRecording {
                 }
                 guard restoredPlist else { continue }
                 do { try preferences.restore(backup) } catch {
-                    result.failures.append(CleanupFailure(path: backup.backupPath, reason: "\(error)"))
+                    result.failures.append(CleanupFailure(path: backup.backupPath, reason: .describing(error)))
                 }
             }
         }
@@ -175,7 +175,7 @@ public actor JournalStore: JournalStoring, JournalRecording {
             if !toStart.isEmpty {
                 for r in await services.bootstrap(toStart) where !r.succeeded {
                     result.failures.append(CleanupFailure(path: r.service.plistURL?.path ?? r.service.label,
-                                                          reason: r.error ?? "서비스를 다시 등록하지 못했습니다"))
+                                                          reason: r.error ?? EngineText(.serviceReregisterFailed)))
                 }
             }
         }
@@ -220,7 +220,7 @@ public actor JournalStore: JournalStoring, JournalRecording {
         let targets = sessions.filter { s in !s.steps.contains(Self.purgedStep) && s.items.contains { $0.destination == .holding } }
         guard !targets.isEmpty else { return [] }
         guard let admin else {
-            return targets.map { CleanupFailure(path: holdingPath($0.id), reason: "관리자 권한 실행기가 없습니다") }
+            return targets.map { CleanupFailure(path: holdingPath($0.id), reason: EngineText(.noAdminExecutor)) }
         }
         let results = await admin.run(targets.map { .purgeHolding(session: $0.id) })
         var failures: [CleanupFailure] = []
@@ -231,7 +231,7 @@ public actor JournalStore: JournalStoring, JournalRecording {
                 try? record(s)
             } else {
                 failures.append(CleanupFailure(path: holdingPath(s.id),
-                                               reason: k < results.count ? results[k].localizedReason : "결과를 받지 못했습니다"))
+                                               reason: k < results.count ? results[k].reason : EngineText(.resultNotReceived)))
             }
         }
         return failures

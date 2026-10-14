@@ -65,7 +65,7 @@ struct CompletionView: View {
             ForEach(completion.result.failures, id: \.path) { f in
                 VStack(alignment: .leading, spacing: 1) {
                     Text(Fmt.path(f.path)).font(.system(.callout, design: .monospaced)).textSelection(.enabled)
-                    Text(f.reason).font(.caption).foregroundStyle(.secondary)
+                    Text(f.reason.localized).font(.caption).foregroundStyle(.secondary)
                 }
             }
         }
@@ -127,7 +127,7 @@ struct CompletionView: View {
 
     @ViewBuilder
     private func advisoryCard(_ advisory: Advisory) -> some View {
-        let name = completion.plan.targetName
+        let name = completion.plan.targetTitle
         switch advisory {
         case .loginItems:
             AdvisoryCard(systemImage: "person.crop.circle.badge.checkmark", title: L("로그인 항목"),

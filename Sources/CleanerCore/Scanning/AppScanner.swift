@@ -138,13 +138,12 @@ public struct AppScanner: AppScanning {
             switch safety.verdict(for: c.url, bundleID: identity.bundleID) {
             case .allowed:
                 return c
-            case .blocked(let reason, let message):
+            case .blocked(let reason, let note):
                 // 정보원이 이미 보호 사유를 붙인 항목(iCloud 등)은 안내용으로 남긴다.
                 if c.protection == nil && (reason == .protectedPath || reason == .symlinkEscape) { return nil }
                 c.protection = c.protection ?? reason
-                // SafetyGuard 메시지는 진단용 평문이라 키 없이 남긴다 (GUI는 보호 사유 설명을 대신 보여 준다)
-                let note = EngineText.verbatim(message)
-                if !message.isEmpty && !c.notes.contains(note) { c.notes.append(note) }
+                // SafetyGuard 판정 문구는 진단용이다 (GUI는 보호 사유 설명을 대신 보여 준다)
+                if !c.notes.contains(note) { c.notes.append(note) }
                 c.isSelected = false
                 return c
             }

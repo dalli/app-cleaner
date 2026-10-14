@@ -202,8 +202,8 @@ struct BlockingSafety: SafetyChecking {
     }
 
     func verdict(for url: URL, bundleID: String?) -> SafetyVerdict {
-        if let p = protectedPrefix, url.isInside(p) { return .blocked(.protectedPath, "보호된 위치") }
-        if let a = appleBundlePath, url.isInside(a) { return .blocked(.appleBundle, "Apple 항목이라 옮기지 않습니다") }
+        if let p = protectedPrefix, url.isInside(p) { return .blocked(.protectedPath, .verbatim("보호된 위치")) }
+        if let a = appleBundlePath, url.isInside(a) { return .blocked(.appleBundle, .verbatim("Apple 항목이라 옮기지 않습니다")) }
         return .allowed(resolved: url)
     }
 }

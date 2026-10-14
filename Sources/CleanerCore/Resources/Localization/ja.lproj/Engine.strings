@@ -1,0 +1,188 @@
+/*
+  App Cleaner — エンジン文言 (判定根拠・メモ・共有理由・エラー) 日本語訳
+  キーは `EngineText.Key.rawValue`、韓国語の原文は `EngineText.Key.koreanFormat`。
+  `%@` にはバンドル ID・パス・App 名など翻訳しない値が順に入る (`%1$@` のように位置指定も可)。
+  `parts` がある文言は `args` の次の位置に、内側の文言 (同じ言語に翻訳済み) が入る。
+*/
+
+/* 判定根拠 — App 削除の情報源 */
+"appBundle" = "App 本体 (%@)";
+"bundleIDMatch" = "バンドル ID %@ が一致";
+"nameMatch" = "名前「%@」が一致 (大文字と小文字を区別しない)";
+"vendorFolder" = "開発元の共有フォルダ「%@」— 同じ開発元のほかの App も使用している可能性があります";
+"bundleIDMatchInVendorFolder" = "バンドル ID %@ が一致 (%@ フォルダ内)";
+"nameMatchInVendorFolder" = "%@ フォルダ内で名前「%@」が一致";
+"appGroupEntitlement" = "App Group %@ (コード署名の entitlements)";
+"appGroup" = "App Group %@";
+"groupNameContainsBundleID" = "グループ名にバンドル ID %@ を含む";
+"teamIDPrefix" = "Team ID %@ のプレフィックス — 同じ開発元で共有している可能性があります";
+"iCloudContainer" = "iCloud コンテナ (バンドル ID %@)";
+"diagnosticReportPrefix" = "診断レポートのファイル名が「%@」で始まる";
+"hiddenSettingsByName" = "名前「%@」に基づく隠し設定「~/%@」";
+"settingsByName" = "名前に基づく設定「~/%@/%@」";
+"pluginBundleIDMatch" = "プラグインのバンドル ID %@ が一致";
+"kernelExtensionBundleID" = "カーネル機能拡張のバンドル ID %@";
+"installReceipt" = "インストールレシート %@";
+"installReceiptSoleOwner" = "インストールレシート %@ のみが所有";
+"homebrewZapRule" = "Homebrew cask「%@」の zap ルール: %@";
+"homebrewLaunchctl" = "Homebrew cask「%@」の launchctl 項目 %@";
+"helperNameMatchesBundleID" = "特権ヘルパーの名前がバンドル ID %@ と一致";
+"launchFileNameMatchesBundleID" = "ファイル名がバンドル ID %@ と一致 (plist を読み取れませんでした)";
+"launchExecutableInsideApp" = "実行ファイルが App バンドル内を指している: %@";
+"launchRunsAppHelper" = "この App の特権ヘルパー %@ を実行";
+"launchLabelMatchesBundleID" = "ファイル名/Label がバンドル ID %@ と一致";
+"embeddedServiceLabel" = "App バンドルに内蔵されたサービスの Label %@";
+"associatedBundleIdentifiers" = "AssociatedBundleIdentifiers にこの App が登録されている";
+"helperRunByDaemon" = "LaunchDaemon %@ が実行する特権ヘルパー";
+
+/* 判定根拠 — 孤立した残存ファイルのスキャン */
+"promotedBySibling" = "同じ App のほかの項目で強い根拠が見つかった";
+"bundleIDAppOffline" = "バンドル ID %@ の App は接続されていない外部ボリュームにある可能性があります";
+"bundleIDAppNotInstalled" = "バンドル ID %@ の App がインストールされていない";
+"bundleIDAppNotInstalledNoMetadata" = "バンドル ID %@ の App がインストールされていない (コンテナのメタデータなし)";
+"containerOwnerOffline" = "コンテナを所有する App %@ は接続されていない外部ボリュームにある可能性があります";
+"containerOwnerNotInstalled" = "コンテナを所有する App %@ がインストールされていない (機能拡張・ヘルパーを含む)";
+"appGroupAppOffline" = "グループ %@ の App は接続されていない外部ボリュームにある可能性があります";
+"appGroupNoInstalledApp" = "グループ %@ を使用するインストール済み App がない";
+"vendorFolderNoInstalledApp" = "開発元の共有フォルダ「%@」— 同じ開発元のインストール済み App がない";
+"noInstalledAppNamed" = "名前が「%@」のインストール済み App がない";
+"noInstalledAppNamedDotfile" = "名前が「%@」のインストール済み App がない (隠し設定フォルダ)";
+"serviceAppOffline" = "サービス %@ の App は接続されていない外部ボリュームにある可能性があります";
+"launchTargetUnknown" = "シェルやインタプリタ経由で実行されるため、実行対象を確認できない";
+"executableLocationUnknown" = "実行ファイル「%@」の場所を確認できない";
+"serviceExecutableUnknown" = "サービス %@ の実行ファイル情報がなく、所有する App もインストールされていない";
+"executableOnOfflineVolume" = "実行ファイル %@ は接続されていない外部ボリュームにある";
+"executableMissing" = "実行ファイル %@ がない";
+"homebrewRecordWithoutApp" = "Homebrew cask「%@」の記録はあるが %@ がない";
+"packageAppMissing" = "インストールパッケージ %@ の App %@ がない";
+"packageInstalledFile" = "インストールパッケージ %@ がインストールしたファイル (App バンドルは削除済み)";
+
+/* メモ — App 削除 */
+"launchViaShell" = "シェルやスクリプト経由で実行されるため、実際の実行対象を確認できませんでした";
+"syncedData" = "iCloud と同期されるデータのため移動しません — 削除するとほかのデバイスからも消えます";
+"kernelExtensionNotRemoved" = "カーネル機能拡張は自動では削除しません — 整理後の案内を確認してください";
+"movedWithParent" = "親フォルダ %@ と一緒に移動されます";
+"inventoryUnknown" = "インストール済み App をまだ確認していないため、ほかの App と共有しているか判断できず、デフォルトでは選択していません";
+"lowConfidenceNameOnly" = "名前が一致しただけで確実ではないため、デフォルトでは選択していません";
+"lowConfidence" = "信頼度が低いため、デフォルトでは選択していません";
+"userData" = "ユーザデータが含まれているため、デフォルトでは選択していません";
+"lastAppOfVendor" = "この開発元の最後の App なので一緒に整理します";
+"usedBy" = "%@ も使用中";
+"usedByMore" = "%@ ほか %@ 個の App も使用中";
+"mayBeUsedByVendorService" = "%@ も使用している可能性があります — 同じ開発元の共有バックグラウンドサービス";
+"mayBeUsedByMoreVendorService" = "%@ ほか %@ 個の App も使用している可能性があります — 同じ開発元の共有バックグラウンドサービス";
+"mayBeUsedByVendorItem" = "%@ も使用している可能性があります — 同じ開発元の共有項目";
+"mayBeUsedByMoreVendorItem" = "%@ ほか %@ 個の App も使用している可能性があります — 同じ開発元の共有項目";
+
+/* メモ — 孤立した残存ファイルのスキャン */
+"spotlightDemoted" = "Spotlight のインデックスが不完全なため信頼度を下げた";
+"spotlightDemotedSome" = "Spotlight のインデックスが不完全なため一部の項目の信頼度を下げた";
+"recentlyModified" = "最近変更された — まだ使用中の可能性があります";
+"vendorAppsInstalled" = "同じ開発元の App (%@) がインストールされている";
+"vendorAppsInstalledMore" = "同じ開発元の App (%@ ほか %@ 個) がインストールされている";
+"maybeOnExternalVolume" = "App が外部ボリュームにある可能性があります";
+"vendorFolderMaybeShared" = "複数の App で共有している開発元のフォルダの可能性があります";
+"commonName" = "よくある名前のため、ほかのプログラムのデータの可能性があります";
+"maybeCLIData" = "コマンドラインツールやランタイムのデータの可能性があります";
+"brewZapRecommended" = "brew uninstall --zap --cask %@ で整理することをおすすめします";
+"homebrewRecordOnly" = "Homebrew の記録だけが残っています — brew uninstall --zap --cask %@ をおすすめします";
+"serviceExecutableRemains" = "サービスの実行ファイルがまだ残っています — ほかのプログラムが使用している可能性があります";
+
+/* 共有理由 */
+"sharedAppGroup" = "同じ App Group (%@) をほかの App も使用";
+"sharedExternalLaunchService" = "実行ファイル (%@) が App の外にある、同じ開発元の共有バックグラウンドサービス";
+"sharedVendorItem" = "同じ開発元のほかの App がインストールされている共有項目";
+"sharedVendorAppInstalled" = "同じ開発元の App がインストールされている";
+"sharedTeamAppInstalled" = "同じ開発元 (Team ID %@) の App がインストールされている";
+
+/* 孤立グループの名前 */
+"developerGroup" = "開発元 %@";
+"unknownName" = "不明";
+
+/* 保護の判定 (診断用) */
+"protectedBundleID" = "保護されたバンドル ID: %@";
+"rootDirectory" = "ルートディレクトリ";
+"symlinkToProtected" = "シンボリックリンクをたどると保護された場所です: %@ (%@)";
+"protectedApp" = "保護された App: %@";
+"appleData" = "Apple のデータは整理しません: %@";
+"selfAppData" = "App Cleaner 自身のデータ: %@";
+"protectedFolder" = "保護されたフォルダ: %@";
+"protectedLocation" = "保護された場所: %@";
+"containsProtectedLocation" = "保護された場所を含むフォルダ: %@";
+
+/* 検査エラー */
+"notAnApp" = "%@ は App バンドル (.app) ではないか、見つかりません。";
+"missingBundleID" = "%@ のバンドル ID を読み取れないため検査できません。";
+"appleApp" = "Apple の App (%@) は削除の対象外です。";
+"cannotRemoveSelf" = "App Cleaner 自身は削除できません。";
+
+/* 整理に失敗した理由 */
+"serviceStopFailed" = "サービスを停止できませんでした";
+"unresponsiveSkipped" = "応答しないプロセスを終了せずに続行しました (pid %@)";
+"protectedNotMoved" = "保護された項目のため移動しませんでした (%@)";
+"prefsCopyTrashFailed" = "環境設定のコピーをゴミ箱に入れられませんでした: %@";
+"itemMissing" = "項目が見つかりません";
+"trashFailed" = "ゴミ箱に入れられませんでした: %@";
+"trashLocationUnknown" = "ゴミ箱内の場所を確認できませんでした";
+"holdingMoveFailed" = "保留フォルダに移動できませんでした: %@";
+"noResult" = "結果なし";
+"cancelledNotMoved" = "キャンセルされたため移動しませんでした";
+"receiptForgetFailed" = "インストール記録 (pkgutil) を削除できませんでした: %@";
+"privacyResetFailed" = "プライバシー権限の記録をリセットできませんでした";
+"outsideSystemRootItem" = "システムルートの外にある項目のため、管理者権限で移動できません";
+
+/* 環境設定のキャッシュ */
+"prefsDomainInvalid" = "環境設定のドメイン名が正しくありません: %@";
+"prefsDomainInvalidNoName" = "環境設定のドメイン名が正しくありません";
+"prefsDomainProtected" = "保護された環境設定のドメインです: %@";
+"prefsFlushFailed" = "環境設定のキャッシュを消去できませんでした (%@、コード %@)";
+"prefsBackupMissing" = "保存した環境設定のコピーがありません: %@";
+"prefsRestoreFailed" = "環境設定を復元できませんでした (%@、コード %@)";
+
+/* 復元 */
+"sessionNotFound" = "整理の記録が見つかりません";
+"restoreFailed" = "復元できませんでした: %@";
+"outsideSystemRootPath" = "システムルートの外にあるパスです";
+"holdingRestoreFailed" = "保留フォルダから復元できませんでした: %@";
+"noAdminForHoldingRestore" = "管理者権限を使えないため、保留フォルダの項目を復元できませんでした";
+"serviceReregisterFailed" = "サービスを再登録できませんでした";
+"noAdminExecutor" = "管理者権限を使えません";
+"resultNotReceived" = "結果を受け取れませんでした";
+"restoredSuffix" = "復元済み";
+
+/* バックグラウンドサービス */
+"serviceLabelInvalid" = "サービスのラベルが正しくないため停止しませんでした: %@";
+"serviceStopFailedCode" = "サービスを停止できませんでした (%@、コード %@)";
+"serviceStopFailedError" = "サービスを停止できませんでした (%@): %@";
+"systemServiceStopFailed" = "システムサービスを停止できませんでした (%@): %@";
+"plistLocationUnknown" = "plist の場所が分からないため再登録できませんでした (%@)";
+"serviceReregisterFailedCode" = "サービスを再登録できませんでした (%@、コード %@)";
+"serviceReregisterFailedError" = "サービスを再登録できませんでした (%@): %@";
+"plistOutsideSystemRoot" = "システムルートの外にある plist です (%@)";
+"systemServiceReregisterFailed" = "システムサービスを再登録できませんでした (%@): %@";
+
+/* コマンドの実行 */
+"commandLaunchFailed" = "%@ を実行できませんでした: %@";
+"commandNonZeroExit" = "%@ が終了コード %@ で終了しました: %@";
+
+/* 管理者の作業 */
+"adminDone" = "完了";
+"adminOutsideAllowedRoot" = "管理者権限で移動できる場所ではありません";
+"adminBadPath" = "パスの形式が正しくありません";
+"adminBadChar" = "サポートされていない文字を含むパスです";
+"adminSymlink" = "パスにシンボリックリンクが含まれているため移動しませんでした";
+"adminProtected" = "保護された項目のため移動しませんでした";
+"adminExists" = "同じ名前の項目がすでにあります";
+"adminBadIdentifier" = "ラベルまたはパッケージ ID の形式が正しくありません";
+"adminBadSession" = "整理の記録 ID が正しくありません";
+"adminHoldingUnsafe" = "保留フォルダが安全ではないため中止しました";
+"adminScriptTampered" = "管理者用スクリプトが改ざんされているため実行しませんでした";
+"adminAuthCancelled" = "管理者認証がキャンセルされました";
+"adminNotRoot" = "管理者権限を取得できませんでした";
+"adminLaunchFailed" = "管理者の作業を開始できませんでした";
+"adminFileOperationFailed" = "ファイル操作に失敗しました";
+"adminNoResult" = "管理者の作業の結果を受け取れませんでした";
+"adminLaunchctlFailed" = "launchctl の実行に失敗しました (%@)";
+"adminPkgutilFailed" = "pkgutil の実行に失敗しました (%@)";
+"adminFailed" = "管理者の作業に失敗しました (%@)";
+"adminPrompt" = "App Cleaner が変更を加えようとしています。";

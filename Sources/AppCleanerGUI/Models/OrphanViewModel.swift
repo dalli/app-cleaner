@@ -146,7 +146,7 @@ final class OrphanViewModel {
             phase = .cancelled
             hasScanned = hasScanned || !groups.isEmpty
         } else {
-            phase = .failed(error.localizedDescription)
+            phase = .failed(L10n.describe(error))
         }
     }
 
@@ -247,7 +247,7 @@ final class OrphanViewModel {
     /// 그룹을 유지 목록에 넣고 목록에서 뺀다. 하단에 "되돌리기" 토스트.
     func keep(_ group: OrphanGroup) {
         guard let index = groups.firstIndex(where: { $0.id == group.id }) else { return }
-        let entry = KeepEntry(kind: .group, key: group.id, displayName: group.displayName)
+        let entry = KeepEntry(kind: .group, key: group.id, displayName: group.title)
         engine.addToKeepList(entry)
         let selection = Set(group.items.flatMap(SelectionTree.leaves(of:)).map(\.path)).intersection(tree.selected)
         groups.remove(at: index)

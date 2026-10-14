@@ -75,10 +75,13 @@ public struct OrphanGroup: Codable, Sendable, Hashable, Identifiable {
     public var notes: [EngineText]
     /// 정리 후 안내 (예: Homebrew 기록만 남은 앱 → `brew uninstall --zap --cask`)
     public var advisories: [Advisory] = []
+    /// 표시 이름이 앱 이름이 아니라 문구일 때("개발자 …", "알 수 없음")의 키 문구. `displayName`은 그 한국어 문장.
+    /// GUI·CLI는 `title(_:)`로 선택한 언어의 이름을 보여 준다.
+    public var nameText: EngineText?
 
     public init(id: String, displayName: String, nameIsGuess: Bool, bundleID: String? = nil, teamID: String? = nil,
                 items: [Candidate], confidence: Confidence, share: ShareStatus = .exclusive, notes: [EngineText] = [],
-                advisories: [Advisory] = []) {
+                advisories: [Advisory] = [], nameText: EngineText? = nil) {
         self.id = id
         self.displayName = displayName
         self.nameIsGuess = nameIsGuess
@@ -89,7 +92,11 @@ public struct OrphanGroup: Codable, Sendable, Hashable, Identifiable {
         self.share = share
         self.notes = notes
         self.advisories = advisories
+        self.nameText = nameText
     }
+
+    /// `language`로 보여 줄 이름
+    public func title(_ language: AppLanguage) -> String { nameText?.localized(language) ?? displayName }
 
     public var totalSize: Int64 { items.reduce(0) { $0 + ($1.size ?? 0) } }
     public var lastModified: Date? { items.compactMap(\.lastModified).max() }

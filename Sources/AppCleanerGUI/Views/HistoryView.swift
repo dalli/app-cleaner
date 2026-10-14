@@ -172,7 +172,7 @@ private struct SessionDetail: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 8) {
-                    Text(session.kind == .appRemoval ? L("%@ 제거", session.targetName) : L("%@ 정리", session.targetName))
+                    Text(session.kind == .appRemoval ? L("%@ 제거", session.targetTitle) : L("%@ 정리", session.targetTitle))
                         .font(.title2.weight(.bold))
                     StatusBadge(status: session.status)
                 }
@@ -270,7 +270,7 @@ private struct RestoreSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(L("%@ 되돌리기", request.session.targetName)).font(.title2.weight(.bold))
+            Text(L("%@ 되돌리기", request.session.targetTitle)).font(.title2.weight(.bold))
             Text(L("%lld개 항목을 원래 위치로 옮깁니다.", request.items.count)).foregroundStyle(.secondary)
 
             if !request.conflicts.isEmpty {

@@ -32,7 +32,8 @@ public protocol AppScanning: Sendable {
 public enum SafetyVerdict: Sendable, Hashable {
     /// 허용. `resolved`는 심볼릭 링크를 해석한 실제 경로
     case allowed(resolved: URL)
-    case blocked(ProtectionReason, String)
+    /// 차단. 문구는 진단용 보호 판정 (`EngineText.Key.isProtectionDetail`)
+    case blocked(ProtectionReason, EngineText)
 
     public var isAllowed: Bool { if case .allowed = self { return true }; return false }
 }

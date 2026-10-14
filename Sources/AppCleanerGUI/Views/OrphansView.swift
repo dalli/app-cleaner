@@ -311,11 +311,11 @@ private struct OrphanGroupRow: View {
     var body: some View {
         let state = vm.state(of: group)
         HStack(spacing: 12) {
-            TriStateCheckbox(state: state, label: group.displayName) { vm.toggle(group) }
+            TriStateCheckbox(state: state, label: group.title) { vm.toggle(group) }
                 .fixedSize()
-            MissingAppIcon(name: group.displayName)
+            MissingAppIcon(name: group.title)
             VStack(alignment: .leading, spacing: 2) {
-                (Text(group.displayName).fontWeight(.semibold) + Text(suffix).foregroundStyle(.secondary))
+                (Text(group.title).fontWeight(.semibold) + Text(suffix).foregroundStyle(.secondary))
                 Text(subtitle)
                     .font(.caption)
                     .foregroundStyle(group.notes.isEmpty ? Color.secondary : noteColor)
@@ -357,7 +357,7 @@ private struct OrphanGroupRow: View {
     private var noteColor: Color { group.share.isShared ? Tone.shared.foreground : Tone.caution.foreground }
 
     private func accessibility(_ state: CheckState) -> String {
-        var parts = [group.displayName + suffix, L("%lld개 항목", group.items.count), Fmt.spokenSize(group.totalSize), group.confidence.fullTitle]
+        var parts = [group.title + suffix, L("%lld개 항목", group.items.count), Fmt.spokenSize(group.totalSize), group.confidence.fullTitle]
         if let s = group.share.spokenText { parts.append(s) }
         parts.append(state.spokenValue)
         return parts.joined(separator: ", ")
@@ -412,7 +412,7 @@ private struct KeepToast: View {
         HStack(spacing: 12) {
             Image(systemName: "eye.slash").foregroundStyle(.secondary).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
-                Text(L("%@ 유지 목록에 넣었습니다.", Josa.eulReul(undo.group.displayName))).fontWeight(.medium)
+                Text(L("%@ 유지 목록에 넣었습니다.", Josa.eulReul(undo.group.title))).fontWeight(.medium)
                 Text(L("설정 › 유지 목록에서 해제할 수 있습니다.")).font(.caption).foregroundStyle(.secondary)
             }
             Button(L("되돌리기"), action: onUndo).buttonStyle(.borderedProminent).controlSize(.small)

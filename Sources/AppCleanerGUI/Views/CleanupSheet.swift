@@ -31,7 +31,7 @@ struct CleanupSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(flow.origin == .orphans ? L("고아 잔여물 정리") : L("%@ 정리", flow.plan.targetName))
+            Text(flow.origin == .orphans ? L("고아 잔여물 정리") : L("%@ 정리", flow.plan.targetTitle))
                 .font(.title2.weight(.bold))
             Text(flow.phase == .preview
                  ? L("아직 아무것도 옮기지 않았습니다. 아래 내용을 확인한 뒤 진행하세요.")
@@ -218,7 +218,7 @@ private struct ProgressContent: View {
         if !flow.failures.isEmpty {
             Banner(tone: .caution, systemImage: "exclamationmark.triangle",
                    text: L("%lld개 항목을 옮기지 못했습니다. 나머지는 계속 진행합니다.", flow.failures.count),
-                   detail: flow.failures.map { "\(Fmt.lastComponent($0.path)) — \($0.reason)" }.joined(separator: "\n"))
+                   detail: flow.failures.map { "\(Fmt.lastComponent($0.path)) — \($0.reason.localized)" }.joined(separator: "\n"))
         }
     }
 
