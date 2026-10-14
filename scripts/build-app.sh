@@ -3,6 +3,7 @@
 #
 #   ./scripts/build-app.sh            # release 빌드 → dist/App Cleaner.app
 #   CONFIG=debug ./scripts/build-app.sh
+#   ARCH=arm64 ./scripts/build-app.sh  # 대상 아키텍처 (기본 arm64 — Apple Silicon)
 #
 # 결과: dist/App Cleaner.app
 #   Contents/MacOS/AppCleanerGUI        GUI 실행 파일
@@ -13,15 +14,16 @@ set -eu
 cd "$(dirname "$0")/.."
 
 CONFIG="${CONFIG:-release}"
+ARCH="${ARCH:-arm64}"
 APP_NAME="App Cleaner"
 BUNDLE_ID="com.dallisoft.AppCleaner"
 VERSION="${VERSION:-0.1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}"
 
-echo "==> swift build -c $CONFIG (AppCleanerGUI, appcleaner)"
-swift build -c "$CONFIG" --product AppCleanerGUI
-swift build -c "$CONFIG" --product appcleaner
-BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
+echo "==> swift build -c $CONFIG --arch $ARCH (AppCleanerGUI, appcleaner)"
+swift build -c "$CONFIG" --arch "$ARCH" --product AppCleanerGUI
+swift build -c "$CONFIG" --arch "$ARCH" --product appcleaner
+BIN_DIR="$(swift build -c "$CONFIG" --arch "$ARCH" --show-bin-path)"
 
 DIST="dist"
 APP="$DIST/$APP_NAME.app"
