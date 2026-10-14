@@ -209,15 +209,18 @@ private struct InspectorList: View {
 
     var body: some View {
         List(selection: $vm.focusedID) {
-            ForEach(vm.sections) { section in
-                DisclosureGroup(isExpanded: expandedBinding(section.category)) {
-                    ForEach(section.items) { item in
-                        CandidateNode(vm: vm, candidate: item)
+            ForEach(vm.rows) { row in
+                OutlineRow(depth: depth(row), expandable: expandable(row), expanded: vm.isExpanded(row),
+                           toggleExpanded: { vm.setExpanded(row, !vm.isExpanded(row)) }) {
+                    switch row {
+                    case .category(let section):
+                        CategoryHeader(vm: vm, section: section)
+                    case .item(let c, _):
+                        CandidateRow(vm: vm, candidate: c)
                     }
-                } label: {
-                    CategoryHeader(vm: vm, section: section)
-                        .tag(section.id)
                 }
+                .tag(row.id)
+                .listRowBackground(background(row))
             }
             Text(L("로그인 항목 · 키체인 항목은 직접 지우지 않고, 정리 후 확인 방법을 안내합니다."))
                 .font(.callout)
@@ -230,6 +233,14 @@ private struct InspectorList: View {
             vm.toggleFocused()
             return .handled
         }
+        .onKeyPress(.leftArrow) {
+            vm.setFocusedExpanded(false)
+            return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            vm.setFocusedExpanded(true)
+            return .handled
+        }
         .contextMenu(forSelectionType: String.self) { ids in
             if let id = ids.first, !id.hasPrefix("cat:") {
                 Button(L("Finder에서 보기")) { model.system.reveal(path: id) }
@@ -238,9 +249,54 @@ private struct InspectorList: View {
         }
     }
 
-    private func expandedBinding(_ c: InspectorCategory) -> Binding<Bool> {
-        Binding(get: { !vm.collapsed.contains(c) },
-                set: { open in if open { vm.collapsed.remove(c) } else { vm.collapsed.insert(c) } })
+    private func depth(_ row: InspectorRow) -> Int {
+        if case .item(_, let d) = row { return d }
+        return 0
+    }
+
+    private func expandable(_ row: InspectorRow) -> Bool {
+        switch row {
+        case .category: return true
+        case .item(let c, _): return !c.children.isEmpty
+        }
+    }
+
+    /// 보통 신뢰도인데 선택된 항목은 강조 (ui-ux.md 결정 2)
+    private func background(_ row: InspectorRow) -> Color? {
+        guard case .item(let c, _) = row, c.children.isEmpty else { return nil }
+        return c.confidence == .medium && vm.state(of: c) == .on ? Tone.caution.background.opacity(0.55) : nil
+    }
+}
+
+/// 들여쓰기 + 펼침 삼각형 (List 안의 DisclosureGroup은 macOS에서 행 재사용이 어긋나 직접 그린다)
+struct OutlineRow<Content: View>: View {
+    var depth: Int
+    var expandable: Bool
+    var expanded: Bool
+    var toggleExpanded: () -> Void
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if depth > 0 { Color.clear.frame(width: CGFloat(depth) * 18, height: 1) }
+            Group {
+                if expandable {
+                    Button(action: toggleExpanded) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                            .rotationEffect(.degrees(expanded ? 90 : 0))
+                            .frame(width: 14, height: 20)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(expanded ? L("접기") : L("펼치기"))
+                } else {
+                    Color.clear.frame(width: 14, height: 1)
+                }
+            }
+            content()
+        }
     }
 }
 
@@ -276,43 +332,6 @@ private struct CategoryHeader: View {
         if let s = section.category.subtitle { parts.insert(s, at: 0) }
         if state == .mixed { parts.append(L("일부 선택")) }
         return parts.joined(separator: " · ")
-    }
-}
-
-/// 후보 1개 (컨테이너면 하위 항목을 펼친다)
-private struct CandidateNode: View {
-    @Bindable var vm: InspectorViewModel
-    var candidate: Candidate
-
-    var body: some View {
-        if candidate.children.isEmpty {
-            CandidateRow(vm: vm, candidate: candidate)
-                .tag(candidate.id)
-                .listRowBackground(rowBackground)
-        } else {
-            DisclosureGroup(isExpanded: expanded) {
-                ForEach(candidate.children) { child in
-                    CandidateRow(vm: vm, candidate: child)
-                        .tag(child.id)
-                        .listRowBackground(background(for: child))
-                }
-            } label: {
-                CandidateRow(vm: vm, candidate: candidate)
-                    .tag(candidate.id)
-            }
-        }
-    }
-
-    private var expanded: Binding<Bool> {
-        Binding(get: { !vm.collapsedContainers.contains(candidate.id) },
-                set: { open in if open { vm.collapsedContainers.remove(candidate.id) } else { vm.collapsedContainers.insert(candidate.id) } })
-    }
-
-    private var rowBackground: Color? { background(for: candidate) }
-
-    /// 보통 신뢰도인데 선택된 항목은 강조 (ui-ux.md 결정 2)
-    private func background(for c: Candidate) -> Color? {
-        c.confidence == .medium && vm.state(of: c) == .on ? Tone.caution.background.opacity(0.55) : nil
     }
 }
 

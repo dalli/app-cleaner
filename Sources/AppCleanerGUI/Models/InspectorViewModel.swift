@@ -76,6 +76,19 @@ struct InspectorSection: Identifiable, Equatable {
     var id: String { "cat:" + category.rawValue }
 }
 
+/// S2 목록의 한 줄 (카테고리 → 후보 → 컨테이너 하위 항목을 펼친 순서)
+enum InspectorRow: Identifiable, Equatable {
+    case category(InspectorSection)
+    case item(Candidate, depth: Int)
+
+    var id: String {
+        switch self {
+        case .category(let s): return s.id
+        case .item(let c, _): return c.id
+        }
+    }
+}
+
 /// S2 잔여물 검사기
 @MainActor
 @Observable
@@ -162,6 +175,45 @@ final class InspectorViewModel {
         var copy = c
         copy.children = c.children.compactMap { filtered($0, by: filter) }
         return copy.children.isEmpty ? nil : copy
+    }
+
+    /// 접힘 상태를 반영해 펼친 목록 (List가 DisclosureGroup 대신 이 순서로 그린다)
+    var rows: [InspectorRow] {
+        var result: [InspectorRow] = []
+        for section in sections {
+            result.append(.category(section))
+            guard !collapsed.contains(section.category) else { continue }
+            for c in section.items {
+                result.append(.item(c, depth: 1))
+                if !c.children.isEmpty && !collapsedContainers.contains(c.id) {
+                    result += c.children.map { .item($0, depth: 2) }
+                }
+            }
+        }
+        return result
+    }
+
+    func isExpanded(_ row: InspectorRow) -> Bool {
+        switch row {
+        case .category(let s): return !collapsed.contains(s.category)
+        case .item(let c, _): return !c.children.isEmpty && !collapsedContainers.contains(c.id)
+        }
+    }
+
+    func setExpanded(_ row: InspectorRow, _ open: Bool) {
+        switch row {
+        case .category(let s):
+            if open { collapsed.remove(s.category) } else { collapsed.insert(s.category) }
+        case .item(let c, _):
+            guard !c.children.isEmpty else { return }
+            if open { collapsedContainers.remove(c.id) } else { collapsedContainers.insert(c.id) }
+        }
+    }
+
+    /// ← / → 키: 포커스된 카테고리·컨테이너 접기/펼치기
+    func setFocusedExpanded(_ open: Bool) {
+        guard let id = focusedID, let row = rows.first(where: { $0.id == id }) else { return }
+        setExpanded(row, open)
     }
 
     var allLeaves: [Candidate] { tree.allLeaves }

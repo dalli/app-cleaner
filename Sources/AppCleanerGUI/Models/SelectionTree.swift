@@ -140,13 +140,14 @@ struct KeptSummary: Equatable, Sendable {
 
     var total: Int { protected + shared + userData + low + other }
 
-    /// 항목마다 한 묶음에만 센다: 보호됨 → 공유 → 사용자 데이터 → 낮음 → 기타
+    /// 항목마다 한 묶음에만 센다: 보호됨 → 낮음 → 공유 → 사용자 데이터 → 기타
+    /// (낮은 신뢰도 항목은 기본으로 숨겨져 있으므로 "낮음"으로 먼저 센다)
     init(_ items: [Candidate]) {
         for item in items {
             if !item.isSelectable { protected += 1 }
+            else if item.confidence == .low { low += 1 }
             else if item.share.isShared { shared += 1 }
             else if item.nature == .userData { userData += 1 }
-            else if item.confidence == .low { low += 1 }
             else { other += 1 }
         }
     }
