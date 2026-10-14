@@ -45,6 +45,11 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
                                    admin: admin, journal: journal)
     }
 
+    /// GUI 시작 시 호출: 첫 검사가 기다리지 않도록 인벤토리 캐시를 미리 만든다.
+    public func prewarm() {
+        if inventory.cached() == nil { inventoryTask.refresh(inventory) }
+    }
+
     // MARK: S1
 
     public func installedApps() async -> [InstalledApp] {
@@ -58,9 +63,9 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
     // MARK: S2
 
     public func scan(appAt url: URL) async throws -> ScanReport {
-        // 캐시가 없으면 공유 판정 대상만 미선택 처리한 채 백그라운드로 인벤토리를 구축한다 (plan.md 8.2).
-        let snapshot = inventory.cached()
-        if snapshot == nil { inventoryTask.refresh(inventory) }
+        // 캐시가 없으면 먼저 인벤토리를 만든다 (첫 실행 1~2초). 실패하면 공유 판정 대상만 미선택 처리한다 (plan.md 8.2).
+        var snapshot = inventory.cached()
+        if snapshot == nil { snapshot = try? await inventory.build() }
         return try await scanner.scan(appAt: url, inventory: snapshot)
     }
 
