@@ -45,7 +45,9 @@ struct OrphanGrouper {
 
     func group(_ items: [OrphanItem]) -> [Group] {
         // 1) BID 루트: 다른 BID의 점 경계 접두사인 가장 짧은 BID (구성요소 3개 이상)
-        let bids = Set(items.compactMap { $0.bundleID?.lowercased() })
+        // 패키지 ID가 BID 형태면(`com.tinyspeck.slackmacgap`) 같은 BID의 항목과 묶는다
+        let packageBIDs = items.compactMap(\.packageID).filter(BundleIDHeuristics.isBundleIDShaped).map { $0.lowercased() }
+        let bids = Set(items.compactMap { $0.bundleID?.lowercased() } + packageBIDs)
         let sortedBIDs = bids.sorted { $0.count < $1.count }
         var rootOf: [String: String] = [:]
         for b in sortedBIDs {
@@ -76,7 +78,10 @@ struct OrphanGrouper {
                     for cb in cask.bundleIDs { keys.append("bid:" + (rootOf[cb.lowercased()] ?? cb.lowercased())) }
                 }
             }
-            if let p = item.packageID { keys.append("pkg:" + p) }
+            if let p = item.packageID {
+                keys.append("pkg:" + p)
+                if let r = rootOf[p.lowercased()] { keys.append("bid:" + r) }
+            }
             if !keys.isEmpty { strong.insert(i) }
             for k in keys {
                 if let j = firstByKey[k] { union(i, j) } else { firstByKey[k] = i }

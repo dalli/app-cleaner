@@ -165,14 +165,18 @@ public final class AppInventory: InventoryProviding, @unchecked Sendable {
         return snapshot
     }
 
-    /// S1 앱 목록 (Apple 기본 앱·`/System` 앱 제외). 서명은 읽지 않으므로 빠르다.
+    /// S1 앱 목록: `/Applications`·`~/Applications`(하위 폴더 포함)와 외장 볼륨 앱. Apple 기본 앱·`/System` 앱 제외.
+    /// 서명은 읽지 않으므로 빠르다.
     /// 크기는 nil — GUI가 `FileStatsCalculator`로 나중에 채운다.
     public func installedApps() async -> [InstalledApp] {
         var urls: [URL] = []
         for root in [paths.system("Applications"), paths.home("Applications")] { urls.append(contentsOf: Self.findApps(in: root)) }
-        // 지난 인벤토리의 비표준 위치 앱 중 아직 존재하는 것
+        // 외장 볼륨의 앱(지난 인벤토리에서 Spotlight로 찾은 것) 중 아직 존재하는 것.
+        // 그 밖의 비표준 위치(캐시·업데이터·Application Support 내부 헬퍼 등)는 인벤토리(오탐 방지)에만 쓰고 목록에는 보이지 않는다.
         if let snap = cached() {
-            urls.append(contentsOf: snap.apps.map(\.url).filter { FileManager.default.itemExists($0) })
+            urls.append(contentsOf: snap.apps.map(\.url).filter {
+                VolumePaths.volumeRoot(of: $0, paths: paths) != nil && FileManager.default.itemExists($0)
+            })
         }
         var seen = Set<String>()
         urls = urls.filter { seen.insert($0.standardizedFileURL.path).inserted }
@@ -399,6 +403,21 @@ public final class AppInventory: InventoryProviding, @unchecked Sendable {
                 let info = BundleInfo.read(bundleAt: item)
                 out.append(EmbeddedBundle(url: item, bundleID: info?.bundleID, isCodeBundle: codeExts.contains(ext)))
                 if depth < 1 && ext == "app" {
+                    out.append(contentsOf: embeddedBundles(of: item, depth: depth + 1))
+                }
+            }
+        }
+        // 그 밖의 위치에 둔 내장 앱: Contents/MacOS/*.app (Docker Desktop), Contents/Resources/*.app,
+        // Contents/Library/<임의>/*.app|appex|xpc (LoginItems 외 SecretsEngine 등)
+        var extraDirs = [contents.appendingPathComponent("MacOS"), contents.appendingPathComponent("Resources")]
+        let known = Set(["LoginItems", "LaunchServices", "SystemExtensions", "LaunchAgents", "LaunchDaemons"])
+        for sub in fm.children(of: contents.appendingPathComponent("Library")) where !known.contains(sub.lastPathComponent) {
+            extraDirs.append(sub)
+        }
+        for dir in extraDirs {
+            for item in fm.children(of: dir) where codeExts.contains(item.pathExtension.lowercased()) && fm.isDirectory(item) {
+                out.append(EmbeddedBundle(url: item, bundleID: BundleInfo.read(bundleAt: item)?.bundleID, isCodeBundle: true))
+                if depth < 1 && item.pathExtension.lowercased() == "app" {
                     out.append(contentsOf: embeddedBundles(of: item, depth: depth + 1))
                 }
             }

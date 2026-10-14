@@ -157,7 +157,8 @@ struct ExclusionRules {
     func isExcludedBundleID(_ bid: String) -> Bool {
         let lower = bid.lowercased()
         if lower == paths.selfBundleID.lowercased() || lower.hasPrefix(paths.selfBundleID.lowercased() + ".") { return true }
-        if prefixes.contains(where: { lower.hasPrefix($0) }) { return true }
+        // 접두사 자신(`com.github.Electron.` ↔ `com.github.Electron`)도 제외
+        if prefixes.contains(where: { lower.hasPrefix($0) || (($0.hasSuffix(".")) && lower == String($0.dropLast())) }) { return true }
         // `group.com.apple.*`, `<TEAM>.com.apple.*`, `systemgroup.com.apple.*`
         return lower.contains(".com.apple.") || lower.hasPrefix("com.apple")
     }
