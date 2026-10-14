@@ -220,6 +220,34 @@ import CleanerTestSupport
         #expect(found2.item(fx.home("Library/Application Support/Foo"))?.confidence == .medium)
     }
 
+    /// 묶음·pkg cask: uninstall에만 나오는 BID로는 매칭하지 않고, 다른 앱 BID가 든 zap 경로는 쓰지 않는다
+    @Test func suiteCaskDoesNotLeakOtherAppsData() throws {
+        let fx = try Fixture()
+        let suite = HomebrewCask(token: "microsoft-word", names: ["Microsoft Word"], apps: [],
+                                 bundleIDs: ["com.microsoft.autoupdate2", "com.microsoft.package.Microsoft_Word.app"],
+                                 zap: ["~/Library/Preferences/com.microsoft.Word.plist", "~/Library/Containers/com.microsoft.Excel",
+                                       "~/Library/Application Support/Microsoft",
+                                       "~/Library/Application Support/com.apple.sharedfilelist/x/com.microsoft.word.sfl*"])
+        try fx.file(fx.home("Library/Preferences/com.microsoft.Word.plist"))
+        try fx.dir(fx.home("Library/Containers/com.microsoft.Excel"))
+        try fx.dir(fx.home("Library/Application Support/Microsoft"))
+        try fx.file(fx.home("Library/Application Support/com.apple.sharedfilelist/x/com.microsoft.word.sfl3"))
+        let source = HomebrewZapSource(paths: fx.paths, rules: ScanKit.provider(casks: [suite]))
+
+        let au = try fx.makeApp(name: "Microsoft AutoUpdate", bundleID: "com.microsoft.autoupdate2")
+        let auID = AppIdentity(bundleURL: au, bundleID: "com.microsoft.autoupdate2", name: "Microsoft AutoUpdate")
+        #expect(try source.candidates(for: auID).isEmpty)
+        #expect(!HomebrewZapSource.caskMatches(suite, auID))
+
+        let word = try fx.makeApp(name: "Microsoft Word", bundleID: "com.microsoft.Word")
+        let wordID = AppIdentity(bundleURL: word, bundleID: "com.microsoft.Word", name: "Microsoft Word")
+        let found = try source.candidates(for: wordID)
+        #expect(found.item(fx.home("Library/Preferences/com.microsoft.Word.plist"))?.confidence == .medium)
+        #expect(found.item(fx.home("Library/Application Support/Microsoft")) != nil)
+        #expect(found.item(fx.home("Library/Containers/com.microsoft.Excel")) == nil)
+        #expect(found.items(named: "com.microsoft.word.sfl3").isEmpty)
+    }
+
     @Test func braceExpansion() {
         #expect(HomebrewZapSource.expandBraces("a{b,c}d") == ["abd", "acd"])
         #expect(HomebrewZapSource.expandBraces("x{1,{2,3}}") == ["x1", "x2", "x3"])
