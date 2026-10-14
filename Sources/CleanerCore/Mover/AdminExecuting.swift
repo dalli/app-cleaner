@@ -104,7 +104,15 @@ public enum AdminPaths {
 /// - 권한 상승된 쪽에서도 스크립트를 root 소유 임시 폴더에 복사해 해시를 다시 확인한 뒤 그 사본을 실행한다.
 /// - CLI: 같은 명령을 `sudo`로 실행.
 public struct AppleScriptAdminExecutor: AdminExecuting {
-    public enum Launcher: String, Sendable { case osascript, sudo }
+    public enum Launcher: String, Sendable {
+        /// GUI: 관리자 인증 대화상자 (`do shell script … with administrator privileges`)
+        case osascript
+        /// CLI: `sudo`
+        case sudo
+        /// 테스트·진단 전용: 현재 사용자로 스크립트를 바로 실행한다. root가 아니면 스크립트가 `APPCLEANER_TEST_ROOT`
+        /// 아래에서만 동작하고 launchctl·pkgutil은 실행하지 않는다.
+        case direct
+    }
 
     public let runner: CommandRunning
     public let scriptURL: URL?
@@ -197,6 +205,8 @@ public struct AppleScriptAdminExecutor: AdminExecuting {
             return try runner.run("/usr/bin/osascript", args)
         case .sudo:
             return try runner.run("/usr/bin/sudo", ["/bin/sh", "-c", PrivilegedScript.launcherShell, "appcleaner-op"] + positional)
+        case .direct:
+            return try runner.run("/bin/sh", [script.path, "batch", opsFile.path])
         }
     }
 }
