@@ -6,6 +6,7 @@
 swift build
 ./scripts/test.sh            # Swift Testing (Command Line Tools 환경에서 매크로 플러그인 경로를 지정)
 ./scripts/test.sh --filter OrphanScannerTests
+APPCLEANER_PERF=1 ./scripts/test.sh --filter slackLikeEndToEnd   # 성능 목표(앱 1개 2초) 단독 확인
 ```
 
 Xcode 없이 Command Line Tools만으로 빌드·테스트한다. XCTest는 사용하지 않고 Swift Testing(`import Testing`)만 쓴다.
