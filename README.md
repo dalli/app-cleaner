@@ -49,8 +49,8 @@ appcleaner restore <세션 ID>                     # 되돌리기
 
 ## 현재 상태 (v0.1.x — MVP)
 
-plan.md의 Phase 1a·1b·2 범위. 아직 남은 것:
+plan.md의 Phase 1a·1b·2 범위. 남은 작업은 [`backlog` 라벨 이슈](https://github.com/dallisoft/app-cleaner/issues?q=is%3Aissue+is%3Aopen+label%3Abacklog)로 관리한다.
 
-- Phase 3: SMAppService 권한 헬퍼(XPC, fd 기반 이동)로 AppleScript 관리자 경로 교체 — 현재 경로는 검사와 이동 사이 경쟁 조건(TOCTOU)이 알려진 제한
-- Phase 4: Developer ID 서명·공증, Sparkle 업데이트, Homebrew Cask 배포, 규칙 데이터 서명 키 교체(현재 내장 공개키는 개발용)
-- 실기기·VM QA 매트릭스 (plan.md 9장)
+- Phase 3: 권한 헬퍼로 관리자 경로 교체 — 현재 경로의 TOCTOU 제한 해소 (#17), 휴지통 감시·정기 고아 스캔 (#18)
+- Phase 4: Developer ID 서명·공증, Sparkle (#19), Homebrew tap·cask (#15, #16), 규칙 데이터 서명 키 교체 (#20)
+- VM·실기기 QA 매트릭스 (#21), GUI 미비점 (#22)
