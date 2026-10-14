@@ -33,21 +33,13 @@ public enum PrivilegedScript {
         "end run",
     ]
 
-    /// 번들 리소스 위치. `.app`에서는 Contents/Resources, SwiftPM 실행 파일에서는 Bundle.module.
-    public static func bundledURL() -> URL? {
+    /// 번들 리소스 위치. `.app`에서는 Contents/Resources, SwiftPM 실행 파일에서는 실행 파일 옆 번들(심볼릭 링크 해석 포함),
+    /// 둘 다 없으면 Bundle.module.
+    public static func bundledURL(resourceURL: URL? = Bundle.main.resourceURL,
+                                  executableURL: URL? = Bundle.main.executableURL) -> URL? {
         let fm = FileManager.default
-        let bundleName = "AppCleaner_CleanerCore.bundle"
-        var candidates: [URL] = []
-        if let res = Bundle.main.resourceURL {
-            candidates.append(res.appendingPathComponent(bundleName).appendingPathComponent("Scripts/\(fileName)"))
-            candidates.append(res.appendingPathComponent(bundleName).appendingPathComponent("Contents/Resources/Scripts/\(fileName)"))
-            candidates.append(res.appendingPathComponent("Scripts/\(fileName)"))
-        }
-        if let exeDir = Bundle.main.executableURL?.deletingLastPathComponent() {
-            candidates.append(exeDir.appendingPathComponent(bundleName).appendingPathComponent("Scripts/\(fileName)"))
-            candidates.append(exeDir.appendingPathComponent(bundleName).appendingPathComponent("Contents/Resources/Scripts/\(fileName)"))
-        }
-        if let found = candidates.first(where: { fm.fileExists(atPath: $0.path) }) { return found }
+        if let found = BundledResources.locate("Scripts/\(fileName)", resourceURL: resourceURL, executableURL: executableURL,
+                                               where: { fm.fileExists(atPath: $0.path) }) { return found }
         return Bundle.module.url(forResource: "Scripts", withExtension: nil)?.appendingPathComponent(fileName)
     }
 
