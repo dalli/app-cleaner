@@ -7,7 +7,12 @@
     "Photos", "Safari", "Siri", "SoftwareUpdate", "Spotlight", "Suggestions", "Weather", "homeenergyd", "locationaccessstored",
     "ProtectedCloudStorage", "CoreParsec", "Wallpaper", "Wallpapers", "AppleMediaServices", "MediaStream", "Maps",
     "Calendars", "Containers", "Group Containers", "Keychains", "Mobile Documents", "Metadata", "PersonalizationPortrait",
-    "TrustedPeersHelper", "Family", "FrontBoard", "Mobile Documents"
+    "TrustedPeersHelper", "Family", "FrontBoard", "Mobile Documents",
+    "AMSDataMigratorTool", "ARFileCache", "Baseband", "BTServer", "contactsd", "CoreSimulator", "EnergyKit", "FamilyCircle",
+    "GameKit", "GeoServices", "icloudmailagent", "IntelligenceFlow", "iLifeMediaBrowser", "Desktop Pictures", "fsck_hfs",
+    "DiscRecording", "LKDC-setup", "livefsd", "hidfw-crashlogs", "GarageBand", "iMovie", "Logic", "Final Cut Pro", "Motion",
+    "Compressor", "MainStage", "Keynote", "Pages", "Numbers", "Xcode", "DeveloperTools", "Developer", "CallHistory",
+    "SharedFileList", "Spotlight Helper", "com.apple.backgroundtaskmanagementagent"
   ],
   "alwaysExcludedPaths": [
     "Library/Application Support/MobileSync",
@@ -29,6 +34,8 @@
   "securityDotfiles": [".ssh", ".gnupg", ".gpg", ".aws", ".kube", ".docker", ".netrc", ".password-store"],
   "nonAppBundleIDPrefixes": [
     "com.apple.", "org.python.", "org.ruby-lang.", "org.nodejs.", "com.oracle.java.", "org.openjdk.", "net.java.",
-    "org.mozilla.crashreporter", "com.github.Electron.", "systemgroup.com.apple."
+    "org.mozilla.crashreporter", "com.github.Electron.", "systemgroup.com.apple.",
+    "org.sparkle-project.", "com.plausiblelabs.", "io.sentry", "com.segment.", "com.crashlytics", "com.onevcat.Kingfisher.",
+    "com.google.firebase", "org.cups.", "com.qtproject", "ort.pyke.", "com.microsoft.autoupdate.fba"
   ]
 }
