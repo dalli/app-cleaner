@@ -27,7 +27,7 @@ public struct HomebrewZapSource: CandidateSource {
         var out: [Candidate] = []
         for cask in matchingCasks(identity, data) {
             for zap in cask.zap {
-                for (url, wildcard) in expand(zap) where !url.isInside(identity.bundleURL) {
+                for (url, wildcard) in expand(zap, bundleIDs: bids.bundleIDs) where !url.isInside(identity.bundleURL) {
                     var c = categorizer.candidate(url, confidence: wildcard ? .low : .medium,
                                                   evidence: [Evidence(.homebrewZap, "Homebrew cask '\(cask.token)' zap 규칙: \(zap)")])
                     if !isLibraryOrDotfile(url) {
@@ -71,16 +71,17 @@ public struct HomebrewZapSource: CandidateSource {
     // MARK: - 경로 펼치기
 
     /// zap 경로를 실제 존재하는 URL로 펼친다. (URL, 와일드카드로 찾았는지)
-    func expand(_ pattern: String) -> [(URL, Bool)] {
+    /// `bundleIDs`: `<BID>*` 형태 와일드카드를 점 경계(`<BID>`/`<BID>.`)로 좁히는 데 쓴다.
+    func expand(_ pattern: String, bundleIDs: [String] = []) -> [(URL, Bool)] {
         var results: [(URL, Bool)] = []
         var seen = Set<String>()
         for p in Self.expandBraces(pattern) {
-            for r in expandGlob(p) where seen.insert(r.0.standardizedFileURL.path).inserted { results.append(r) }
+            for r in expandGlob(p, bundleIDs: bundleIDs) where seen.insert(r.0.standardizedFileURL.path).inserted { results.append(r) }
         }
         return results
     }
 
-    func expandGlob(_ pattern: String) -> [(URL, Bool)] {
+    func expandGlob(_ pattern: String, bundleIDs: [String] = []) -> [(URL, Bool)] {
         let base: URL
         let rest: Substring
         if pattern.hasPrefix("~/") { base = paths.home; rest = pattern.dropFirst(2) }
@@ -99,7 +100,8 @@ public struct HomebrewZapSource: CandidateSource {
                 wildcard = true
                 var next: [URL] = []
                 for dir in current {
-                    for child in fm.children(of: dir) where Self.fnmatch(comp, child.lastPathComponent) {
+                    for child in fm.children(of: dir) where Self.fnmatch(comp, child.lastPathComponent)
+                        && Self.respectsBundleIDBoundary(comp, child.lastPathComponent, bundleIDs) {
                         next.append(child)
                     }
                 }
@@ -136,6 +138,14 @@ public struct HomebrewZapSource: CandidateSource {
             return rel.hasPrefix("Library/") || rel.hasPrefix(".")
         }
         return true
+    }
+
+    /// zap의 `com.foo.app*`는 `com.foo.appx`까지 잡는다. 접두사가 이 앱의 BID면 점 경계를 지키는 항목만 남긴다 (plan.md 3장).
+    static func respectsBundleIDBoundary(_ pattern: String, _ name: String, _ bundleIDs: [String]) -> Bool {
+        guard let star = pattern.firstIndex(of: "*") else { return true }
+        let prefix = String(pattern[..<star])
+        guard let bid = bundleIDs.first(where: { $0.caseInsensitiveCompare(prefix) == .orderedSame }) else { return true }
+        return BundleIDRules.matches(name, bundleID: bid)
     }
 
     static func isGlob(_ s: String) -> Bool { s.contains("*") || s.contains("?") || s.contains("[") }

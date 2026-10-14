@@ -118,9 +118,18 @@ public struct SelectionPolicy: SelectionPolicing {
             if let exe = externalExecutable(c, ctx) { return .externalLaunch(executable: exe) }
             return nil
         }
-        if isVendorFolder(c.url, ctx) { return .vendor(name: name) }
         if c.evidence.contains(where: { $0.source == .teamIdentifier }) { return .vendor(name: name) }
-        return nil
+        switch vendorFolderRelation(c.url, ctx) {
+        case .folder(let vendor):
+            return .vendor(name: vendor)
+        case .inside(let vendor):
+            // 벤더 폴더 안 항목은 이 앱 고유 근거(BID·이름·영수증)가 없을 때만 벤더 공용으로 본다.
+            // 예: Homebrew zap의 `~/Library/Google/GoogleSoftwareUpdate` (Keystone)
+            let weakOnly = c.evidence.allSatisfy { [.homebrewZap, .pathRule, .teamIdentifier].contains($0.source) }
+            return weakOnly ? .vendor(name: vendor) : nil
+        case .none:
+            return nil
+        }
     }
 
     func judgeShare(_ c: inout Candidate, _ kind: SharedKind, _ ctx: Context) {
@@ -159,11 +168,21 @@ public struct SelectionPolicy: SelectionPolicing {
         }
     }
 
-    /// 벤더 공용 폴더: `~/Library/<카테고리>/<Vendor>` 또는 `/Library/<카테고리>/<Vendor>`
-    func isVendorFolder(_ url: URL, _ ctx: Context) -> Bool {
-        guard ctx.vendorFolders.contains(url.lastPathComponent.lowercased()) else { return false }
-        let grand = url.deletingLastPathComponent().deletingLastPathComponent().standardizedFileURL.path
-        return grand == paths.userLibrary.standardizedFileURL.path || grand == paths.systemLibrary.standardizedFileURL.path
+    enum VendorRelation {
+        case folder(String)
+        case inside(String)
+    }
+
+    /// 벤더 공용 폴더(`~/Library/<Vendor>`, `~/Library/<카테고리>/<Vendor>`, `/Library/…` 동일) 자체인지, 그 안인지
+    func vendorFolderRelation(_ url: URL, _ ctx: Context) -> VendorRelation? {
+        for lib in [paths.userLibrary, paths.systemLibrary] {
+            guard let rel = url.relativePath(from: lib), !rel.isEmpty else { continue }
+            let comps = rel.split(separator: "/").map(String.init)
+            for i in 0..<min(2, comps.count) where ctx.vendorFolders.contains(comps[i].lowercased()) {
+                return comps.count == i + 1 ? .folder(comps[i]) : .inside(comps[i])
+            }
+        }
+        return nil
     }
 
     /// Launch plist의 실행 파일이 이 앱의 위치 밖이면 그 경로

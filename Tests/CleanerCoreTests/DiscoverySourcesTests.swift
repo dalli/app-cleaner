@@ -172,6 +172,7 @@ import CleanerTestSupport
         try fx.dir(fx.home("Library/Caches/com.example.foo"))
         try fx.dir(fx.home("Library/Caches/com.example.foo.ShipIt"))
         try fx.dir(fx.home("Library/Caches/com.unrelated"))
+        try fx.dir(fx.home("Library/Caches/com.example.foox"))
         try fx.file(fx.home("Library/Preferences/com.example.foo.plist"))
         try fx.file(fx.home("Library/Preferences/com.example.foo.helper.plist"))
         try fx.dir(fx.home(".ssh"))
@@ -187,6 +188,8 @@ import CleanerTestSupport
         #expect(found.item(fx.home("Library/Caches/com.example.foo"))?.confidence == .low)
         #expect(found.item(fx.home("Library/Caches/com.example.foo.ShipIt"))?.confidence == .low)
         #expect(found.item(fx.home("Library/Caches/com.unrelated")) == nil)
+        // `com.example.foo*`라도 점 경계 밖(`com.example.foox`)은 잡지 않는다
+        #expect(found.item(fx.home("Library/Caches/com.example.foox")) == nil)
         // 중괄호 펼치기는 와일드카드가 아니다
         #expect(found.item(fx.home("Library/Preferences/com.example.foo.plist"))?.confidence == .medium)
         #expect(found.item(fx.home("Library/Preferences/com.example.foo.plist"))?.preferencesDomain == "com.example.foo")
