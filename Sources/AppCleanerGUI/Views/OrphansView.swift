@@ -19,9 +19,7 @@ struct OrphansView: View {
         .navigationSubtitle(subtitle)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if vm.isScanning {
-                    Button(L("스캔 취소")) { vm.cancelScan() }
-                } else if vm.hasScanned || vm.phase != .idle {
+                if !vm.isScanning && (vm.hasScanned || vm.phase != .idle) {
                     Button { model.startOrphanScan() } label: {
                         Label(L("다시 스캔"), systemImage: "arrow.clockwise")
                     }
@@ -257,20 +255,26 @@ private struct OrphanList: View {
 
     var body: some View {
         List(selection: $vm.focusedID) {
-            ForEach(vm.visibleGroups) { group in
-                DisclosureGroup(isExpanded: expanded(group)) {
-                    ForEach(vm.visibleItems(of: group)) { item in
-                        OrphanItemRow(vm: vm, item: item).tag(item.id)
+            ForEach(vm.rows) { row in
+                switch row {
+                case .group(let g):
+                    OutlineRow(depth: 0, expandable: true, expanded: vm.expanded.contains(g.id),
+                               toggleExpanded: { vm.setExpanded(groupID: g.id, !vm.expanded.contains(g.id)) }) {
+                        OrphanGroupRow(vm: vm, group: g)
                     }
-                    let hidden = vm.hiddenItemCount(of: group)
-                    if hidden > 0 {
-                        Button(L("항목 %lld개 더 보기", hidden)) { vm.showAllItems.insert(group.id) }
+                    .tag(row.id)
+                case .item(let c):
+                    OutlineRow(depth: 1, expandable: false, expanded: false, toggleExpanded: {}) {
+                        OrphanItemRow(vm: vm, item: c)
+                    }
+                    .tag(row.id)
+                case .more(let gid, let count):
+                    OutlineRow(depth: 1, expandable: false, expanded: false, toggleExpanded: {}) {
+                        Button(L("항목 %lld개 더 보기", count)) { vm.showAllItems.insert(gid) }
                             .buttonStyle(.link)
                             .padding(.vertical, 4)
-                            .selectionDisabled()
                     }
-                } label: {
-                    OrphanGroupRow(vm: vm, group: group).tag("group:" + group.id)
+                    .selectionDisabled()
                 }
             }
         }
@@ -279,21 +283,24 @@ private struct OrphanList: View {
             vm.toggleFocused()
             return .handled
         }
+        .onKeyPress(.leftArrow) {
+            vm.setFocusedExpanded(false)
+            return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            vm.setFocusedExpanded(true)
+            return .handled
+        }
         .contextMenu(forSelectionType: String.self) { ids in
             if let id = ids.first {
                 if id.hasPrefix("group:"), let g = vm.groups.first(where: { "group:" + $0.id == id }) {
                     Button(L("유지 (목록에서 숨기기)")) { vm.keep(g) }
-                } else {
+                } else if !id.hasPrefix("more:") {
                     Button(L("Finder에서 보기")) { model.system.reveal(path: id) }
                     Button(L("경로 복사")) { model.system.copyToPasteboard(id) }
                 }
             }
         }
-    }
-
-    private func expanded(_ g: OrphanGroup) -> Binding<Bool> {
-        Binding(get: { vm.expanded.contains(g.id) },
-                set: { if $0 { vm.expanded.insert(g.id) } else { vm.expanded.remove(g.id) } })
     }
 }
 

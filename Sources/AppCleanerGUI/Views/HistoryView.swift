@@ -245,16 +245,17 @@ private struct SessionDetail: View {
                     .lineLimit(1).truncationMode(.middle)
                     .help(item.originalPath)
             }
+            .width(min: 220, ideal: 420)
             TableColumn(L("현재 위치")) { (item: JournalItem) in
                 Text(vm.currentLocation(item, in: session))
                     .foregroundStyle(vm.isRestorable(item, in: session) ? .primary : .secondary)
                     .help(item.movedTo)
             }
-            .width(min: 120, ideal: 170)
+            .width(min: 110, ideal: 170, max: 260)
             TableColumn(L("크기")) { (item: JournalItem) in
                 Text(Fmt.size(item.size)).monospacedDigit()
             }
-            .width(min: 60, ideal: 80)
+            .width(min: 60, ideal: 80, max: 100)
         }
         .tableStyle(.bordered(alternatesRowBackgrounds: true))
         .frame(minHeight: 160)

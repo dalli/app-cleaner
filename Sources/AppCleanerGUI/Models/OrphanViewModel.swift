@@ -14,6 +14,22 @@ enum OrphanSort: String, CaseIterable, Hashable, Sendable {
     }
 }
 
+/// S5 목록의 한 줄
+enum OrphanRow: Identifiable, Equatable {
+    case group(OrphanGroup)
+    case item(Candidate)
+    /// "항목 n개 더 보기"
+    case more(groupID: String, count: Int)
+
+    var id: String {
+        switch self {
+        case .group(let g): return "group:" + g.id
+        case .item(let c): return c.id
+        case .more(let gid, _): return "more:" + gid
+        }
+    }
+}
+
 /// S5 고아 잔여물
 @MainActor
 @Observable
@@ -121,6 +137,8 @@ final class OrphanViewModel {
         tree.merge(roots: groups.flatMap(\.items))
         phase = .finished
         hasScanned = true
+        // 처음에는 가장 큰 그룹을 펼쳐 항목 행과 판정 근거를 바로 보여 준다
+        if expanded.isEmpty, let first = visibleGroups.first { expanded.insert(first.id) }
     }
 
     private func scanEnded(_ error: any Error) {
@@ -157,6 +175,34 @@ final class OrphanViewModel {
     /// 그룹 펼침 시 보일 항목 (처음 3개 + "n개 더 보기")
     func visibleItems(of group: OrphanGroup) -> [Candidate] {
         showAllItems.contains(group.id) ? group.items : Array(group.items.prefix(Self.collapsedItemLimit))
+    }
+
+    /// 펼침 상태를 반영한 목록
+    var rows: [OrphanRow] {
+        var result: [OrphanRow] = []
+        for g in visibleGroups {
+            result.append(.group(g))
+            guard expanded.contains(g.id) else { continue }
+            result += visibleItems(of: g).map { .item($0) }
+            let hidden = hiddenItemCount(of: g)
+            if hidden > 0 { result.append(.more(groupID: g.id, count: hidden)) }
+        }
+        return result
+    }
+
+    func setExpanded(groupID: String, _ open: Bool) {
+        if open { expanded.insert(groupID) } else { expanded.remove(groupID) }
+    }
+
+    /// ← / → 키
+    func setFocusedExpanded(_ open: Bool) {
+        guard let id = focusedID else { return }
+        if id.hasPrefix("group:") {
+            setExpanded(groupID: String(id.dropFirst(6)), open)
+        } else if !open, let g = groups.first(where: { $0.items.contains { $0.id == id } }) {
+            setExpanded(groupID: g.id, false)
+            focusedID = "group:" + g.id
+        }
     }
 
     func hiddenItemCount(of group: OrphanGroup) -> Int {

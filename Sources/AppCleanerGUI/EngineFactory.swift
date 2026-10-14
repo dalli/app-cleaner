@@ -16,6 +16,7 @@ func makeEngine(arguments: [String] = CommandLine.arguments) -> any CleanerEngin
         var options = DemoCleanerEngine.Options()
         if arguments.contains("--demo-no-fda") { options.fullDiskAccess = .denied }
         if arguments.contains("--demo-fast") { options.delayScale = 0.2 }
+        if arguments.contains("--demo-no-hang") { options.simulateUnresponsiveApp = false }
         return DemoCleanerEngine(options: options)
     }
     // TODO(통합): return LiveCleanerEngine(paths: .live, runner: ProcessCommandRunner(), ...)

@@ -9,8 +9,14 @@ import Foundation
 enum L10n {
     static let bundle: Bundle = .module
 
-    /// 실제로 선택된 UI 언어 ("ko" 또는 "en")
-    static let language: String = bundle.preferredLocalizations.first ?? "ko"
+    /// 실제로 선택된 UI 언어 ("ko" 또는 "en"). 사용자 선호 언어(`-AppleLanguages` 포함)에서 고른다.
+    static let language: String = Bundle.preferredLocalizations(
+        from: bundle.localizations.filter { $0 != "Base" },
+        forPreferences: Locale.preferredLanguages
+    ).first ?? "ko"
+
+    /// 고른 언어의 `.lproj` (문자열은 항상 여기서 찾아 날짜·조사 처리와 언어가 어긋나지 않게 한다)
+    static let table: Bundle = bundle.path(forResource: language, ofType: "lproj").flatMap(Bundle.init(path:)) ?? bundle
 
     /// 날짜·숫자 형식에 쓰는 로케일 (UI 언어와 맞춘다)
     static let locale: Locale = {
@@ -24,7 +30,7 @@ enum L10n {
 
 /// 한국어 원문 키로 현재 언어의 문구를 돌려준다.
 func L(_ key: String) -> String {
-    L10n.bundle.localizedString(forKey: key, value: nil, table: nil)
+    L10n.table.localizedString(forKey: key, value: nil, table: nil)
 }
 
 /// 형식 인자가 있는 문구 (`%lld`, `%@`).

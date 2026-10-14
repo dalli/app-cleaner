@@ -247,6 +247,7 @@ private struct ProgressContent: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
         .background(current ? Tone.accent.background.opacity(0.7) : Color.clear, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .accessibilityElement(children: .combine)

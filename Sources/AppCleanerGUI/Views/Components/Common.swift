@@ -32,8 +32,9 @@ struct Banner<Trailing: View>: View {
             }
             .font(.callout)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
             trailing()
+                .fixedSize()
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)

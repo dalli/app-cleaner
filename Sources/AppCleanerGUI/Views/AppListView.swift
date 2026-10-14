@@ -22,10 +22,15 @@ struct AppListView: View {
         .navigationTitle(L("앱 제거"))
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Picker(L("정렬"), selection: $vm.sort) {
-                    ForEach(AppSort.allCases, id: \.self) { Text($0.title).tag($0) }
+                Menu {
+                    Picker(L("정렬"), selection: $vm.sort) {
+                        ForEach(AppSort.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.inline)
+                } label: {
+                    Label(L("정렬: %@", vm.sort.title), systemImage: "arrow.up.arrow.down")
+                        .labelStyle(.titleAndIcon)
                 }
-                .pickerStyle(.menu)
                 .fixedSize()
                 .help(L("정렬"))
             }
