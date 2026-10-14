@@ -143,7 +143,7 @@ struct SettingsView: View {
 
     private var ruleDetail: String {
         let info = model.ruleInfo
-        var parts = [L("경로 규칙 · Homebrew 정리 규칙 %@개 · 제외 목록", Fmt.number(info.caskCount))]
+        var parts = [L("경로 규칙 · Homebrew 정리 규칙 %lld개 · 제외 목록", info.caskCount)]
         if let d = info.updatedAt { parts.append(L("%@ 갱신", Fmt.relative(d))) }
         parts.append(info.signatureVerified ? L("서명 확인됨") : L("서명 확인 실패 — 번들 기본값 사용"))
         return parts.joined(separator: " · ")

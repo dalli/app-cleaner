@@ -28,7 +28,7 @@ enum DemoData {
         evidence: [Evidence] = [], protection: ProtectionReason? = nil, selected: Bool? = nil,
         size: Int64?, files: Int? = nil, modifiedDaysAgo: Double? = 3,
         service: LaunchServiceRef? = nil, prefsDomain: String? = nil,
-        children: [Candidate] = [], notes: [String] = [], orphan: Bool = false
+        children: [Candidate] = [], notes: [EngineText] = [], orphan: Bool = false
     ) -> Candidate {
         let n = nature ?? category.defaultNature
         let minimum: Confidence = orphan ? .high : .medium
@@ -98,47 +98,47 @@ enum DemoData {
         let office = ["Microsoft Excel", "Microsoft PowerPoint", "Microsoft Outlook"]
         let candidates: [Candidate] = [
             item(appURL.path, .appBundle, .high, domain: .system,
-                 evidence: [Evidence(.bundleIdentifier, "선택한 앱 본체")], size: 2_100 * MB, files: 6_812, modifiedDaysAgo: 12,
+                 evidence: [Evidence(.bundleIdentifier, .verbatim("선택한 앱 본체"))], size: 2_100 * MB, files: 6_812, modifiedDaysAgo: 12,
                  notes: []),
             item(container, .container, .high,
-                 evidence: [Evidence(.containerMetadata, "컨테이너 메타데이터의 번들 ID가 \(bid)와 일치")],
+                 evidence: [Evidence(.containerMetadata, .verbatim("컨테이너 메타데이터의 번들 ID가 \(bid)와 일치"))],
                  size: nil, modifiedDaysAgo: 0, children: [
                     item(container + "/Data/Library/Caches", .containerItem, .high, nature: .regenerable,
-                         evidence: [Evidence(.containerMetadata, "앱 컨테이너 안의 캐시")], size: 820 * MB, files: 3_120, modifiedDaysAgo: 0),
+                         evidence: [Evidence(.containerMetadata, .verbatim("앱 컨테이너 안의 캐시"))], size: 820 * MB, files: 3_120, modifiedDaysAgo: 0),
                     item(container + "/Data/Library/Preferences", .containerItem, .high, nature: .settings,
-                         evidence: [Evidence(.containerMetadata, "앱 컨테이너 안의 환경설정")], size: 48 * KB, files: 6, modifiedDaysAgo: 0),
+                         evidence: [Evidence(.containerMetadata, .verbatim("앱 컨테이너 안의 환경설정"))], size: 48 * KB, files: 6, modifiedDaysAgo: 0),
                     item(container + "/Data/Documents", .containerItem, .high, nature: .userData,
-                         evidence: [Evidence(.containerMetadata, "비어 있지 않은 Data/Documents")], size: 1_200 * MB, files: 37,
-                         modifiedDaysAgo: 2, notes: ["문서 37개 포함 · 마지막 수정 2일 전 — 기본으로 남겨 둡니다"]),
+                         evidence: [Evidence(.containerMetadata, .verbatim("비어 있지 않은 Data/Documents"))], size: 1_200 * MB, files: 37,
+                         modifiedDaysAgo: 2, notes: [.verbatim("문서 37개 포함 · 마지막 수정 2일 전 — 기본으로 남겨 둡니다")]),
                  ]),
             item("~/Library/Group Containers/UBF8T346G9.Office", .groupContainer, .high,
-                 share: .shared(usedBy: office, reason: "이 폴더를 지우면 세 앱의 로그인 정보와 최근 문서 목록이 초기화됩니다."),
-                 evidence: [Evidence(.appGroup, "코드 서명의 App Group과 정확히 일치"), Evidence(.homebrewZap, "Homebrew zap 규칙에 포함")],
+                 share: .shared(usedBy: office, reason: .verbatim("이 폴더를 지우면 세 앱의 로그인 정보와 최근 문서 목록이 초기화됩니다.")),
+                 evidence: [Evidence(.appGroup, .verbatim("코드 서명의 App Group과 정확히 일치")), Evidence(.homebrewZap, .verbatim("Homebrew zap 규칙에 포함"))],
                  size: 3_100 * MB, files: 1_284, modifiedDaysAgo: 0.1),
             item("~/Library/LaunchAgents/com.microsoft.update.agent.plist", .launchAgent, .medium,
-                 share: .shared(usedBy: ["Microsoft AutoUpdate"], reason: "실행 파일이 앱 밖(/Library/Application Support/Microsoft/MAU2.0)에 있고 같은 개발사의 다른 앱이 설치되어 있습니다."),
-                 evidence: [Evidence(.launchPlist, "Label이 같은 개발사(UBF8T346G9)의 업데이트 도구를 가리킴")],
+                 share: .shared(usedBy: ["Microsoft AutoUpdate"], reason: .verbatim("실행 파일이 앱 밖(/Library/Application Support/Microsoft/MAU2.0)에 있고 같은 개발사의 다른 앱이 설치되어 있습니다.")),
+                 evidence: [Evidence(.launchPlist, .verbatim("Label이 같은 개발사(UBF8T346G9)의 업데이트 도구를 가리킴"))],
                  size: 4 * KB, modifiedDaysAgo: 30,
                  service: LaunchServiceRef(label: "com.microsoft.update.agent", domain: .user),
-                 notes: ["Microsoft AutoUpdate — 같은 개발사의 다른 앱이 사용"]),
-            item("~/Library/Caches/\(bid)", .caches, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")], size: 60 * MB, files: 412, modifiedDaysAgo: 0),
-            item("~/Library/HTTPStorages/\(bid)", .httpStorage, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")], size: 2 * MB, modifiedDaysAgo: 0),
-            item("~/Library/WebKit/\(bid)", .webKit, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")], size: 12 * MB, modifiedDaysAgo: 1),
-            item("~/Library/Saved Application State/\(bid).savedState", .savedState, .high, evidence: [Evidence(.bundleIdentifier, "<번들 ID>.savedState")], size: 1 * MB, modifiedDaysAgo: 0),
-            item("~/Library/Logs/Microsoft Word", .logs, .medium, evidence: [Evidence(.name, "폴더 이름이 앱 이름과 정확히 일치")], size: 21 * MB, modifiedDaysAgo: 0,
-                 notes: ["이름이 일치해서 찾았습니다 — 확인 후 정리하세요"]),
-            item("~/Library/Preferences/\(bid).plist", .preferences, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")],
+                 notes: [.verbatim("Microsoft AutoUpdate — 같은 개발사의 다른 앱이 사용")]),
+            item("~/Library/Caches/\(bid)", .caches, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))], size: 60 * MB, files: 412, modifiedDaysAgo: 0),
+            item("~/Library/HTTPStorages/\(bid)", .httpStorage, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))], size: 2 * MB, modifiedDaysAgo: 0),
+            item("~/Library/WebKit/\(bid)", .webKit, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))], size: 12 * MB, modifiedDaysAgo: 1),
+            item("~/Library/Saved Application State/\(bid).savedState", .savedState, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("<번들 ID>.savedState"))], size: 1 * MB, modifiedDaysAgo: 0),
+            item("~/Library/Logs/Microsoft Word", .logs, .medium, evidence: [Evidence(.name, .verbatim("폴더 이름이 앱 이름과 정확히 일치"))], size: 21 * MB, modifiedDaysAgo: 0,
+                 notes: [.verbatim("이름이 일치해서 찾았습니다 — 확인 후 정리하세요")]),
+            item("~/Library/Preferences/\(bid).plist", .preferences, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))],
                  size: 72 * KB, modifiedDaysAgo: 0, prefsDomain: bid),
             item("~/Library/Preferences/ByHost/\(bid).8C1F2A7E-5B3D-4E21-9A0B-7D6C5E4F3A21.plist", .byHostPreferences, .high,
-                 evidence: [Evidence(.bundleIdentifier, "ByHost/<번들 ID>.<UUID>.plist")], size: 48 * KB, modifiedDaysAgo: 5),
+                 evidence: [Evidence(.bundleIdentifier, .verbatim("ByHost/<번들 ID>.<UUID>.plist"))], size: 48 * KB, modifiedDaysAgo: 5),
             item("~/Library/Logs/DiagnosticReports/Microsoft Word_2026-09-30-101522.ips", .diagnosticReports, .low,
-                 evidence: [Evidence(.name, "진단 리포트 파일 이름 패턴")], size: 420 * KB, modifiedDaysAgo: 14),
+                 evidence: [Evidence(.name, .verbatim("진단 리포트 파일 이름 패턴"))], size: 420 * KB, modifiedDaysAgo: 14),
             item("~/Library/Logs/DiagnosticReports/Microsoft Word_2026-08-11-084410.ips", .diagnosticReports, .low,
-                 evidence: [Evidence(.name, "진단 리포트 파일 이름 패턴")], size: 380 * KB, modifiedDaysAgo: 64),
+                 evidence: [Evidence(.name, .verbatim("진단 리포트 파일 이름 패턴"))], size: 380 * KB, modifiedDaysAgo: 64),
             item("~/Library/Application Support/Microsoft", .applicationSupport, .low,
-                 share: .shared(usedBy: ["Microsoft Excel", "Microsoft PowerPoint"], reason: "같은 개발사(UBF8T346G9)의 다른 앱이 설치되어 있어 벤더 공용 폴더로 판정했습니다."),
-                 evidence: [Evidence(.teamIdentifier, "벤더 공용 폴더 이름")], size: 2 * MB, modifiedDaysAgo: 3),
-            item("~/Library/Caches/Microsoft", .caches, .low, evidence: [Evidence(.name, "벤더 이름만 일치")], size: 300 * KB, modifiedDaysAgo: 3),
+                 share: .shared(usedBy: ["Microsoft Excel", "Microsoft PowerPoint"], reason: .verbatim("같은 개발사(UBF8T346G9)의 다른 앱이 설치되어 있어 벤더 공용 폴더로 판정했습니다.")),
+                 evidence: [Evidence(.teamIdentifier, .verbatim("벤더 공용 폴더 이름"))], size: 2 * MB, modifiedDaysAgo: 3),
+            item("~/Library/Caches/Microsoft", .caches, .low, evidence: [Evidence(.name, .verbatim("벤더 이름만 일치"))], size: 300 * KB, modifiedDaysAgo: 3),
         ]
         return ScanReport(identity: identity, candidates: candidates, warnings: [.appRunning],
                           advisories: [.loginItems, .keychain(searchTerm: "Microsoft")], ruleDataVersion: ruleVersion)
@@ -149,32 +149,32 @@ enum DemoData {
         let container = "~/Library/Containers/\(bid)"
         let identity = AppIdentity(bundleURL: appURL, bundleID: bid, name: "Slack", version: "4.41.97", teamID: "BQR82RBBHL", source: .direct)
         let candidates: [Candidate] = [
-            item(appURL.path, .appBundle, .high, evidence: [Evidence(.bundleIdentifier, "선택한 앱 본체")], size: 410 * MB, files: 1_904, modifiedDaysAgo: 9),
-            item(container, .container, .high, evidence: [Evidence(.containerMetadata, "컨테이너 메타데이터의 번들 ID가 \(bid)와 일치")],
+            item(appURL.path, .appBundle, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("선택한 앱 본체"))], size: 410 * MB, files: 1_904, modifiedDaysAgo: 9),
+            item(container, .container, .high, evidence: [Evidence(.containerMetadata, .verbatim("컨테이너 메타데이터의 번들 ID가 \(bid)와 일치"))],
                  size: nil, children: [
                     item(container + "/Data/Library/Caches", .containerItem, .high, nature: .regenerable,
-                         evidence: [Evidence(.containerMetadata, "앱 컨테이너 안의 캐시")], size: 180 * MB, modifiedDaysAgo: 1),
+                         evidence: [Evidence(.containerMetadata, .verbatim("앱 컨테이너 안의 캐시"))], size: 180 * MB, modifiedDaysAgo: 1),
                     item(container + "/Data/Library/Preferences", .containerItem, .high, nature: .settings,
-                         evidence: [Evidence(.containerMetadata, "앱 컨테이너 안의 환경설정")], size: 12 * KB, modifiedDaysAgo: 1),
+                         evidence: [Evidence(.containerMetadata, .verbatim("앱 컨테이너 안의 환경설정"))], size: 12 * KB, modifiedDaysAgo: 1),
                     item(container + "/Data/Library/Application Support/Slack", .containerItem, .high, nature: .userData,
-                         evidence: [Evidence(.containerMetadata, "메시지 데이터베이스(*.sqlite) 포함")], size: 640 * MB, files: 214,
-                         modifiedDaysAgo: 1, notes: ["메시지 데이터베이스 포함 · 기본으로 남겨 둡니다"]),
+                         evidence: [Evidence(.containerMetadata, .verbatim("메시지 데이터베이스(*.sqlite) 포함"))], size: 640 * MB, files: 214,
+                         modifiedDaysAgo: 1, notes: [.verbatim("메시지 데이터베이스 포함 · 기본으로 남겨 둡니다")]),
                  ]),
             item("~/Library/Mobile Documents/iCloud~com~tinyspeck~slackmacgap", .iCloudContainer, .high,
-                 evidence: [Evidence(.bundleIdentifier, "iCloud 컨테이너 이름이 번들 ID와 일치")], protection: .iCloudData,
+                 evidence: [Evidence(.bundleIdentifier, .verbatim("iCloud 컨테이너 이름이 번들 ID와 일치"))], protection: .iCloudData,
                  size: 3 * MB, modifiedDaysAgo: 20),
             item("~/Library/LaunchAgents/\(bid).ShipIt.plist", .launchAgent, .high,
-                 evidence: [Evidence(.launchPlist, "Program이 /Applications/Slack.app/Contents/Frameworks/Squirrel.framework/Resources/ShipIt을 가리킴")],
+                 evidence: [Evidence(.launchPlist, .verbatim("Program이 /Applications/Slack.app/Contents/Frameworks/Squirrel.framework/Resources/ShipIt을 가리킴"))],
                  size: 4 * KB, modifiedDaysAgo: 9, service: LaunchServiceRef(label: "\(bid).ShipIt", domain: .user)),
-            item("~/Library/Caches/\(bid)", .caches, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")], size: 210 * MB, modifiedDaysAgo: 1),
-            item("~/Library/Caches/\(bid).ShipIt", .caches, .high, evidence: [Evidence(.bundleIdentifier, "<번들 ID>. 접두사")], size: 84 * MB, modifiedDaysAgo: 9),
-            item("~/Library/Saved Application State/\(bid).savedState", .savedState, .high, evidence: [Evidence(.bundleIdentifier, "<번들 ID>.savedState")], size: 500 * KB, modifiedDaysAgo: 1),
-            item("~/Library/Preferences/\(bid).plist", .preferences, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")], size: 36 * KB, modifiedDaysAgo: 1, prefsDomain: bid),
+            item("~/Library/Caches/\(bid)", .caches, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))], size: 210 * MB, modifiedDaysAgo: 1),
+            item("~/Library/Caches/\(bid).ShipIt", .caches, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("<번들 ID>. 접두사"))], size: 84 * MB, modifiedDaysAgo: 9),
+            item("~/Library/Saved Application State/\(bid).savedState", .savedState, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("<번들 ID>.savedState"))], size: 500 * KB, modifiedDaysAgo: 1),
+            item("~/Library/Preferences/\(bid).plist", .preferences, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))], size: 36 * KB, modifiedDaysAgo: 1, prefsDomain: bid),
             item("~/Library/Application Support/Slack", .applicationSupport, .medium, nature: .settings,
-                 evidence: [Evidence(.name, "폴더 이름이 앱 이름과 정확히 일치"), Evidence(.homebrewZap, "Homebrew zap 규칙에 포함")],
-                 size: 95 * MB, modifiedDaysAgo: 1, notes: ["이름이 일치해서 찾았습니다 — 확인 후 정리하세요"]),
+                 evidence: [Evidence(.name, .verbatim("폴더 이름이 앱 이름과 정확히 일치")), Evidence(.homebrewZap, .verbatim("Homebrew zap 규칙에 포함"))],
+                 size: 95 * MB, modifiedDaysAgo: 1, notes: [.verbatim("이름이 일치해서 찾았습니다 — 확인 후 정리하세요")]),
             item("~/Library/Logs/DiagnosticReports/Slack_2026-10-01-120044.ips", .diagnosticReports, .low,
-                 evidence: [Evidence(.name, "진단 리포트 파일 이름 패턴")], size: 220 * KB, modifiedDaysAgo: 13),
+                 evidence: [Evidence(.name, .verbatim("진단 리포트 파일 이름 패턴"))], size: 220 * KB, modifiedDaysAgo: 13),
         ]
         return ScanReport(identity: identity, candidates: candidates, warnings: [],
                           advisories: [.loginItems, .keychain(searchTerm: "Slack")], ruleDataVersion: ruleVersion)
@@ -185,19 +185,19 @@ enum DemoData {
         let identity = AppIdentity(bundleURL: appURL, bundleID: bid, name: "Docker", version: "4.34.2", teamID: "9BNSXJN65R",
                                    appGroups: ["group.com.docker"], homebrewCask: "docker", source: .homebrew)
         let candidates: [Candidate] = [
-            item(appURL.path, .appBundle, .high, evidence: [Evidence(.homebrewRecord, "Caskroom 기록과 일치")], size: 1_800 * MB, modifiedDaysAgo: 20),
+            item(appURL.path, .appBundle, .high, evidence: [Evidence(.homebrewRecord, .verbatim("Caskroom 기록과 일치"))], size: 1_800 * MB, modifiedDaysAgo: 20),
             item("~/Library/Group Containers/group.com.docker", .groupContainer, .high, nature: .userData,
-                 evidence: [Evidence(.appGroup, "코드 서명의 App Group과 정확히 일치")], size: 22_400 * MB, files: 41, modifiedDaysAgo: 14,
-                 notes: ["가상 디스크(Docker.raw) 포함 · 컨테이너와 이미지가 들어 있습니다"]),
+                 evidence: [Evidence(.appGroup, .verbatim("코드 서명의 App Group과 정확히 일치"))], size: 22_400 * MB, files: 41, modifiedDaysAgo: 14,
+                 notes: [.verbatim("가상 디스크(Docker.raw) 포함 · 컨테이너와 이미지가 들어 있습니다")]),
             item("/Library/LaunchDaemons/com.docker.vmnetd.plist", .launchDaemon, .high, domain: .system,
-                 evidence: [Evidence(.launchPlist, "Program이 /Library/PrivilegedHelperTools/com.docker.vmnetd를 가리킴")],
+                 evidence: [Evidence(.launchPlist, .verbatim("Program이 /Library/PrivilegedHelperTools/com.docker.vmnetd를 가리킴"))],
                  size: 4 * KB, modifiedDaysAgo: 120, service: LaunchServiceRef(label: "com.docker.vmnetd", domain: .system)),
             item("/Library/PrivilegedHelperTools/com.docker.vmnetd", .privilegedHelper, .high, domain: .system,
-                 evidence: [Evidence(.launchPlist, "LaunchDaemon이 실행하는 헬퍼")], size: 3 * MB, modifiedDaysAgo: 120),
-            item("~/Library/Caches/\(bid)", .caches, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")], size: 140 * MB, modifiedDaysAgo: 14),
-            item("~/Library/Preferences/\(bid).plist", .preferences, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")], size: 8 * KB, modifiedDaysAgo: 14, prefsDomain: bid),
-            item("~/.docker", .dotfile, .low, nature: .settings, evidence: [Evidence(.name, "이름 기반 dotfile")], size: 18 * MB, modifiedDaysAgo: 14,
-                 notes: ["명령줄 도구 설정이 들어 있을 수 있습니다"]),
+                 evidence: [Evidence(.launchPlist, .verbatim("LaunchDaemon이 실행하는 헬퍼"))], size: 3 * MB, modifiedDaysAgo: 120),
+            item("~/Library/Caches/\(bid)", .caches, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))], size: 140 * MB, modifiedDaysAgo: 14),
+            item("~/Library/Preferences/\(bid).plist", .preferences, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))], size: 8 * KB, modifiedDaysAgo: 14, prefsDomain: bid),
+            item("~/.docker", .dotfile, .low, nature: .settings, evidence: [Evidence(.name, .verbatim("이름 기반 dotfile"))], size: 18 * MB, modifiedDaysAgo: 14,
+                 notes: [.verbatim("명령줄 도구 설정이 들어 있을 수 있습니다")]),
         ]
         return ScanReport(identity: identity, candidates: candidates, warnings: [.otherCopies([url("/Volumes/Backup/Applications/Docker.app")])],
                           advisories: [.loginItems, .homebrewZap(token: "docker")], ruleDataVersion: ruleVersion)
@@ -210,14 +210,14 @@ enum DemoData {
                                    teamID: app?.teamID, source: app?.app.source ?? .direct)
         let candidates: [Candidate] = [
             item(appURL.path, .appBundle, .high, domain: app?.app.source == .appStore ? .system : .user,
-                 evidence: [Evidence(.bundleIdentifier, "선택한 앱 본체")], size: app?.lazySize ?? 120 * MB, modifiedDaysAgo: 30),
-            item("~/Library/Application Support/\(name)", .applicationSupport, .medium, evidence: [Evidence(.name, "폴더 이름이 앱 이름과 정확히 일치")],
-                 size: 46 * MB, modifiedDaysAgo: 2, notes: ["이름이 일치해서 찾았습니다 — 확인 후 정리하세요"]),
-            item("~/Library/Caches/\(bid)", .caches, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")], size: 38 * MB, modifiedDaysAgo: 2),
-            item("~/Library/Saved Application State/\(bid).savedState", .savedState, .high, evidence: [Evidence(.bundleIdentifier, "<번들 ID>.savedState")], size: 300 * KB, modifiedDaysAgo: 2),
-            item("~/Library/Preferences/\(bid).plist", .preferences, .high, evidence: [Evidence(.bundleIdentifier, "번들 ID 정확 일치")], size: 20 * KB, modifiedDaysAgo: 2, prefsDomain: bid),
+                 evidence: [Evidence(.bundleIdentifier, .verbatim("선택한 앱 본체"))], size: app?.lazySize ?? 120 * MB, modifiedDaysAgo: 30),
+            item("~/Library/Application Support/\(name)", .applicationSupport, .medium, evidence: [Evidence(.name, .verbatim("폴더 이름이 앱 이름과 정확히 일치"))],
+                 size: 46 * MB, modifiedDaysAgo: 2, notes: [.verbatim("이름이 일치해서 찾았습니다 — 확인 후 정리하세요")]),
+            item("~/Library/Caches/\(bid)", .caches, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))], size: 38 * MB, modifiedDaysAgo: 2),
+            item("~/Library/Saved Application State/\(bid).savedState", .savedState, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("<번들 ID>.savedState"))], size: 300 * KB, modifiedDaysAgo: 2),
+            item("~/Library/Preferences/\(bid).plist", .preferences, .high, evidence: [Evidence(.bundleIdentifier, .verbatim("번들 ID 정확 일치"))], size: 20 * KB, modifiedDaysAgo: 2, prefsDomain: bid),
             item("~/Library/Logs/DiagnosticReports/\(name)_2026-09-21-094012.ips", .diagnosticReports, .low,
-                 evidence: [Evidence(.name, "진단 리포트 파일 이름 패턴")], size: 150 * KB, modifiedDaysAgo: 23),
+                 evidence: [Evidence(.name, .verbatim("진단 리포트 파일 이름 패턴"))], size: 150 * KB, modifiedDaysAgo: 23),
         ]
         return ScanReport(identity: identity, candidates: candidates, advisories: [.loginItems, .keychain(searchTerm: name)],
                           ruleDataVersion: ruleVersion)
@@ -229,7 +229,7 @@ enum DemoData {
         let slackBID = "com.tinyspeck.slackmacgap"
         func o(_ path: String, _ cat: ItemCategory, _ conf: Confidence, nature: DataNature? = nil, share: ShareStatus = .exclusive,
                _ why: String, source: EvidenceSource = .inventory, size: Int64, days: Double, service: LaunchServiceRef? = nil) -> Candidate {
-            item(path, cat, conf, nature: nature, share: share, evidence: [Evidence(source, why)], size: size,
+            item(path, cat, conf, nature: nature, share: share, evidence: [Evidence(source, .verbatim(why))], size: size,
                  modifiedDaysAgo: days, service: service, orphan: true)
         }
         let slack = OrphanGroup(id: slackBID, displayName: "Slack", nameIsGuess: false, bundleID: slackBID, items: [
@@ -263,24 +263,24 @@ enum DemoData {
             o("~/Library/Preferences/Blackmagic Design/DaVinci Resolve", .preferences, .low, "외장 볼륨의 앱을 확인하지 못해 낮음으로 낮춤", source: .name, size: 2 * MB, days: 3),
             o("~/Library/Caches/com.blackmagic-design.DaVinciResolve", .caches, .low, "외장 볼륨의 앱을 확인하지 못해 낮음으로 낮춤", size: 46 * MB, days: 3),
             o("~/Library/Logs/DaVinci Resolve", .logs, .low, "외장 볼륨의 앱을 확인하지 못해 낮음으로 낮춤", source: .name, size: 2 * MB, days: 3),
-        ], confidence: .low, notes: ["외장 볼륨 \"Media\"에 앱이 있을 수 있음"])
+        ], confidence: .low, notes: [.verbatim("외장 볼륨 \"Media\"에 앱이 있을 수 있음")])
 
         let charlesBID = "com.xk72.Charles"
         let charles = OrphanGroup(id: charlesBID, displayName: "Charles", nameIsGuess: true, bundleID: charlesBID, items: [
             o("~/Library/Application Support/Charles", .applicationSupport, .medium, "번들 ID 접두사로만 판정", source: .bundleIdentifier, size: 41 * MB, days: 125),
             o("~/Library/Preferences/\(charlesBID).plist", .preferences, .medium, "번들 ID와 일치하는 설치 앱 없음 (이름은 추정)", source: .bundleIdentifier, size: 16 * KB, days: 125),
             o("~/Library/Caches/\(charlesBID)", .caches, .medium, "번들 ID와 일치하는 설치 앱 없음 (이름은 추정)", source: .bundleIdentifier, size: 17 * MB, days: 125),
-        ], confidence: .medium, notes: ["번들 ID로만 판정"])
+        ], confidence: .medium, notes: [.verbatim("번들 ID로만 판정")])
 
         let google = OrphanGroup(id: "vendor:google", displayName: "Google 공용 폴더", nameIsGuess: false, teamID: "EQHXZ8M8AV", items: [
             o("~/Library/Application Support/Google", .applicationSupport, .low,
-              share: .shared(usedBy: ["Google Chrome"], reason: "같은 개발사의 Chrome이 설치되어 있음"),
+              share: .shared(usedBy: ["Google Chrome"], reason: .verbatim("같은 개발사의 Chrome이 설치되어 있음")),
               "벤더 공용 폴더 — 같은 Team ID의 앱이 설치되어 있음", source: .teamIdentifier, size: 38 * MB, days: 60),
             o("~/Library/Caches/Google", .caches, .low,
-              share: .shared(usedBy: ["Google Chrome"], reason: "같은 개발사의 Chrome이 설치되어 있음"),
+              share: .shared(usedBy: ["Google Chrome"], reason: .verbatim("같은 개발사의 Chrome이 설치되어 있음")),
               "벤더 공용 폴더 — 같은 Team ID의 앱이 설치되어 있음", source: .teamIdentifier, size: 4 * MB, days: 60),
-        ], confidence: .low, share: .shared(usedBy: ["Google Chrome"], reason: "같은 개발사의 Chrome이 설치되어 있음"),
-           notes: ["같은 개발사의 Chrome이 설치되어 있음"])
+        ], confidence: .low, share: .shared(usedBy: ["Google Chrome"], reason: .verbatim("같은 개발사의 Chrome이 설치되어 있음")),
+           notes: [.verbatim("같은 개발사의 Chrome이 설치되어 있음")])
 
         let adobe = OrphanGroup(id: "vendor:adobe", displayName: "Adobe 공용 폴더", nameIsGuess: false, items: [
             o("~/Library/Application Support/Adobe", .applicationSupport, .low, "벤더 공용 폴더", source: .teamIdentifier, size: 120 * MB, days: 90),

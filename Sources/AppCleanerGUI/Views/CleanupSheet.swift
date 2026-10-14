@@ -117,7 +117,7 @@ private struct PreviewContent: View {
                     HStack(alignment: .firstTextBaseline) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.displayName).fontWeight(.medium)
-                            Text(item.share.usageText ?? item.notes.first ?? Fmt.path(item.path))
+                            Text(item.share.usageText ?? item.notes.first?.localized ?? Fmt.path(item.path))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         Spacer()
