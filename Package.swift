@@ -1,0 +1,35 @@
+// swift-tools-version: 6.0
+import PackageDescription
+
+let package = Package(
+    name: "AppCleaner",
+    defaultLocalization: "ko",
+    platforms: [.macOS(.v14)],
+    products: [
+        .library(name: "CleanerCore", targets: ["CleanerCore"]),
+        .executable(name: "appcleaner", targets: ["appcleaner"]),
+        .executable(name: "AppCleanerGUI", targets: ["AppCleanerGUI"]),
+    ],
+    targets: [
+        .target(
+            name: "CleanerCore",
+            resources: [.copy("Resources/RuleData")]
+        ),
+        .target(
+            name: "CleanerTestSupport",
+            dependencies: ["CleanerCore"]
+        ),
+        .executableTarget(
+            name: "appcleaner",
+            dependencies: ["CleanerCore"]
+        ),
+        .executableTarget(
+            name: "AppCleanerGUI",
+            dependencies: ["CleanerCore"]
+        ),
+        .testTarget(
+            name: "CleanerCoreTests",
+            dependencies: ["CleanerCore", "CleanerTestSupport"]
+        ),
+    ]
+)

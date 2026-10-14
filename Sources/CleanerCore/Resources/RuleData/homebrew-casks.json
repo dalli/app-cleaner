@@ -1,0 +1,17 @@
+[
+  {"token": "slack", "names": ["Slack"], "apps": ["Slack.app"], "bundleIDs": ["com.tinyspeck.slackmacgap"],
+   "zap": ["~/Library/Application Scripts/com.tinyspeck.slackmacgap", "~/Library/Application Support/Slack",
+           "~/Library/Caches/com.tinyspeck.slackmacgap*", "~/Library/Containers/com.tinyspeck.slackmacgap*",
+           "~/Library/Cookies/com.tinyspeck.slackmacgap.binarycookies", "~/Library/Group Containers/*.com.tinyspeck.slackmacgap",
+           "~/Library/Group Containers/*.slack", "~/Library/HTTPStorages/com.tinyspeck.slackmacgap*",
+           "~/Library/Logs/Slack", "~/Library/Preferences/ByHost/com.tinyspeck.slackmacgap.ShipIt.*.plist",
+           "~/Library/Preferences/com.tinyspeck.slackmacgap*", "~/Library/Saved Application State/com.tinyspeck.slackmacgap.savedState",
+           "~/Library/WebKit/com.tinyspeck.slackmacgap"]},
+  {"token": "cursor", "names": ["Cursor"], "apps": ["Cursor.app"], "bundleIDs": ["com.todesktop.230313mzl4w4u92"],
+   "zap": ["~/.cursor", "~/Library/Application Support/Caches/cursor-updater", "~/Library/Application Support/Cursor",
+           "~/Library/Caches/com.todesktop.230313mzl4w4u92", "~/Library/Caches/com.todesktop.230313mzl4w4u92.ShipIt",
+           "~/Library/HTTPStorages/com.todesktop.230313mzl4w4u92", "~/Library/Logs/Cursor",
+           "~/Library/Preferences/ByHost/com.todesktop.230313mzl4w4u92.ShipIt.*.plist",
+           "~/Library/Preferences/com.todesktop.230313mzl4w4u92.plist",
+           "~/Library/Saved Application State/com.todesktop.230313mzl4w4u92.savedState"]}
+]

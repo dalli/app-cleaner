@@ -1,0 +1,34 @@
+{
+  "appleSystemNames": [
+    "AddressBook", "CallHistoryDB", "CallHistoryTransactions", "CloudDocs", "CrashReporter", "Dock", "FileProvider",
+    "Knowledge", "SyncServices", "iCloud", "com.apple.sharedfilelist", "com.apple.TCC", "com.apple.spotlight",
+    "Accounts", "Animoji", "AppStore", "Assistant", "CallServices", "CloudKit", "ContainerManager", "DifferentialPrivacy",
+    "DiskImages", "FaceTime", "icdd", "identityservicesd", "Mail", "Messages", "MobileSync", "networkserviceproxy",
+    "Photos", "Safari", "Siri", "SoftwareUpdate", "Spotlight", "Suggestions", "Weather", "homeenergyd", "locationaccessstored",
+    "ProtectedCloudStorage", "CoreParsec", "Wallpaper", "Wallpapers", "AppleMediaServices", "MediaStream", "Maps",
+    "Calendars", "Containers", "Group Containers", "Keychains", "Mobile Documents", "Metadata", "PersonalizationPortrait",
+    "TrustedPeersHelper", "Family", "FrontBoard", "Mobile Documents"
+  ],
+  "alwaysExcludedPaths": [
+    "Library/Application Support/MobileSync",
+    "Library/Mobile Documents",
+    "Library/Keychains",
+    "Library/Mail",
+    "Library/Messages",
+    "Library/Photos",
+    "Library/Calendars",
+    "Library/Safari",
+    ".ssh",
+    ".gnupg",
+    ".Trash"
+  ],
+  "vendorFolders": [
+    "Adobe", "Google", "Microsoft", "JetBrains", "Apple", "Oracle", "Autodesk", "Mozilla", "Zoom", "Logitech", "Corel",
+    "Parallels", "VMware", "Docker", "Unity", "Blackmagic Design", "Native Instruments", "Avid", "Steinberg", "Setapp"
+  ],
+  "securityDotfiles": [".ssh", ".gnupg", ".gpg", ".aws", ".kube", ".docker", ".netrc", ".password-store"],
+  "nonAppBundleIDPrefixes": [
+    "com.apple.", "org.python.", "org.ruby-lang.", "org.nodejs.", "com.oracle.java.", "org.openjdk.", "net.java.",
+    "org.mozilla.crashreporter", "com.github.Electron.", "systemgroup.com.apple."
+  ]
+}
