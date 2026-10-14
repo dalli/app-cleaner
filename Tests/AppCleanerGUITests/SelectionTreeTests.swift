@@ -73,9 +73,9 @@ struct SelectionTreeTests {
     @Test func keptSummaryBuckets() {
         let items = [
             locked,
-            candidate("/s", share: .shared(usedBy: ["Excel"], reason: "")),
+            candidate("/s", share: .shared(usedBy: ["Excel"], reason: .verbatim(""))),
             candidate("/u", nature: .userData),
-            candidate("/l", .low, share: .shared(usedBy: ["Excel"], reason: "")),
+            candidate("/l", .low, share: .shared(usedBy: ["Excel"], reason: .verbatim(""))),
             candidate("/o"),
         ]
         let s = KeptSummary(items)

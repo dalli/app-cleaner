@@ -127,11 +127,43 @@ public struct RestoreOptions: Sendable, Hashable {
     public var conflictPolicy: ConflictPolicy
     /// 중지했던 서비스를 `launchctl bootstrap`으로 다시 등록
     public var reregisterServices: Bool
+    /// 항목별 충돌 처리 (원래 경로 → 정책). 없는 항목은 `conflictPolicy`를 따른다.
+    /// 한 번의 복원 호출로 항목마다 다른 선택을 지킨다 (관리자 인증 1회, 기록 역순 유지).
+    public var itemPolicies: [String: ConflictPolicy]
 
-    public init(conflictPolicy: ConflictPolicy = .renameRestored, reregisterServices: Bool = true) {
+    public init(conflictPolicy: ConflictPolicy = .renameRestored, reregisterServices: Bool = true,
+                itemPolicies: [String: ConflictPolicy] = [:]) {
         self.conflictPolicy = conflictPolicy
         self.reregisterServices = reregisterServices
+        self.itemPolicies = itemPolicies
     }
+
+    public func conflictPolicy(for originalPath: String) -> ConflictPolicy {
+        itemPolicies[originalPath] ?? conflictPolicy
+    }
+}
+
+/// 되돌리기 전에 항목별로 예상한 결과 (ui-ux.md S6 되돌리기 확인).
+/// 실제 `restore`와 같은 판정을 쓰며, 조회 시점의 파일 시스템 기준이다.
+public struct RestorePreview: Codable, Sendable, Hashable {
+    /// 원래 위치로 그대로 되돌릴 수 있는 항목
+    public var ready: [String]
+    /// 원래 위치에 같은 이름이 이미 있는 항목 (충돌 처리 정책을 따른다)
+    public var conflicts: [String]
+    /// 이동 위치가 사라져 복원할 수 없는 항목 (휴지통 비움, 보류 폴더 영구 삭제)
+    public var missing: [String]
+    /// 이미 되돌린 항목
+    public var alreadyRestored: [String]
+
+    public init(ready: [String] = [], conflicts: [String] = [], missing: [String] = [], alreadyRestored: [String] = []) {
+        self.ready = ready
+        self.conflicts = conflicts
+        self.missing = missing
+        self.alreadyRestored = alreadyRestored
+    }
+
+    /// 되돌리기를 시도할 항목 (충돌 포함)
+    public var restorable: [String] { ready + conflicts }
 }
 
 public struct RestoreResult: Codable, Sendable {

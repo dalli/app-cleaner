@@ -258,7 +258,8 @@ func stepEvents(_ events: [CleanupProgress]) -> [String] {
         let (result, _) = await h.execute(plan)
         #expect(result.movedCount == 0)
         #expect(result.failures.count == 1)
-        #expect(result.failures[0].reason.contains("보호된 항목"))
+        #expect(result.failures[0].reason.key == .protectedNotMoved)
+        #expect(result.failures[0].reason.text.contains("보호된 항목"))
         #expect(fx.exists(ssh.appendingPathComponent("cache.db")))
     }
 
@@ -276,7 +277,7 @@ func stepEvents(_ events: [CleanupProgress]) -> [String] {
         #expect(result.movedToTrash == 1)
         #expect(result.movedSize == 16)
         #expect(result.failures.map(\.path) == [missing.path])
-        #expect(result.failures[0].reason == "항목을 찾을 수 없습니다")
+        #expect(result.failures[0].reason.text == "항목을 찾을 수 없습니다")
         #expect(!fx.exists(present))
         #expect(fx.exists(fx.paths.trash.appendingPathComponent("com.example.here/data")))
         #expect(events.contains { if case .itemFailed = $0 { return true }; return false })

@@ -94,17 +94,17 @@ public struct PathRuleSource: CandidateSource {
             if let bid = ctx.bids.match(entry) {
                 var c = Candidate(url: child, category: root.category, domain: root.domain,
                                   confidence: ctx.bids.confidence(forMatched: bid),
-                                  evidence: [Evidence(.bundleIdentifier, "번들 ID \(bid) 일치")])
+                                  evidence: [Evidence(.bundleIdentifier, EngineText(.bundleIDMatch, bid))])
                 if root.preferences, entry.hasSuffix(".plist") { c.preferencesDomain = String(entry.dropLast(".plist".count)) }
                 out.append(c)
             } else if root.byName, let name = ctx.names.match(entry) {
                 out.append(Candidate(url: child, category: root.category, domain: root.domain,
                                      confidence: ctx.names.confidence(for: name),
-                                     evidence: [Evidence(.name, "이름 '\(name)' 일치 (대소문자 무시)")]))
+                                     evidence: [Evidence(.name, EngineText(.nameMatch, name))]))
             }
             if let vendor = vendorNames.first(where: { $0.caseInsensitiveCompare(entry) == .orderedSame }), fm.isDirectory(child) {
                 out.append(Candidate(url: child, category: root.category, domain: root.domain, confidence: .low,
-                                     evidence: [Evidence(.pathRule, "벤더 공용 폴더 '\(vendor)' — 같은 개발사의 다른 앱도 쓸 수 있음")]))
+                                     evidence: [Evidence(.pathRule, EngineText(.vendorFolder, vendor))]))
                 out += vendorSubfolders(child, vendor: vendor, root: root, ctx)
             }
         }
@@ -133,11 +133,11 @@ public struct PathRuleSource: CandidateSource {
             if let bid = ctx.bids.match(entry) {
                 out.append(Candidate(url: child, category: root.category, domain: root.domain,
                                      confidence: ctx.bids.confidence(forMatched: bid),
-                                     evidence: [Evidence(.bundleIdentifier, "번들 ID \(bid) 일치 (\(vendor) 폴더 안)")]))
+                                     evidence: [Evidence(.bundleIdentifier, EngineText(.bundleIDMatchInVendorFolder, bid, vendor))]))
             } else if let name = names.first(where: { !$0.isEmpty && $0.caseInsensitiveCompare(entry) == .orderedSame }) {
                 out.append(Candidate(url: child, category: root.category, domain: root.domain,
                                      confidence: ctx.names.confidence(for: name),
-                                     evidence: [Evidence(.name, "\(vendor) 폴더 안 이름 '\(name)' 일치")]))
+                                     evidence: [Evidence(.name, EngineText(.nameMatchInVendorFolder, vendor, name))]))
             }
         }
         return out
@@ -154,7 +154,7 @@ public struct PathRuleSource: CandidateSource {
             let lower = entry.lowercased()
             if groups.contains(lower) {
                 out.append(Candidate(url: child, category: .groupContainer, confidence: .high,
-                                     evidence: [Evidence(.appGroup, "App Group \(entry) (코드 서명 entitlements)")]))
+                                     evidence: [Evidence(.appGroup, EngineText(.appGroupEntitlement, entry))]))
                 continue
             }
             // `group.<BID>` / `<TEAM>.<BID>` 형태
@@ -163,10 +163,10 @@ public struct PathRuleSource: CandidateSource {
             if let team, entry.hasPrefix(team + ".") { rest = String(entry.dropFirst(team.count + 1)) }
             if let rest, let bid = ctx.bids.match(rest) {
                 out.append(Candidate(url: child, category: .groupContainer, confidence: ctx.bids.confidence(forMatched: bid),
-                                     evidence: [Evidence(.bundleIdentifier, "그룹 이름에 번들 ID \(bid) 포함")]))
+                                     evidence: [Evidence(.bundleIdentifier, EngineText(.groupNameContainsBundleID, bid))]))
             } else if let team, entry.hasPrefix(team + ".") {
                 out.append(Candidate(url: child, category: .groupContainer, confidence: .low,
-                                     evidence: [Evidence(.teamIdentifier, "Team ID \(team) 접두사 — 같은 개발사 공용일 수 있음")]))
+                                     evidence: [Evidence(.teamIdentifier, EngineText(.teamIDPrefix, team))]))
             }
         }
         return out
@@ -179,7 +179,7 @@ public struct PathRuleSource: CandidateSource {
         return FileManager.default.children(of: paths.userLibrary.appendingPathComponent("Application Scripts"))
             .filter { groups.contains($0.lastPathComponent.lowercased()) }
             .map { Candidate(url: $0, category: .applicationScripts, confidence: .high,
-                             evidence: [Evidence(.appGroup, "App Group \($0.lastPathComponent)")]) }
+                             evidence: [Evidence(.appGroup, EngineText(.appGroup, $0.lastPathComponent))]) }
     }
 
     /// `~/Library/Mobile Documents/iCloud~<BID의 .을 ~로>` — 탐지·안내만 (선택 불가)
@@ -190,9 +190,9 @@ public struct PathRuleSource: CandidateSource {
         return FileManager.default.children(of: dir).compactMap { child in
             guard let bid = wanted[child.lastPathComponent.lowercased()] else { return nil }
             return Candidate(url: child, category: .iCloudContainer, confidence: .high, nature: .synced,
-                             evidence: [Evidence(.bundleIdentifier, "iCloud 컨테이너 (번들 ID \(bid))")],
+                             evidence: [Evidence(.bundleIdentifier, EngineText(.iCloudContainer, bid))],
                              protection: .iCloudData,
-                             notes: ["iCloud에 동기화되는 데이터라 옮기지 않습니다 — 지우면 다른 기기에서도 사라집니다"])
+                             notes: [EngineText(.syncedData)])
         }
     }
 
@@ -202,7 +202,7 @@ public struct PathRuleSource: CandidateSource {
         FileManager.default.children(of: dir).compactMap { child in
             guard let name = ctx.names.matchDiagnostic(child.lastPathComponent) else { return nil }
             return Candidate(url: child, category: .diagnosticReports, domain: domain, confidence: .low,
-                             evidence: [Evidence(.name, "진단 리포트 파일명이 '\(name)'(으)로 시작")])
+                             evidence: [Evidence(.name, EngineText(.diagnosticReportPrefix, name))])
         }
     }
 
@@ -216,13 +216,13 @@ public struct PathRuleSource: CandidateSource {
             guard entry.hasPrefix("."), !security.contains(entry.lowercased()),
                   let name = ctx.names.match(String(entry.dropFirst())) else { continue }
             out.append(Candidate(url: child, category: .dotfile, confidence: .low,
-                                 evidence: [Evidence(.name, "이름 '\(name)' 기반 숨김 설정 '~/\(entry)'")]))
+                                 evidence: [Evidence(.name, EngineText(.hiddenSettingsByName, name, entry))]))
         }
         for rel in [".config", ".local/share", ".cache"] {
             for child in fm.children(of: paths.home(rel)) {
                 guard let name = ctx.names.match(child.lastPathComponent) else { continue }
                 out.append(Candidate(url: child, category: .dotfile, confidence: .low,
-                                     evidence: [Evidence(.name, "이름 기반 설정 '~/\(rel)/\(name)'")]))
+                                     evidence: [Evidence(.name, EngineText(.settingsByName, rel, name))]))
             }
         }
         return out
@@ -234,7 +234,7 @@ public struct PathRuleSource: CandidateSource {
         FileManager.default.children(of: dir).compactMap { child in
             guard let bid = BundleInfo.read(bundleAt: child)?.bundleID, let matched = ctx.bids.match(bid) else { return nil }
             return Candidate(url: child, category: .plugin, domain: domain, confidence: ctx.bids.confidence(forMatched: matched),
-                             evidence: [Evidence(.bundleIdentifier, "플러그인 번들 ID \(bid) 일치")])
+                             evidence: [Evidence(.bundleIdentifier, EngineText(.pluginBundleIDMatch, bid))])
         }
     }
 
@@ -243,9 +243,9 @@ public struct PathRuleSource: CandidateSource {
         FileManager.default.children(of: dir).filter { $0.pathExtension == "kext" }.compactMap { child in
             guard let bid = BundleInfo.read(bundleAt: child)?.bundleID, ctx.bids.match(bid) != nil else { return nil }
             return Candidate(url: child, category: .kernelExtension, domain: .system, confidence: .high,
-                             evidence: [Evidence(.bundleIdentifier, "커널 확장 번들 ID \(bid)")],
+                             evidence: [Evidence(.bundleIdentifier, EngineText(.kernelExtensionBundleID, bid))],
                              protection: .detectOnly,
-                             notes: ["커널 확장은 자동으로 제거하지 않습니다 — 정리 후 안내를 확인하세요"])
+                             notes: [EngineText(.kernelExtensionNotRemoved)])
         }
     }
 }

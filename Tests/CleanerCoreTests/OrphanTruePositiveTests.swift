@@ -20,7 +20,7 @@ import CleanerTestSupport
         #expect(a.isSelected)
         #expect(a.category == .launchAgent)
         #expect(a.launchService == LaunchServiceRef(label: "com.gonecorp.gone.agent", domain: .user, plistURL: agent))
-        #expect(a.evidence.contains { $0.detail == "실행 파일 /Applications/Gone.app/Contents/MacOS/agent 없음" })
+        #expect(a.evidence.contains { $0.detail == EngineText(.executableMissing, "/Applications/Gone.app/Contents/MacOS/agent") })
 
         let d = try #require(report.item(daemon))
         #expect(d.confidence == .high)
@@ -124,7 +124,7 @@ import CleanerTestSupport
             let item = try #require(report.item(url))
             #expect(item.confidence == .high)
             #expect(item.isSelected)
-            #expect(item.evidence.contains { $0.detail == "같은 앱의 다른 항목에서 높은 근거 발견" })
+            #expect(item.evidence.contains { $0.detail == EngineText(.promotedBySibling) })
         }
         // 이름 기반은 승격하지 않는다
         #expect(report.item(support)?.confidence == .low)
@@ -160,7 +160,7 @@ import CleanerTestSupport
         #expect(r.category == .receipt)
         #expect(r.confidence == .high)
         #expect(r.isSelected)
-        #expect(r.evidence.contains { $0.source == .receipt && $0.detail.contains("/Applications/Tool.app") })
+        #expect(r.evidence.contains { $0.source == .receipt && $0.detail.key == .packageAppMissing && $0.detail.text.contains("/Applications/Tool.app") })
         // 실행 파일이 아직 있는 서비스는 보통 + 미선택 (승격하지 않음)
         let d = try #require(report.item(daemon))
         #expect(d.confidence == .medium)
@@ -267,7 +267,7 @@ import CleanerTestSupport
                                                label: "com.example.pathless", arguments: ["node", "server.js"])
         let report = try await h.scan()
         #expect(report.item(agent)?.confidence == .high)
-        #expect(report.item(agent)?.evidence.contains { $0.detail == "실행 파일 /Applications/Opener.app 없음" } == true)
+        #expect(report.item(agent)?.evidence.contains { $0.detail == EngineText(.executableMissing, "/Applications/Opener.app") } == true)
         #expect(!report.contains(alive))
         #expect(report.item(unknown)?.confidence == .low)
     }

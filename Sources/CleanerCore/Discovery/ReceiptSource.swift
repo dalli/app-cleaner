@@ -60,7 +60,7 @@ public struct ReceiptSource: CandidateSource {
             let url = receipts.appendingPathComponent("\(id).\(ext)")
             guard fm.itemExists(url) else { continue }
             out.append(Candidate(url: url, category: .receipt, domain: .system, confidence: .high,
-                                 evidence: [Evidence(.receipt, "설치 영수증 \(id)")]))
+                                 evidence: [Evidence(.receipt, EngineText(.installReceipt, id))]))
         }
 
         guard let base = installBase(forPackage: id),
@@ -112,7 +112,7 @@ public struct ReceiptSource: CandidateSource {
             let url = paths.system(rel)
             // 앱 번들 내부 파일은 앱 본체 후보가 대신한다.
             if url.isStrictlyInside(bundle) { continue }
-            var c = categorizer.candidate(url, confidence: .high, evidence: [Evidence(.receipt, "설치 영수증 \(id)이(가) 단독 소유")])
+            var c = categorizer.candidate(url, confidence: .high, evidence: [Evidence(.receipt, EngineText(.installReceiptSoleOwner, id))])
             if c.category == .other && rel.hasPrefix("Applications/") && url.pathExtension == "app" { c.category = .appBundle }
             out.append(c)
         }

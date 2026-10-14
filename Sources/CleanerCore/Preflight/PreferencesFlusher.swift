@@ -27,9 +27,9 @@ public struct CFPreferencesFlusher: PreferencesFlushing {
     }
 
     public func flush(domain: String, backupDirectory: URL) throws -> PreferencesBackup? {
-        guard SafeIdentifier.isValid(domain) else { throw CleanupError("환경설정 도메인 이름이 올바르지 않습니다: \(domain)") }
+        guard SafeIdentifier.isValid(domain) else { throw CleanupError(.prefsDomainInvalid, domain) }
         guard !SafeIdentifier.isApple(domain), domain.lowercased() != paths.selfBundleID.lowercased() else {
-            throw CleanupError("보호된 환경설정 도메인입니다: \(domain)")
+            throw CleanupError(.prefsDomainProtected, domain)
         }
         let fm = FileManager.default
         try fm.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
@@ -46,17 +46,17 @@ public struct CFPreferencesFlusher: PreferencesFlushing {
 
         let out = try runner.run(Self.defaults, ["delete", domain])
         if !out.succeeded && !out.stderr.contains("does not exist") {
-            throw CleanupError("환경설정 캐시를 비우지 못했습니다 (\(domain), 코드 \(out.status))")
+            throw CleanupError(.prefsFlushFailed, domain, String(out.status))
         }
         return fm.itemExists(backup) ? PreferencesBackup(domain: domain, backupPath: backup.path) : nil
     }
 
     public func restore(_ backup: PreferencesBackup) throws {
-        guard SafeIdentifier.isValid(backup.domain) else { throw CleanupError("환경설정 도메인 이름이 올바르지 않습니다") }
+        guard SafeIdentifier.isValid(backup.domain) else { throw CleanupError(.prefsDomainInvalidNoName) }
         guard FileManager.default.itemExists(URL(fileURLWithPath: backup.backupPath)) else {
-            throw CleanupError("보관한 환경설정 사본이 없습니다: \(backup.domain)")
+            throw CleanupError(.prefsBackupMissing, backup.domain)
         }
         let out = try runner.run(Self.defaults, ["import", backup.domain, backup.backupPath])
-        guard out.succeeded else { throw CleanupError("환경설정을 되살리지 못했습니다 (\(backup.domain), 코드 \(out.status))") }
+        guard out.succeeded else { throw CleanupError(.prefsRestoreFailed, backup.domain, String(out.status)) }
     }
 }

@@ -100,6 +100,29 @@ extension ShareStatus {
     }
 }
 
+extension EngineText {
+    /// 현재 UI 언어의 문장 (판정 근거·메모·공유 사유·실패 사유). 번역은 CleanerCore 리소스의 `Engine.strings`.
+    var localized: String { localized(L10n.appLanguage) }
+}
+
+extension OrphanGroup {
+    /// 현재 UI 언어의 그룹 이름 ("개발자 …" 같은 엔진 문구 이름도 번역)
+    var title: String { title(L10n.appLanguage) }
+}
+
+extension JournalSession {
+    /// 대상 이름. 엔진이 고아 정리에 붙이는 고정 이름("고아 잔여물")은 UI 언어로 바꾼다 (이전 기록 포함).
+    var targetTitle: String { CleanupPlan.title(kind: kind, targetName: targetName) }
+}
+
+extension CleanupPlan {
+    var targetTitle: String { Self.title(kind: kind, targetName: targetName) }
+
+    static func title(kind: SessionKind, targetName: String) -> String {
+        kind == .orphanCleanup && targetName == CleanupPlanner.orphanTargetName ? L("고아 잔여물") : targetName
+    }
+}
+
 extension EvidenceSource {
     /// 정보원 이름. 내부 용어는 이 칸에만 쓴다 (ui-ux.md 4.3).
     var title: String {
@@ -171,8 +194,11 @@ extension Candidate {
 
     /// 보조 설명 줄 (남겨두는 이유 등)
     var secondaryText: String? {
-        if let protection { return notes.first ?? protection.explanation }
-        if !notes.isEmpty { return notes.joined(separator: " · ") }
+        // 보호 항목의 SafetyGuard 판정 문구는 진단용이라 보호 사유 설명을 대신 쓴다
+        if let protection {
+            return notes.first(where: { !$0.isVerbatim && !$0.key.isProtectionDetail })?.localized ?? protection.explanation
+        }
+        if !notes.isEmpty { return notes.map(\.localized).joined(separator: " · ") }
         if let usage = share.usageText { return usage }
         return nil
     }

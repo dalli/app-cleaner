@@ -56,8 +56,11 @@ public struct AdminOperationResult: Sendable, Hashable {
         self.message = message
     }
 
-    /// 사용자에게 보여줄 한국어 사유
-    public var localizedReason: String { succeeded ? "완료" : PrivilegedScript.localizedReason(message) }
+    /// 사용자에게 보여줄 사유
+    public var reason: EngineText { succeeded ? EngineText(.adminDone) : PrivilegedScript.reason(message) }
+
+    /// 한국어 사유
+    public var localizedReason: String { reason.text }
 }
 
 /// 관리자 권한 실행기. **한 번의 호출 = 한 번의 인증**이므로 호출자는 작업을 모아서 보낸다 (plan.md 5.3).
@@ -200,6 +203,7 @@ public struct AppleScriptAdminExecutor: AdminExecuting {
         case .osascript:
             var args: [String] = []
             for line in PrivilegedScript.appleScriptSource { args += ["-e", line] }
+            args.append(PrivilegedScript.authorizationPrompt())
             args.append(PrivilegedScript.launcherShell)
             args += positional
             return try runner.run("/usr/bin/osascript", args)

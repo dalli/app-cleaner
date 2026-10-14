@@ -29,7 +29,7 @@ public struct HomebrewZapSource: CandidateSource {
             for zap in cask.zap where !Self.mentionsForeignBundleID(zap, ours: bids.bundleIDs) {
                 for (url, wildcard) in expand(zap, bundleIDs: bids.bundleIDs) where !url.isInside(identity.bundleURL) {
                     var c = categorizer.candidate(url, confidence: wildcard ? .low : .medium,
-                                                  evidence: [Evidence(.homebrewZap, "Homebrew cask '\(cask.token)' zap 규칙: \(zap)")])
+                                                  evidence: [Evidence(.homebrewZap, EngineText(.homebrewZapRule, cask.token, zap))])
                     if !isLibraryOrDotfile(url) {
                         // `~/Documents/<App>` 같은 Library 밖 경로는 사용자 파일일 수 있다.
                         c.confidence = .low
@@ -45,7 +45,7 @@ public struct HomebrewZapSource: CandidateSource {
                     let url = dir.appendingPathComponent("\(label).plist")
                     guard fm.itemExists(url) else { continue }
                     out.append(categorizer.candidate(url, confidence: .medium,
-                                                     evidence: [Evidence(.homebrewZap, "Homebrew cask '\(cask.token)'의 launchctl 항목 \(label)")]))
+                                                     evidence: [Evidence(.homebrewZap, EngineText(.homebrewLaunchctl, cask.token, label))]))
                 }
             }
         }

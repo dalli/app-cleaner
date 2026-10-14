@@ -64,6 +64,8 @@ struct OrphanGrouper {
         var caskToken: String?
         var displayName: String
         var nameIsGuess: Bool
+        /// 앱 이름이 아닌 표시 이름("개발자 …", "알 수 없음")의 키 문구
+        var nameText: EngineText?
     }
 
     /// Homebrew cask 데이터로 항목에 cask 토큰을 붙인다 (BID 일치 또는 zap 경로)
@@ -211,6 +213,7 @@ struct OrphanGrouper {
         }
 
         // 표시 이름: Homebrew cask 데이터 → 기록된 앱 경로 → 이름 기반 폴더명 → BID 추정 → Team ID
+        g.nameText = nil
         if let name = cask?.names.first ?? cask?.apps.first.map({ String($0.dropLast($0.hasSuffix(".app") ? 4 : 0)) }) {
             g.displayName = name
             g.nameIsGuess = false
@@ -224,10 +227,16 @@ struct OrphanGrouper {
             g.displayName = comp.prefix(1).uppercased() + comp.dropFirst()
             g.nameIsGuess = true
         } else if let t = g.teamID {
-            g.displayName = "개발자 \(t)"
+            g.nameText = EngineText(.developerGroup, t)
+            g.displayName = g.nameText!.text
             g.nameIsGuess = true
         } else {
-            g.displayName = g.items.first?.url.lastPathComponent ?? "알 수 없음"
+            if let name = g.items.first?.url.lastPathComponent {
+                g.displayName = name
+            } else {
+                g.nameText = EngineText(.unknownName)
+                g.displayName = g.nameText!.text
+            }
             g.nameIsGuess = true
         }
     }

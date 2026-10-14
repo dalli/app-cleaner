@@ -32,7 +32,8 @@ public protocol AppScanning: Sendable {
 public enum SafetyVerdict: Sendable, Hashable {
     /// 허용. `resolved`는 심볼릭 링크를 해석한 실제 경로
     case allowed(resolved: URL)
-    case blocked(ProtectionReason, String)
+    /// 차단. 문구는 진단용 보호 판정 (`EngineText.Key.isProtectionDetail`)
+    case blocked(ProtectionReason, EngineText)
 
     public var isAllowed: Bool { if case .allowed = self { return true }; return false }
 }
@@ -60,6 +61,8 @@ public protocol JournalStoring: Sendable {
     func session(id: UUID) async -> JournalSession?
     /// `itemPaths`가 nil이면 전체 복원
     func restore(sessionID: UUID, itemPaths: Set<String>?, options: RestoreOptions) async -> RestoreResult
+    /// 복원하지 않고 항목별 예상 결과(충돌·복원 불가)만 조회. 세션이 없으면 nil.
+    func restorePreview(sessionID: UUID, itemPaths: Set<String>?) async -> RestorePreview?
     func holdingUsage(retentionDays: Int) async -> HoldingUsage
     /// 보류 기간이 지난 세션의 보류 폴더 항목을 영구 삭제 (사용자 확인 후 호출)
     func purgeHolding(sessionIDs: [UUID]) async -> [CleanupFailure]

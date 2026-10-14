@@ -67,14 +67,58 @@ import CleanerTestSupport
         #expect(try String(contentsOf: b, encoding: .utf8) == "new-b")
 
         let renamed = await h.journal.restore(sessionID: result.sessionID, itemPaths: nil, options: RestoreOptions())
-        let renamedA = fx.home("Library/Preferences/com.example.a (복원됨).plist")
-        let renamedB = fx.home("Library/Caches/com.example.b (복원됨)")
+        let renamedA = fx.home("Library/Preferences/com.example.a (\(JournalStore.restoredSuffix)).plist")
+        let renamedB = fx.home("Library/Caches/com.example.b (\(JournalStore.restoredSuffix))")
         #expect(Set(renamed.restored) == [renamedA.path, renamedB.path])
         #expect(try String(contentsOf: renamedA, encoding: .utf8) == "old-a")
         #expect(try String(contentsOf: a, encoding: .utf8) == "new-a")
         #expect(try String(contentsOf: renamedB, encoding: .utf8) == "old-b")
         #expect(JournalStore.renamedURL(for: renamedA.deletingLastPathComponent().appendingPathComponent("com.example.a.plist"))
-                .lastPathComponent == "com.example.a (복원됨 2).plist")
+                .lastPathComponent == "com.example.a (\(JournalStore.restoredSuffix) 2).plist")
+    }
+
+    /// 복원 미리보기는 실제 복원과 같은 판정을 쓰고, 항목별 정책은 한 번의 호출로 지킨다
+    @Test func restorePreviewMatchesRestoreAndPerItemPolicies() async throws {
+        let h = try Harness()
+        let fx = h.fx
+        let a = try fx.file(fx.home("Library/Preferences/com.example.a.plist"), text: "old-a")
+        let b = try fx.file(fx.home("Library/Caches/com.example.b"), text: "old-b")
+        let c = try fx.file(fx.home("Library/Logs/com.example.c"), text: "old-c")
+        let d = try fx.file(fx.home("Library/Caches/com.example.d"), text: "old-d")
+        let (result, _) = await h.execute(plan([a, b, c, d].map {
+            Candidate(url: $0, category: .caches, confidence: .high, isSelected: true)
+        }))
+        #expect(result.movedCount == 4)
+        try fx.file(a, text: "new-a")
+        try fx.file(b, text: "new-b")
+        let session = try #require(await h.journal.session(id: result.sessionID))
+        try FileManager.default.removeItem(atPath: try #require(session.items.first { $0.originalPath == c.path }).movedTo)
+
+        let preview = try #require(await h.journal.restorePreview(sessionID: result.sessionID, itemPaths: nil))
+        #expect(preview.ready == [d.path])
+        #expect(preview.conflicts == [a.path, b.path])
+        #expect(preview.missing == [c.path])
+        #expect(preview.alreadyRestored.isEmpty)
+        #expect(Set(preview.restorable) == [a.path, b.path, d.path])
+        #expect(await h.journal.restorePreview(sessionID: result.sessionID, itemPaths: [a.path])?.conflicts == [a.path])
+        #expect(await h.journal.restorePreview(sessionID: UUID(), itemPaths: nil) == nil)
+        // 미리보기는 아무것도 옮기지 않는다
+        #expect(try String(contentsOf: a, encoding: .utf8) == "new-a")
+        #expect(!fx.exists(d))
+
+        // a는 건너뛰고 b는 이름 바꿔 복원 — 한 번의 호출
+        let restore = await h.journal.restore(sessionID: result.sessionID, itemPaths: nil,
+                                              options: RestoreOptions(conflictPolicy: .renameRestored, itemPolicies: [a.path: .skip]))
+        #expect(restore.skipped == [a.path])
+        #expect(restore.missing == [c.path])
+        #expect(Set(restore.restored) == [fx.home("Library/Caches/com.example.b (\(JournalStore.restoredSuffix))").path, d.path])
+        #expect(try String(contentsOf: a, encoding: .utf8) == "new-a")
+        #expect(try String(contentsOf: b, encoding: .utf8) == "new-b")
+
+        let after = try #require(await h.journal.restorePreview(sessionID: result.sessionID, itemPaths: nil))
+        #expect(after.conflicts == [a.path])
+        #expect(Set(after.alreadyRestored) == [b.path, d.path])
+        #expect(after.missing == [c.path])
     }
 
     /// 휴지통을 비운 경우 → 일부 복원 불가 / 복원 불가, 복원 결과에 빠진 항목 표시
@@ -162,6 +206,14 @@ import CleanerTestSupport
         #expect(s2.status == .notRestorable)
         #expect(await h.journal.holdingUsage(retentionDays: 30).totalSize == 0)
         #expect(await h.journal.restore(sessionID: r2.sessionID, itemPaths: nil, options: RestoreOptions()).missing == [daemon.path])
+        #expect(await h.journal.restorePreview(sessionID: r2.sessionID, itemPaths: nil)?.missing == [daemon.path])
+    }
+
+    /// 엔진이 실제 보류 폴더 위치를 알려 준다 (GUI가 기록에서 추정하지 않음)
+    @Test func liveEngineExposesHoldingFolder() throws {
+        let fx = try Fixture()
+        let engine = LiveCleanerEngine(paths: fx.paths, runner: StubCommandRunner(), adminLauncher: .direct)
+        #expect(engine.holdingFolderURL == fx.paths.holdingDir)
     }
 
     @Test func restoreReregistersStoppedServicesAndExports() async throws {

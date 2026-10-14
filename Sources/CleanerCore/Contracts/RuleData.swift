@@ -101,22 +101,13 @@ public enum BundledRuleData {
         var files: [String: String]?
     }
 
-    /// 번들 리소스 폴더 위치. `.app`에서는 Contents/Resources, SwiftPM 실행 파일에서는 Bundle.module.
-    public static func resourceDirectory() -> URL? {
+    /// 번들 리소스 폴더 위치. `.app`에서는 Contents/Resources, SwiftPM 실행 파일에서는 실행 파일 옆 번들(심볼릭 링크 해석 포함),
+    /// 둘 다 없으면 Bundle.module.
+    public static func resourceDirectory(resourceURL: URL? = Bundle.main.resourceURL,
+                                         executableURL: URL? = Bundle.main.executableURL) -> URL? {
         let fm = FileManager.default
-        let bundleName = "AppCleaner_CleanerCore.bundle"
-        var candidates: [URL] = []
-        if let res = Bundle.main.resourceURL {
-            candidates.append(res.appendingPathComponent(bundleName).appendingPathComponent("RuleData"))
-            candidates.append(res.appendingPathComponent(bundleName).appendingPathComponent("Contents/Resources/RuleData"))
-            candidates.append(res.appendingPathComponent("RuleData"))
-        }
-        let exeDir = Bundle.main.executableURL?.deletingLastPathComponent()
-        if let exeDir {
-            candidates.append(exeDir.appendingPathComponent(bundleName).appendingPathComponent("RuleData"))
-            candidates.append(exeDir.appendingPathComponent(bundleName).appendingPathComponent("Contents/Resources/RuleData"))
-        }
-        if let found = candidates.first(where: { fm.isDirectory($0) }) { return found }
+        if let found = BundledResources.locate("RuleData", resourceURL: resourceURL, executableURL: executableURL,
+                                               where: { fm.isDirectory($0) }) { return found }
         return Bundle.module.url(forResource: "RuleData", withExtension: nil)
     }
 

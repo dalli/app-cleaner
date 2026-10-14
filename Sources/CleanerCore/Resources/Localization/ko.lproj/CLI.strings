@@ -1,0 +1,30 @@
+/*
+  appcleaner CLI — 한국어 (기본 언어)
+  키가 한국어 원문이므로 이 파일에는 키와 다른 문구(영문 키 "usage")만 둔다.
+*/
+
+"usage" = "사용법: appcleaner <명령> [옵션]
+
+명령:
+  scan <앱 경로|이름>          앱과 잔여물을 검사만 한다 (아무것도 지우지 않음)
+      --all                     남겨두는 항목까지 모두 표시
+      --json                    JSON 출력
+  remove <앱 경로|이름>        기본 선택 항목을 휴지통/보류 폴더로 이동
+      --dry-run                 실제로 옮기지 않고 정리 계획만 출력 (JSON)
+      --yes                     확인 없이 진행
+      --reset-privacy           개인정보 보호 권한 기록(TCC) 초기화
+  orphans                       이미 삭제된 앱의 고아 잔여물 스캔
+      --min-confidence <high|medium|low>
+      --include-dotfiles        숨김 설정 폴더 포함 (~/.ssh, ~/.gnupg는 항상 제외)
+      --json
+  orphans clean                 고아 잔여물 정리 (기본: 높음 + 사용자 데이터 아님)
+      --dry-run | --yes | --json
+      --include-medium          보통 신뢰도 항목도 포함
+  history [--json]              삭제 기록
+  restore <세션 ID> [--yes]     세션 되돌리기
+  version                       버전
+
+공통 옵션:
+  --lang <ko|en|ja>             출력 언어 (기본: APPCLEANER_LANG → LC_ALL·LANG → 시스템 언어, 그 밖에는 영어)
+                                --json 출력은 언어와 무관
+  --demo                        (개발용) 가짜 데이터 엔진 사용";

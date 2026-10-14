@@ -4,9 +4,9 @@ import Foundation
 public struct ServiceActionResult: Sendable, Hashable {
     public var service: LaunchServiceRef
     /// nil이면 성공
-    public var error: String?
+    public var error: EngineText?
 
-    public init(service: LaunchServiceRef, error: String? = nil) {
+    public init(service: LaunchServiceRef, error: EngineText? = nil) {
         self.service = service
         self.error = error
     }
@@ -44,7 +44,7 @@ public struct LaunchctlServiceController: ServiceControlling {
         var systemOps: [(LaunchServiceRef, AdminOperation)] = []
         for s in services {
             guard SafeIdentifier.isValid(s.label), !SafeIdentifier.isApple(s.label) else {
-                results.append(.init(service: s, error: "서비스 레이블이 올바르지 않아 중지하지 않았습니다: \(s.label)"))
+                results.append(.init(service: s, error: EngineText(.serviceLabelInvalid, s.label)))
                 continue
             }
             switch s.domain {
@@ -54,10 +54,10 @@ public struct LaunchctlServiceController: ServiceControlling {
                     if Self.bootoutOK.contains(out.status) {
                         results.append(.init(service: s))
                     } else {
-                        results.append(.init(service: s, error: "서비스를 중지하지 못했습니다 (\(s.label), 코드 \(out.status))"))
+                        results.append(.init(service: s, error: EngineText(.serviceStopFailedCode, s.label, String(out.status))))
                     }
                 } catch {
-                    results.append(.init(service: s, error: "서비스를 중지하지 못했습니다 (\(s.label)): \(error)"))
+                    results.append(.init(service: s, error: EngineText(.serviceStopFailedError, s.label, parts: [.describing(error)])))
                 }
             case .system:
                 systemOps.append((s, .bootoutSystem(label: s.label)))
@@ -68,7 +68,7 @@ public struct LaunchctlServiceController: ServiceControlling {
             for (i, (s, _)) in systemOps.enumerated() {
                 let r = i < adminResults.count ? adminResults[i] : nil
                 results.append(.init(service: s, error: r?.succeeded == true ? nil
-                    : "시스템 서비스를 중지하지 못했습니다 (\(s.label)): \(r?.localizedReason ?? "결과 없음")"))
+                    : EngineText(.systemServiceStopFailed, s.label, parts: [r?.reason ?? EngineText(.noResult)])))
             }
         }
         return order(results, like: services)
@@ -79,7 +79,7 @@ public struct LaunchctlServiceController: ServiceControlling {
         var systemOps: [(LaunchServiceRef, AdminOperation)] = []
         for s in services {
             guard let plist = s.plistURL else {
-                results.append(.init(service: s, error: "plist 위치를 몰라 다시 등록하지 못했습니다 (\(s.label))"))
+                results.append(.init(service: s, error: EngineText(.plistLocationUnknown, s.label)))
                 continue
             }
             switch s.domain {
@@ -87,13 +87,13 @@ public struct LaunchctlServiceController: ServiceControlling {
                 do {
                     let out = try runner.run(Self.launchctl, ["bootstrap", "gui/\(paths.uid)", plist.path])
                     results.append(.init(service: s, error: out.succeeded ? nil
-                        : "서비스를 다시 등록하지 못했습니다 (\(s.label), 코드 \(out.status))"))
+                        : EngineText(.serviceReregisterFailedCode, s.label, String(out.status))))
                 } catch {
-                    results.append(.init(service: s, error: "서비스를 다시 등록하지 못했습니다 (\(s.label)): \(error)"))
+                    results.append(.init(service: s, error: EngineText(.serviceReregisterFailedError, s.label, parts: [.describing(error)])))
                 }
             case .system:
                 guard let logical = AdminPaths.logicalPath(of: plist, root: paths.root) else {
-                    results.append(.init(service: s, error: "시스템 루트 밖의 plist입니다 (\(plist.path))"))
+                    results.append(.init(service: s, error: EngineText(.plistOutsideSystemRoot, plist.path)))
                     continue
                 }
                 systemOps.append((s, .bootstrapSystem(plistPath: logical)))
@@ -104,7 +104,7 @@ public struct LaunchctlServiceController: ServiceControlling {
             for (i, (s, _)) in systemOps.enumerated() {
                 let r = i < adminResults.count ? adminResults[i] : nil
                 results.append(.init(service: s, error: r?.succeeded == true ? nil
-                    : "시스템 서비스를 다시 등록하지 못했습니다 (\(s.label)): \(r?.localizedReason ?? "결과 없음")"))
+                    : EngineText(.systemServiceReregisterFailed, s.label, parts: [r?.reason ?? EngineText(.noResult)])))
             }
         }
         return order(results, like: services)

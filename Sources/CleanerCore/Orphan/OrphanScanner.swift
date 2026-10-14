@@ -140,18 +140,18 @@ public struct OrphanScanner: OrphanScanning {
             if hasHigh && item.confidence == .medium && !item.offline && item.promotable {
                 item.confidence = .high
                 item.promoted = true
-                item.evidence.append(Evidence(.inventory, "같은 앱의 다른 항목에서 높은 근거 발견"))
+                item.evidence.append(Evidence(.inventory, EngineText(.promotedBySibling)))
             }
             if !spotlightReliable && item.confidence == .medium {
                 item.confidence = .low
-                item.addNote("Spotlight 색인이 불완전해 신뢰도를 낮춤")
+                item.addNote(EngineText(.spotlightDemoted))
             }
             if item.category != .receipt && !(item.category == .other && item.caskToken != nil) {
                 item.lastModified = FileDates.latestModified(item.url)
                 if let m = item.lastModified, options.recentModificationWindow > 0,
                    now.timeIntervalSince(m) < options.recentModificationWindow {
                     item.confidence = item.confidence.demoted()
-                    item.addNote("최근에 수정됨 — 아직 사용 중일 수 있음")
+                    item.addNote(EngineText(.recentlyModified))
                 }
             } else {
                 item.lastModified = FileDates.modified(item.url)
@@ -161,19 +161,21 @@ public struct OrphanScanner: OrphanScanning {
             if vendorApps.isEmpty, let t = item.teamID { vendorApps = index.teams[t] ?? [] }
             if !vendorApps.isEmpty {
                 item.confidence = item.confidence.demoted()
-                item.addNote("같은 개발사의 앱(\(Self.list(vendorApps)))이 설치되어 있음")
+                item.addNote(Self.vendorAppsNote(vendorApps))
             }
             if item.offline {
                 item.confidence = .low
-                item.addNote("앱이 외장 볼륨에 있을 수 있음")
+                item.addNote(EngineText(.maybeOnExternalVolume))
             }
             g.items[i] = item
         }
     }
 
-    private static func list(_ names: [String]) -> String {
+    /// "같은 개발사의 앱(A, B)이 설치되어 있음" / "같은 개발사의 앱(A 외 2개)이 설치되어 있음"
+    private static func vendorAppsNote(_ names: [String]) -> EngineText {
         let unique = names.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
-        return unique.count <= 2 ? unique.joined(separator: ", ") : "\(unique[0]) 외 \(unique.count - 1)개"
+        return unique.count <= 2 ? EngineText(.vendorAppsInstalled, unique.joined(separator: ", "))
+            : EngineText(.vendorAppsInstalledMore, unique[0], String(unique.count - 1))
     }
 
     // MARK: - 후보 변환
@@ -196,20 +198,20 @@ public struct OrphanScanner: OrphanScanning {
         let confidence = candidates.map(\.confidence).max() ?? .low
         let sharedUsers = candidates.flatMap(\.share.usedBy).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
         let share: ShareStatus = sharedUsers.isEmpty ? .exclusive
-            : .shared(usedBy: sharedUsers, reason: "같은 개발사의 앱이 설치되어 있음")
-        var notes: [String] = []
-        if g.items.contains(where: \.offline) { notes.append("앱이 외장 볼륨에 있을 수 있음") }
-        if g.items.contains(where: { $0.notes.contains("Spotlight 색인이 불완전해 신뢰도를 낮춤") }) {
-            notes.append("Spotlight 색인이 불완전해 일부 항목의 신뢰도를 낮춤")
+            : .shared(usedBy: sharedUsers, reason: EngineText(.sharedVendorAppInstalled))
+        var notes: [EngineText] = []
+        if g.items.contains(where: \.offline) { notes.append(EngineText(.maybeOnExternalVolume)) }
+        if g.items.contains(where: { $0.notes.contains(EngineText(.spotlightDemoted)) }) {
+            notes.append(EngineText(.spotlightDemotedSome))
         }
         var advisories: [Advisory] = []
         for token in Set(g.items.filter { $0.category == .other }.compactMap(\.caskToken)).sorted() {
             advisories.append(.homebrewZap(token: token))
-            notes.append("Homebrew 기록만 남아 있음 — brew uninstall --zap --cask \(token) 권장")
+            notes.append(EngineText(.homebrewRecordOnly, token))
         }
         return OrphanGroup(id: g.key, displayName: g.displayName, nameIsGuess: g.nameIsGuess, bundleID: g.bundleID,
                            teamID: g.teamID, items: candidates, confidence: confidence, share: share, notes: notes,
-                           advisories: advisories)
+                           advisories: advisories, nameText: g.nameText)
     }
 
     /// 고아 스캔 기본 선택: High + 선택 가능한 데이터 성격 + 비공유 + 보호 아님 (Medium은 선택하지 않음 — plan.md 4.5.4)

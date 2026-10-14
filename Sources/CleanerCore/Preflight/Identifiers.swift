@@ -17,8 +17,10 @@ public enum SafeIdentifier {
     }
 }
 
-/// 정리 실행 중 생기는 오류. `description`은 사용자에게 그대로 보여주는 한국어 문구.
-public struct CleanupError: Error, Sendable, CustomStringConvertible, Hashable {
-    public var description: String
-    public init(_ description: String) { self.description = description }
+/// 정리 실행 중 생기는 오류. 사용자 문구는 `text` (`description`은 한국어 문장).
+public struct CleanupError: EngineTextError, Sendable, CustomStringConvertible, Hashable {
+    public var text: EngineText
+    public init(_ text: EngineText) { self.text = text }
+    public init(_ key: EngineText.Key, _ args: String...) { self.text = EngineText(key, args: args) }
+    public var description: String { text.text }
 }

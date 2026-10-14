@@ -108,7 +108,7 @@ public struct AppScanner: AppScanning {
         let inSystemApps = bundle.isInside(paths.system("Applications"))
         let writable = fm.isWritableFile(atPath: bundle.path) && fm.isWritableFile(atPath: bundle.deletingLastPathComponent().path)
         return Candidate(url: bundle, category: .appBundle, domain: inSystemApps && !writable ? .system : .user,
-                         confidence: .high, evidence: [Evidence(.bundleIdentifier, "앱 본체 (\(identity.bundleID))")])
+                         confidence: .high, evidence: [Evidence(.bundleIdentifier, EngineText(.appBundle, identity.bundleID))])
     }
 
     /// 정보원을 병렬로 실행한다. 정보원 하나가 실패해도 나머지 결과는 유지한다.
@@ -138,11 +138,12 @@ public struct AppScanner: AppScanning {
             switch safety.verdict(for: c.url, bundleID: identity.bundleID) {
             case .allowed:
                 return c
-            case .blocked(let reason, let message):
+            case .blocked(let reason, let note):
                 // 정보원이 이미 보호 사유를 붙인 항목(iCloud 등)은 안내용으로 남긴다.
                 if c.protection == nil && (reason == .protectedPath || reason == .symlinkEscape) { return nil }
                 c.protection = c.protection ?? reason
-                if !message.isEmpty && !c.notes.contains(message) { c.notes.append(message) }
+                // SafetyGuard 판정 문구는 진단용이다 (GUI는 보호 사유 설명을 대신 보여 준다)
+                if !c.notes.contains(note) { c.notes.append(note) }
                 c.isSelected = false
                 return c
             }
@@ -156,7 +157,7 @@ public struct AppScanner: AppScanning {
             guard c.isSelected, let parent = selected.first(where: { c.url.isStrictlyInside($0.url) }) else { return c }
             var c = c
             c.isSelected = false
-            let note = "상위 폴더 \(parent.url.lastPathComponent)와 함께 옮겨집니다"
+            let note = EngineText(.movedWithParent, parent.url.lastPathComponent)
             if !c.notes.contains(note) { c.notes.append(note) }
             return c
         }

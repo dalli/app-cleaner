@@ -1,0 +1,570 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>%@ 선택 · %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$@ を選択 · %2$#@items@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>%lld / %lld개 항목</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$lld / %2$#@items@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>%lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@items@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>%lld개 항목</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@items@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>%lld개 항목 이동</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@items@ を移動</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>%lld개 항목, %@를 휴지통과 보류 폴더로 옮겼습니다. 삭제 기록에서 되돌릴 수 있습니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@s@</string>
+		<key>s</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%1$lld 項目 (%2$@) をゴミ箱と保留フォルダに移動しました。削除履歴から復元できます。</string>
+		</dict>
+	</dict>
+	<key>%lld개 항목, %@를 휴지통으로 옮겼습니다. 휴지통을 비우기 전까지 되돌릴 수 있습니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@s@</string>
+		<key>s</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%1$lld 項目 (%2$@) をゴミ箱に入れました。ゴミ箱を空にするまでは復元できます。</string>
+		</dict>
+	</dict>
+	<key>%lld개 항목을 옮기지 못했습니다</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@items@ を移動できませんでした</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>%lld개 항목을 옮기지 못했습니다. 나머지는 계속 진행합니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@items@ を移動できませんでした。残りの処理は続行します。</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>%lld개 항목을 원래 위치로 되돌렸습니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@s@</string>
+		<key>s</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目を元の場所に復元しました。</string>
+		</dict>
+	</dict>
+	<key>%lld개 항목을 원래 위치로 옮깁니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@s@</string>
+		<key>s</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目を元の場所に戻します。</string>
+		</dict>
+	</dict>
+	<key>%lld개 항목을 휴지통으로 이동</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@items@ をゴミ箱に入れる</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>%lld일</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@days@</string>
+		<key>days</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 日</string>
+		</dict>
+	</dict>
+	<key>경로 규칙 · Homebrew 정리 규칙 %lld개 · 제외 목록</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>パスルール · %#@rules@ · 除外リスト</string>
+		<key>rules</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>Homebrew 整理ルール %lld 個</string>
+		</dict>
+	</dict>
+	<key>공유: %@ 외 %lld개 앱 사용 중</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>共有: %1$@ ほか %2$#@apps@ が使用中</string>
+		<key>apps</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個の App</string>
+		</dict>
+	</dict>
+	<key>권한 부족으로 읽지 못한 위치 %lld곳</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@s@</string>
+		<key>s</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>権限不足で読み取れなかった場所: %lld か所</string>
+		</dict>
+	</dict>
+	<key>그룹 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@groups@</string>
+		<key>groups</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld グループ</string>
+		</dict>
+	</dict>
+	<key>남겨두는 항목 %lld개 보기</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>残しておく項目 %#@items@ を表示</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個</string>
+		</dict>
+	</dict>
+	<key>남겨둔 항목 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>残した項目 %#@items@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個</string>
+		</dict>
+	</dict>
+	<key>마지막 스캔 %@ (%@, 설치 앱 %lld개 확인)</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>前回のスキャン %1$@ (%2$@、インストール済み App %3$#@apps@ を確認)</string>
+		<key>apps</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個</string>
+		</dict>
+	</dict>
+	<key>백그라운드 서비스 %lld개 중지</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>バックグラウンドサービス %#@services@ を停止</string>
+		<key>services</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個</string>
+		</dict>
+	</dict>
+	<key>백그라운드 서비스 %lld개 중지 — 되돌릴 때 다시 등록할 수 있음</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>バックグラウンドサービス %#@services@ を停止 — 復元時に再登録可能</string>
+		<key>services</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個</string>
+		</dict>
+	</dict>
+	<key>보관 기간(%lld일)이 지난 보류 항목이 작업 %lld개에 있습니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>保管期間 (%1$#@days@) を過ぎた保留項目を含む整理が %2$#@cleanups@ あります。</string>
+		<key>cleanups</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 件</string>
+		</dict>
+		<key>days</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 日</string>
+		</dict>
+	</dict>
+	<key>보관 기간이 지난 작업 %lld개의 보류 항목을 영구 삭제합니다. 영구 삭제한 항목은 되돌릴 수 없습니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>保管期間を過ぎた整理 %#@cleanups@ の保留項目を完全に削除します。完全に削除した項目は復元できません。</string>
+		<key>cleanups</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 件</string>
+		</dict>
+	</dict>
+	<key>보류 폴더 %@ · 가장 오래된 항목 %lld일 경과</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>保留フォルダ %1$@ · 最も古い項目は %2$#@days@ 経過</string>
+		<key>days</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 日</string>
+		</dict>
+	</dict>
+	<key>선택 · 그룹 %lld개, 항목 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>選択 · %1$#@groups@、%2$#@items@</string>
+		<key>groups</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld グループ</string>
+		</dict>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>선택하지 않은 %lld개 항목(%@)은 그대로 남습니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@s@</string>
+		<key>s</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>選択していない %1$lld 項目 (%2$@) はそのまま残ります。</string>
+		</dict>
+	</dict>
+	<key>앱 %lld개 · %@</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@apps@ · %2$@</string>
+		<key>apps</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個の App</string>
+		</dict>
+	</dict>
+	<key>원래 위치에 같은 이름이 이미 있는 항목 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@s@</string>
+		<key>s</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>元の場所に同じ名前がすでに存在する項目 %lld 個</string>
+		</dict>
+	</dict>
+	<key>유지 목록에 숨긴 항목 %lld개는 표시하지 않았습니다. 설정 › 유지 목록에서 해제할 수 있습니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@s@</string>
+		<key>s</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>保持リストで非表示にした %lld 項目は表示していません。設定 › 保持リスト で解除できます。</string>
+		</dict>
+	</dict>
+	<key>정리 미리보기 · %lld개, %@</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>整理のプレビュー · %1$#@items@、%2$@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>지난 스캔에서 앱 %lld개의 잔여물 %@를 찾았습니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>前回のスキャンで %1$#@apps@ の残存ファイル %2$@ が見つかりました。</string>
+		<key>apps</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個の App</string>
+		</dict>
+	</dict>
+	<key>직접 선택한 공유·사용자 데이터 항목 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>自分で選択した共有・ユーザデータ項目 %#@items@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個</string>
+		</dict>
+	</dict>
+	<key>찾은 항목 %lld개 · %@</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>見つかった項目 %1$#@items@ · %2$@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個</string>
+		</dict>
+	</dict>
+	<key>취소하기 전에 옮긴 %lld개 항목은 되돌릴 수 있습니다.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@s@</string>
+		<key>s</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>キャンセル前に移動した %lld 項目は復元できます。</string>
+		</dict>
+	</dict>
+	<key>파일 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@files@</string>
+		<key>files</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個のファイル</string>
+		</dict>
+	</dict>
+	<key>항목 %lld개 더 보기</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>ほか %#@items@ を表示</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 項目</string>
+		</dict>
+	</dict>
+	<key>환경설정 캐시 %lld개 삭제 — 사본 보관됨</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>環境設定キャッシュ %#@caches@ を削除 — コピーを保管済み</string>
+		<key>caches</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個</string>
+		</dict>
+	</dict>
+	<key>앱 %lld개의 잔여물</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%#@apps@の残存ファイル</string>
+		<key>apps</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>other</key>
+			<string>%lld 個の App</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

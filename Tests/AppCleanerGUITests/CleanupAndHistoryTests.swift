@@ -116,13 +116,13 @@ struct CleanupFlowTests {
 struct HistoryViewModelTests {
     @Test func loadAndRestoreWithPerItemConflictChoice() async throws {
         let engine = fastEngine()
-        let vm = HistoryViewModel(engine: engine, pathExists: { DemoCleanerEngine.simulatedConflict($0) })
+        let vm = HistoryViewModel(engine: engine)
         await vm.load(retentionDays: 30)
         #expect(vm.sessions.count == 5)
         #expect(vm.selectedSession?.targetName == "Microsoft Word")
         #expect(vm.expiredSessionIDs.count == 1)
 
-        vm.requestRestoreAll()
+        await vm.requestRestoreAll()
         var req = try #require(vm.restoreRequest)
         #expect(req.items.count == 5)
         #expect(req.conflicts.count == 1)
@@ -138,19 +138,56 @@ struct HistoryViewModelTests {
     }
 
     @Test func restoreCheckedItemsOnly() async throws {
-        let vm = HistoryViewModel(engine: fastEngine(), pathExists: { _ in false })
+        let vm = HistoryViewModel(engine: fastEngine())
         await vm.load(retentionDays: 30)
         let session = try #require(vm.selectedSession)
         vm.toggleChecked(session.items[0])
-        vm.requestRestoreChecked()
+        await vm.requestRestoreChecked()
         #expect(vm.restoreRequest?.items.count == 1)
         await vm.performRestore()
         #expect(vm.lastRestore?.restored.count == 1)
         #expect(vm.checkedItems.isEmpty)
     }
 
+    /// 충돌은 엔진 미리보기로 정하고, 항목별 선택은 한 번의 복원 호출에 담는다
+    @Test func conflictsComeFromEnginePreviewAndRestoreRunsOnce() async throws {
+        let engine = CountingEngine(base: fastEngine())
+        let vm = HistoryViewModel(engine: engine)
+        await vm.load(retentionDays: 30)
+        await vm.requestRestoreAll()
+        var req = try #require(vm.restoreRequest)
+        #expect(engine.previewCalls == 1)
+        #expect(req.conflicts == Set(req.items.map(\.originalPath).filter(DemoCleanerEngine.simulatedConflict)))
+        let conflict = try #require(req.conflicts.first)
+        req.policies[conflict] = .skip
+        vm.restoreRequest = req
+        await vm.performRestore()
+        #expect(engine.restoreOptions.count == 1)
+        #expect(engine.restoreOptions.first?.conflictPolicy(for: conflict) == .skip)
+        #expect(vm.lastRestore?.skipped == [conflict])
+    }
+
+    /// 화면을 연 뒤 이동 위치가 사라진 항목은 확인 시트에서 빠지고 목록이 갱신된다
+    @Test func staleItemsAreDroppedBeforeConfirm() async throws {
+        let engine = fastEngine()
+        let vm = HistoryViewModel(engine: engine)
+        await vm.load(retentionDays: 30)
+        let session = try #require(vm.selectedSession)
+        _ = await engine.restore(sessionID: session.id, itemPaths: [session.items[0].originalPath], options: RestoreOptions())
+        await vm.prepareRestore(session: session, items: session.items)
+        let req = try #require(vm.restoreRequest)
+        #expect(!req.items.contains { $0.originalPath == session.items[0].originalPath })
+        #expect(vm.selectedSession?.items[0].restoredAt != nil)
+    }
+
+    @Test func holdingFolderComesFromEngine() {
+        let engine = fastEngine()
+        #expect(HistoryViewModel(engine: engine).holdingFolderPath == engine.holdingFolderURL.path)
+        #expect(engine.holdingFolderURL.path.hasSuffix("/\(SystemPaths.ourAppFolderName)/Holding"))
+    }
+
     @Test func missingItemsAreNotRestorable() async throws {
-        let vm = HistoryViewModel(engine: fastEngine(), pathExists: { _ in false })
+        let vm = HistoryViewModel(engine: fastEngine())
         await vm.load(retentionDays: 30)
         let docker = try #require(vm.sessions.first { $0.targetName == "Docker" })
         #expect(docker.status == .partiallyRestorable)
@@ -160,7 +197,7 @@ struct HistoryViewModelTests {
     }
 
     @Test func purgeOnlyAfterExplicitCall() async {
-        let vm = HistoryViewModel(engine: fastEngine(), pathExists: { _ in false })
+        let vm = HistoryViewModel(engine: fastEngine())
         await vm.load(retentionDays: 30)
         #expect(!vm.expiredSessionIDs.isEmpty)
         _ = await vm.purgeExpired(retentionDays: 30)

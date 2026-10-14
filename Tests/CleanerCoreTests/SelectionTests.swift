@@ -93,8 +93,8 @@ import CleanerTestSupport
         let cs = [
             Candidate(url: fx.home("Library/Caches/com.microsoft.Word"), category: .caches, confidence: .high),
             Candidate(url: fx.home("Library/Application Support/Microsoft Word"), category: .applicationSupport, confidence: .medium,
-                      evidence: [Evidence(.name, "이름")]),
-            Candidate(url: fx.home(".word"), category: .dotfile, confidence: .low, evidence: [Evidence(.name, "이름")]),
+                      evidence: [Evidence(.name, .verbatim("이름"))]),
+            Candidate(url: fx.home(".word"), category: .dotfile, confidence: .low, evidence: [Evidence(.name, .verbatim("이름"))]),
             Candidate(url: fx.home("Library/Application Support/Word Data"), category: .applicationSupport, confidence: .high, nature: .userData),
             Candidate(url: fx.root("Library/Extensions/Word.kext"), category: .kernelExtension, domain: .system, confidence: .high,
                       protection: .detectOnly),
@@ -168,9 +168,9 @@ import CleanerTestSupport
     @Test func lastAppOfVendorPromotesVendorFolder() throws {
         let (fx, id, policy) = try setup()
         let vendor = Candidate(url: fx.home("Library/Application Support/Microsoft"), category: .applicationSupport, confidence: .low,
-                               evidence: [Evidence(.pathRule, "벤더")])
+                               evidence: [Evidence(.pathRule, .verbatim("벤더"))])
         let teamGroup = Candidate(url: fx.home("Library/Group Containers/UBF8T346G9.OneDriveSync"), category: .groupContainer,
-                                  confidence: .low, evidence: [Evidence(.teamIdentifier, "team")])
+                                  confidence: .low, evidence: [Evidence(.teamIdentifier, .verbatim("team"))])
         let out = policy.evaluate([vendor, teamGroup], for: id,
                                   inventory: InventorySnapshot(apps: [ScanKit.inventoryApp("Slack", bundleID: "com.tinyspeck.slackmacgap", teamID: "BQR82RBBHL", in: fx)]))
         #expect(out[0].confidence == .medium)
@@ -181,10 +181,15 @@ import CleanerTestSupport
     }
 
     @Test func usageNoteWording() {
-        #expect(SelectionPolicy.usageNote(["Excel"]) == "Excel이 함께 사용 중")
-        #expect(SelectionPolicy.usageNote(["Google Drive"]) == "Google Drive가 함께 사용 중")
-        #expect(SelectionPolicy.usageNote(["Microsoft Excel", "Microsoft PowerPoint"]) == "Microsoft Excel 외 1개 앱이 함께 사용 중")
-        #expect(SelectionPolicy.usageNote(["한글"]) == "한글이 함께 사용 중")
-        #expect(SelectionPolicy.usageNote(["카카오"]) == "카카오가 함께 사용 중")
+        #expect(SelectionPolicy.usageNote(["Excel"]) == EngineText(.usedBy, "Excel"))
+        #expect(SelectionPolicy.usageNote(["Excel"]).text == "Excel이 함께 사용 중")
+        #expect(SelectionPolicy.usageNote(["Google Drive"]).text == "Google Drive가 함께 사용 중")
+        #expect(SelectionPolicy.usageNote(["Microsoft Excel", "Microsoft PowerPoint"]) == EngineText(.usedByMore, "Microsoft Excel", "1"))
+        #expect(SelectionPolicy.usageNote(["Microsoft Excel", "Microsoft PowerPoint"]).text == "Microsoft Excel 외 1개 앱이 함께 사용 중")
+        #expect(SelectionPolicy.usageNote(["한글"]).text == "한글이 함께 사용 중")
+        #expect(SelectionPolicy.usageNote(["카카오"]).text == "카카오가 함께 사용 중")
+        #expect(SelectionPolicy.usageNote(["Excel"], vendor: .item).text == "Excel이 함께 사용 중일 수 있습니다 — 같은 개발사 공용 항목")
+        #expect(SelectionPolicy.usageNote(["A", "B", "C"], vendor: .backgroundService).text
+                == "A 외 2개 앱이 함께 사용 중일 수 있습니다 — 같은 개발사 공용 백그라운드 서비스")
     }
 }
