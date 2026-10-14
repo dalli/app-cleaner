@@ -101,6 +101,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func runDemoScript() {
         guard let model, model.isDemo else { return }
         let opts = Self.launchOptions
+        if CommandLine.arguments.contains("--demo-dark") { NSApp.appearance = NSAppearance(named: .darkAqua) }
         Task { @MainActor in
             if opts.startOrphanScan { model.startOrphanScan() }
             guard let name = opts.openAppName else { return }
