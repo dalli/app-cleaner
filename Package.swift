@@ -13,7 +13,7 @@ let package = Package(
     targets: [
         .target(
             name: "CleanerCore",
-            resources: [.copy("Resources/RuleData")]
+            resources: [.copy("Resources/RuleData"), .copy("Resources/Scripts")]
         ),
         .target(
             name: "CleanerTestSupport",
