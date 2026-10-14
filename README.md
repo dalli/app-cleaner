@@ -16,6 +16,17 @@ open -n "dist/App Cleaner.app" --args --demo   # 가짜 데이터로 화면 확�
 ./scripts/test.sh                      # 테스트
 ```
 
+## 설치 (Apple Silicon)
+
+[Releases](https://github.com/dallisoft/app-cleaner/releases)에서 받는다.
+
+- `AppCleaner-<버전>-macos-arm64.zip` — 앱 (CLI는 `Contents/Helpers/appcleaner`)
+- `appcleaner-<버전>-macos-arm64.tar.gz` — CLI 단독 (실행 파일 옆의 `AppCleaner_CleanerCore.bundle`을 함께 둘 것)
+
+ad-hoc 서명·미공증 빌드라 처음 실행 시 Gatekeeper가 막으면 Finder에서 우클릭 › 열기를 쓴다.
+릴리즈는 `v*` 태그를 푸시하면 GitHub Actions(`.github/workflows/release.yml`)가 macOS arm64 러너에서 빌드·테스트 후 올린다.
+로컬에서는 `VERSION=0.1.1 ./scripts/package-release.sh`.
+
 ## CLI
 
 ```sh
@@ -36,7 +47,7 @@ appcleaner restore <세션 ID>                     # 되돌리기
 - 신뢰도 낮음·다른 앱과 공유·사용자 데이터는 기본 선택하지 않는다. iCloud 데이터·기기 백업·`~/.ssh` 등은 선택할 수 없다.
 - 관리자 작업은 번들의 고정 스크립트(`privileged-op.sh`, 해시 확인)만 실행하며 권한 상승된 쪽에서 경로를 다시 검증한다.
 
-## 현재 상태 (v0.1.0 — MVP)
+## 현재 상태 (v0.1.x — MVP)
 
 plan.md의 Phase 1a·1b·2 범위. 아직 남은 것:
 
