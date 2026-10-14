@@ -18,6 +18,9 @@ import CleanerTestSupport
             .deletingLastPathComponent().deletingLastPathComponent()
         let oneDrive = try fx.dir(fx.home("Library/Group Containers/UBF8T346G9.OneDriveStandaloneSuite"))
         let container = try fx.makeContainer(bundleID: "com.microsoft.Word")
+        // 그룹 이름으로 찾은 Application Scripts도 Group Container와 같은 공유 판정을 받아야 한다 (실기기 회귀)
+        let officeScripts = try fx.dir(fx.home("Library/Application Scripts/UBF8T346G9.Office"))
+        let wordOnlyScripts = try fx.dir(fx.home("Library/Application Scripts/UBF8T346G9.WordOnly"))
 
         let inventory = InventorySnapshot(apps: [
             ScanKit.inventoryApp("Microsoft Word", bundleID: "com.microsoft.Word", teamID: "UBF8T346G9",
@@ -50,6 +53,11 @@ import CleanerTestSupport
         let od = try #require(c.item(oneDrive))
         #expect(od.share.isShared)
         #expect(!od.isSelected)
+
+        let os = try #require(c.item(officeScripts))
+        #expect(os.share.isShared)
+        #expect(!os.isSelected)
+        #expect(c.item(wordOnlyScripts)?.isSelected == true)
 
         #expect(c.item(container)?.isSelected == true)
         #expect(c.item(word)?.isSelected == true)

@@ -1,10 +1,7 @@
 import CleanerCore
 import Foundation
 
-// 엔진 선택은 이 파일 한 곳에서만 한다.
-//
-// 통합 단계: `LiveCleanerEngine`이 생기면 아래 `makeEngine`의 마지막 줄을
-// `return LiveCleanerEngine(...)`로 바꾼다. `--demo`는 계속 `DemoCleanerEngine`을 쓴다.
+// 엔진 선택은 이 파일 한 곳에서만 한다. `--demo`는 가짜 데이터, 그 외에는 실제 엔진.
 
 /// `--demo` 또는 `--demo-*` 인자가 있으면 데모 모드
 func isDemoMode(arguments: [String]) -> Bool {
@@ -19,6 +16,7 @@ func makeEngine(arguments: [String] = CommandLine.arguments) -> any CleanerEngin
         if arguments.contains("--demo-no-hang") { options.simulateUnresponsiveApp = false }
         return DemoCleanerEngine(options: options)
     }
-    // TODO(통합): return LiveCleanerEngine(paths: .live, runner: ProcessCommandRunner(), ...)
-    return DemoCleanerEngine()
+    let engine = LiveCleanerEngine()
+    engine.prewarm()
+    return engine
 }
