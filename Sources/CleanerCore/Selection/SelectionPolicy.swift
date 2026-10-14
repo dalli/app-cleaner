@@ -110,7 +110,10 @@ public struct SelectionPolicy: SelectionPolicing {
 
     func sharedJudgement(_ c: Candidate, _ ctx: Context) -> SharedKind? {
         let name = c.url.lastPathComponent
-        if c.category == .groupContainer {
+        // Group Container뿐 아니라 App Group 이름으로 찾은 다른 위치(`Application Scripts/<GROUP>` 등)도 같은 판정을 받는다.
+        let matchedByGroupOnly = c.evidence.contains { $0.source == .appGroup }
+            && !c.evidence.contains { $0.source == .bundleIdentifier || $0.source == .receipt }
+        if c.category == .groupContainer || matchedByGroupOnly {
             let own = ctx.identity.appGroups.contains { $0.caseInsensitiveCompare(name) == .orderedSame }
             return .groupContainer(group: name, ownGroup: own)
         }
