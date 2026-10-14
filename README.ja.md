@@ -20,6 +20,18 @@ open -n "dist/App Cleaner.app" --args --demo   # ダミーデータで画面を�
 
 ## インストール（Apple シリコン）
 
+### Homebrew（CLI）
+
+```sh
+brew install dallisoft/tap/appcleaner
+appcleaner version
+```
+
+お使いの Mac でソースからビルドするため（Swift 6 を含む Command Line Tools または Xcode が必要）、公証されていなくても Gatekeeper にブロックされません。
+更新は `brew upgrade appcleaner` です。アプリ（GUI）は下記の Releases から入手してください（cask は #16 で対応予定）。
+
+### Releases
+
 [Releases](https://github.com/dallisoft/app-cleaner/releases) からダウンロードします。
 
 - `AppCleaner-<バージョン>-macos-arm64.zip` — アプリ（CLI は `Contents/Helpers/appcleaner`）
