@@ -219,8 +219,9 @@ public struct SelectionPolicy: SelectionPolicing {
 
     static func sameVendorApps(_ others: [InventoryApp], _ identity: AppIdentity) -> [InventoryApp] {
         let vendor = BundleIDRules.vendorPrefix(identity.bundleID)
+        // Team ID가 같거나 BID 벤더 접두사(`com.google.`)가 같으면 같은 개발사로 본다 (보수적으로 합집합).
         return others.filter { app in
-            if let team = identity.teamID, let t = app.teamID { return t == team }
+            if let team = identity.teamID, let t = app.teamID, t == team { return true }
             if let vendor { return app.bundleID.lowercased().hasPrefix(vendor + ".") }
             return false
         }

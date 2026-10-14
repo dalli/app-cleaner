@@ -116,6 +116,14 @@ import CleanerTestSupport
         #expect(v.notes.contains { $0.contains("Google Drive가 함께 사용 중일 수 있습니다") })
         #expect(report.candidates.item(chromeDir)?.isSelected == true)
 
+        // Team ID가 달라도 BID 벤더 접두사(com.google.)가 같은 앱이 있으면 공유로 본다
+        let other = InventorySnapshot(apps: [
+            ScanKit.inventoryApp("Android Studio", bundleID: "com.google.android.studio", teamID: "ZZZZZ99999", in: fx),
+        ])
+        let r3 = try await ScanKit.scanner(fx, signatures: sig).scan(appAt: chrome, inventory: other)
+        #expect(r3.candidates.item(vendor)?.share.usedBy == ["Android Studio"])
+        #expect(r3.candidates.item(vendor)?.isSelected == false)
+
         // 마지막 Google 앱이면 벤더 폴더를 Medium으로 제시하고, 안의 Chrome 폴더는 상위와 함께 옮겨진다
         let r2 = try await ScanKit.scanner(fx, signatures: sig).scan(appAt: chrome, inventory: InventorySnapshot(apps: []))
         let v2 = try #require(r2.candidates.item(vendor))
