@@ -287,4 +287,40 @@ import CleanerTestSupport
         #expect(!report.contains(h.fx.paths.appDataDir))
         #expect(!report.contains(prefs))
     }
+
+    @Test func vendorProductFolderOfInstalledAppIsNotOrphan() async throws {
+        let h = try OrphanHarness()
+        try h.fx.makeApp(name: "Docker", bundleID: "com.docker.docker", embedded: [
+            .init("Contents/MacOS/Docker Desktop.app", bundleID: "com.electron.dockerdesktop"),
+        ])
+        let support = try h.fx.dir(h.fx.home("Library/Application Support/Docker Desktop"))
+        let temp = try h.fx.dir(h.fx.paths.userCacheDir.appendingPathComponent("com.electron.dockerdesktop.helper"))
+        let report = try await h.scan()
+        #expect(!report.contains(support))
+        #expect(!report.contains(temp))
+    }
+
+    @Test func receiptsInstallingIntoTemporaryLocationsAreNotJudged() async throws {
+        let h = try OrphanHarness()
+        try h.addPackage("com.example.staged.pkg", files: ["tmp/STAGE/staged.app", "tmp/STAGE/staged.app/Contents/Info.plist"])
+        try h.addPackage("com.example.helperonly.pkg", files: ["Library/Application Support/Foo/Foo Helper.app/Contents/Info.plist"])
+        // AppleDouble 항목(._X.app)은 앱으로 보지 않는다: 실제 앱이 있으면 판정하지 않음
+        try h.addPackage("com.example.present.pkg", files: ["Applications/._Present.app", "Applications/Present.app/Contents/Info.plist"])
+        try h.fx.makeApp(name: "Present", bundleID: "com.example.present")
+        let report = try await h.scan()
+        #expect(!report.allItems.contains { $0.category == .receipt })
+    }
+
+    @Test func libraryBundleIDsAreExcluded() async throws {
+        let h = try OrphanHarness()
+        let urls = [
+            try h.fx.file(h.fx.home("Library/Preferences/com.github.Electron.plist")),
+            try h.fx.dir(h.fx.home("Library/Caches/com.plausiblelabs.crashreporter.data")),
+            try h.fx.dir(h.fx.home("Library/Caches/org.sparkle-project.Sparkle")),
+            try h.fx.dir(h.fx.home("Library/Caches/io.sentry")),
+            try h.fx.file(h.fx.home("Library/Preferences/org.cups.PrintingPrefs.plist")),
+        ]
+        let report = try await h.scan()
+        for url in urls { #expect(!report.contains(url), "\(url.lastPathComponent)") }
+    }
 }

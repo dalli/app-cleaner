@@ -18,7 +18,7 @@ enum BundleIDHeuristics {
     /// 파일 확장자로 흔한 것 — `foo.log` 같은 이름을 BID로 오인하지 않도록
     static let fileExtensions: Set<String> = [
         "log", "txt", "json", "plist", "db", "sqlite", "sqlite3", "lock", "pid", "tmp", "bak", "old", "cache", "dat", "xml",
-        "app", "savedstate", "binarycookies", "zip", "gz", "dmg", "pkg",
+        "savedstate", "binarycookies", "zip", "gz", "dmg", "pkg", "store", "shm", "wal",
     ]
 
     /// 역DNS 형태의 번들 ID처럼 보이는지
@@ -29,8 +29,11 @@ enum BundleIDHeuristics {
         let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_"))
         for p in parts where p.isEmpty || p.unicodeScalars.contains(where: { !allowed.contains($0) }) { return false }
         if fileExtensions.contains(parts.last!.lowercased()) { return false }
-        // 숫자로만 된 구성요소가 많으면 버전 문자열 (예: 1.2.3)
-        if parts.allSatisfy({ $0.allSatisfy(\.isNumber) }) { return false }
+        // 역DNS 첫 구성요소는 글자만 (`rn-core-v0.10.11` 같은 버전 폴더 제외)
+        if !parts[0].allSatisfy({ $0.isLetter && $0.isASCII }) { return false }
+        // 숫자로 끝나면 로그 회전·버전 (`warp.log.old.0`, `foo.1.2`)
+        if parts.last!.allSatisfy(\.isNumber) { return false }
+        if parts.dropFirst().contains(where: { ["log", "old", "bak", "tmp"].contains($0.lowercased()) }) { return false }
         if parts.count >= 3 { return true }
         return reverseDNSRoots.contains(parts[0].lowercased())
     }
@@ -80,7 +83,7 @@ enum BundleIDHeuristics {
         if set.contains(lower) { return true }
         // 항목이 설치 BID의 하위(`com.foo.app.ShipIt`)이거나 설치 BID가 항목의 하위(`com.foo.app` ← `com.foo.app.helper`)
         var parts = lower.split(separator: ".").map(String.init)
-        while parts.count > 3 {
+        while parts.count > 2 {
             parts.removeLast()
             if set.contains(parts.joined(separator: ".")) { return true }
         }

@@ -243,4 +243,36 @@ import CleanerTestSupport
         #expect(report.item(helper)?.confidence == .high)   // 깨진 데몬과 같은 그룹이라 승격
         #expect(report.item(helper)?.requiresAdmin == true)
     }
+
+    @Test func relativeOpenProgramUsesAbsoluteArgument() async throws {
+        let h = try OrphanHarness()
+        let agent = try h.fx.makeLaunchPlist(at: h.fx.home("Library/LaunchAgents/com.example.opener.plist"),
+                                             label: "com.example.opener", arguments: ["open", "-a", "/Applications/Opener.app"],
+                                             keepAlive: true)
+        let alive = try h.fx.makeLaunchPlist(at: h.fx.home("Library/LaunchAgents/com.example.alive.plist"),
+                                             label: "com.example.alive", arguments: ["open", "-a", "/Applications/Alive.app"])
+        try h.fx.makeApp(name: "Alive", bundleID: "com.othervendor.alive")
+        let unknown = try h.fx.makeLaunchPlist(at: h.fx.home("Library/LaunchAgents/com.example.pathless.plist"),
+                                               label: "com.example.pathless", arguments: ["node", "server.js"])
+        let report = try await h.scan()
+        #expect(report.item(agent)?.confidence == .high)
+        #expect(report.item(agent)?.evidence.contains { $0.detail == "실행 파일 /Applications/Opener.app 없음" } == true)
+        #expect(!report.contains(alive))
+        #expect(report.item(unknown)?.confidence == .low)
+    }
+
+    @Test func receiptWithBundleIDShapedPackageJoinsBundleIDGroup() async throws {
+        let h = try OrphanHarness()
+        try h.addPackage("com.gonevendor.tracker", files: ["Applications/Tracker.app", "Applications/Tracker.app/Contents/Info.plist"])
+        let caches = try h.fx.dir(h.fx.home("Library/Caches/com.gonevendor.tracker"))
+        let scripts = try h.fx.dir(h.fx.home("Library/Application Scripts/group.com.gonevendor.tracker"))
+        let report = try await h.scan()
+        let receipt = h.fx.root("private/var/db/receipts/com.gonevendor.tracker.plist")
+        let g = try #require(report.group(containing: receipt))
+        #expect(g.items.contains { $0.path == caches.standardizedFileURL.path })
+        #expect(g.items.contains { $0.path == scripts.standardizedFileURL.path })
+        #expect(g.displayName == "Tracker")
+        #expect(report.item(caches)?.confidence == .high)
+        #expect(report.item(caches)?.isSelected == true)
+    }
 }

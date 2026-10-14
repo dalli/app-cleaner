@@ -81,14 +81,16 @@ struct OrphanCollector {
         let fm = FileManager.default
         for root in roots {
             guard fm.isDirectory(root.url) else { continue }
-            let children: [URL]
+            let names: [String]
             do {
-                children = try fm.contentsOfDirectory(at: root.url, includingPropertiesForKeys: nil, options: [])
+                // 루트가 심볼릭 링크여도 대상 폴더를 나열하되, 항목 경로는 원래 루트 아래로 유지한다
+                names = try fm.contentsOfDirectory(atPath: root.url.resolvingSymlinksInPath().path)
             } catch {
                 unreadable.append(root.url)   // 전체 디스크 접근 권한 없음 등
                 continue
             }
-            for child in children.map(\.standardizedFileURL).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+            let children = names.map { root.url.appendingPathComponent($0).standardizedFileURL }
+            for child in children.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
                 let name = child.lastPathComponent
                 if name.hasPrefix(".") || root.skipNames.contains(name) { continue }
                 if exclusions.isExcludedPath(child) { continue }
@@ -150,6 +152,9 @@ struct OrphanCollector {
 
     /// BID 이름 항목 (Preferences, Caches, HTTPStorages …): 인벤토리에 없으면 Medium
     func judgeBundleID(_ bid: String, url: URL, root: Root) -> OrphanItem? {
+        if bid.lowercased().hasPrefix("group.") || BundleIDHeuristics.teamPrefix(bid) != nil {
+            return judgeGroup(url, identifier: bid, root: root)
+        }
         guard BundleIDHeuristics.isBundleIDShaped(bid), !exclusions.isExcludedBundleID(bid) else { return nil }
         var item = OrphanItem(url: url, category: root.category, domain: root.domain, bundleID: bid, confidence: .medium,
                               evidence: [])
@@ -238,8 +243,10 @@ struct OrphanCollector {
         if index.matchesInstalledName(name) { return nil }
         let normalized = BundleIDHeuristics.normalizedName(name)
         guard !normalized.isEmpty else { return nil }
-        // 같은 벤더의 다른 앱이 설치돼 있으면 공용 폴더 — 고아로 보지 않는다
+        // 같은 벤더의 다른 앱이 설치돼 있으면 공용 폴더 — 고아로 보지 않는다 (`Docker Desktop` ↔ Docker, `Google Drive` ↔ Chrome)
         if index.vendorNames.contains(normalized) { return nil }
+        if name.contains(" "), let first = name.split(separator: " ").first,
+           index.vendorNames.contains(BundleIDHeuristics.normalizedName(String(first))) { return nil }
         var item = OrphanItem(url: url, category: root.category, domain: root.domain, name: name, confidence: .low, evidence: [])
         if exclusions.isVendorFolder(name) {
             item.evidence.append(Evidence(.name, "개발사 공용 폴더 '\(name)' — 같은 개발사의 설치 앱이 없음"))
@@ -278,7 +285,17 @@ struct OrphanCollector {
             item.evidence.append(Evidence(.launchPlist, "셸·인터프리터로 실행되어 실행 대상을 확인할 수 없음"))
             return item
         }
-        guard let exe = plist.effectiveExecutable else {
+        // `open -a /Applications/Foo.app`처럼 상대 경로 실행 파일이면 인자의 절대 경로를 대상으로 본다
+        var executable = plist.effectiveExecutable
+        if let e = executable, !e.hasPrefix("/") {
+            executable = plist.arguments.dropFirst().first { $0.hasPrefix("/") }
+            if executable == nil {
+                item.confidence = .low
+                item.evidence.append(Evidence(.launchPlist, "실행 파일 '\(e)'의 위치를 확인할 수 없음"))
+                return item
+            }
+        }
+        guard let exe = executable else {
             guard labelIsBID else { return nil }
             item.evidence.append(Evidence(.launchPlist, "서비스 \(label)의 실행 파일 정보가 없고 소유 앱이 설치 목록에 없음"))
             return item
@@ -403,8 +420,11 @@ struct OrphanCollector {
         let fm = FileManager.default
         for pkg in packages.sorted() {
             guard let files = listings[pkg] else { continue }
-            let apps = Self.appBundles(in: files)
-            guard !apps.isEmpty else { continue }   // 앱이 없는 패키지(드라이버·CLI)는 판정하지 않는다
+            // `/Applications`에 설치한 앱만 본다. 임시 위치(`/tmp` 등)에 풀었다가 옮기는 설치기나
+            // 앱이 없는 패키지(드라이버·CLI)는 판정하지 않는다.
+            let apps = Self.appBundles(in: files).filter { $0.hasPrefix("Applications/") }
+            guard !apps.isEmpty else { continue }
+            if BundleIDHeuristics.isBundleIDShaped(pkg), index.ownership(of: pkg) == .installed { continue }
             let present = apps.contains { rel in
                 fm.itemExists(paths.system(rel)) || index.appFileNames.contains(URL(fileURLWithPath: rel).lastPathComponent.lowercased())
             }
@@ -440,6 +460,7 @@ struct OrphanCollector {
         for f in files {
             var comps: [Substring] = []
             for c in f.split(separator: "/") {
+                if c.hasPrefix("._") { break }   // AppleDouble 메타데이터
                 comps.append(c)
                 if c.hasSuffix(".app") {
                     let p = comps.joined(separator: "/")

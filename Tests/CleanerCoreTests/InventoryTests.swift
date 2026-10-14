@@ -299,5 +299,29 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         #expect(BundleIDHeuristics.matchesAny("com.foo.app.ShipIt", in: ["com.foo.app"]))
         #expect(BundleIDHeuristics.matchesAny("com.foo.app", in: ["com.foo.app.helper"]))
         #expect(!BundleIDHeuristics.matchesAny("com.foo.other", in: ["com.foo.app"]))
+        // 실제 환경에서 발견한 경계 사례
+        #expect(BundleIDHeuristics.isBundleIDShaped("com.cmuxterm.app"))
+        #expect(!BundleIDHeuristics.isBundleIDShaped("warp.log.old.0"))
+        #expect(!BundleIDHeuristics.isBundleIDShaped("rn-core-v0.10.11-p1.I2u27X"))
+        #expect(!BundleIDHeuristics.isBundleIDShaped("default.store"))
+        #expect(BundleIDHeuristics.matchesAny("org.tabby.ShipIt", in: ["org.tabby"]))
+    }
+
+    @Test func nestedAppsOutsideStandardHelperFolders() async throws {
+        let fx = try Fixture()
+        let docker = try fx.makeApp(name: "Docker", bundleID: "com.docker.docker", embedded: [
+            .init("Contents/MacOS/Docker Desktop.app", bundleID: "com.electron.dockerdesktop"),
+            .init("Contents/MacOS/Docker Desktop.app/Contents/Frameworks/Docker Desktop Helper.app",
+                  bundleID: "com.electron.dockerdesktop.helper"),
+            .init("Contents/Library/SecretsEngine/docker-pass.app", bundleID: "com.docker.pass"),
+            .init("Contents/Resources/Updater.app", bundleID: "com.docker.updater"),
+        ])
+        let runner = StubCommandRunner()
+        spotlightStub(runner) { [docker] in [docker] }
+        let snap = try await makeInventory(fx, runner: runner).build()
+        let app = try #require(snap.apps.first { $0.bundleID == "com.docker.docker" })
+        for bid in ["com.electron.dockerdesktop", "com.electron.dockerdesktop.helper", "com.docker.pass", "com.docker.updater"] {
+            #expect(app.embeddedBundleIDs.contains(bid), "\(bid)")
+        }
     }
 }
