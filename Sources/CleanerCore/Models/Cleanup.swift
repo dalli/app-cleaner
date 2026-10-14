@@ -82,7 +82,7 @@ public enum CleanupProgress: Sendable {
     case stepStarted(CleanupStep)
     case stepFinished(CleanupStep)
     case itemMoved(path: String, completed: Int, total: Int)
-    case itemFailed(path: String, reason: String)
+    case itemFailed(path: String, reason: EngineText)
 }
 
 /// 종료 요청에 응답하지 않는 앱 (ui-ux.md "진행 중")
@@ -104,13 +104,39 @@ public enum UnresponsiveDecision: String, Sendable {
     case cancel
 }
 
-public struct CleanupFailure: Codable, Sendable, Hashable {
+public struct CleanupFailure: Sendable, Hashable {
     public var path: String
-    public var reason: String
+    public var reason: EngineText
 
-    public init(path: String, reason: String) {
+    public init(path: String, reason: EngineText) {
         self.path = path
         self.reason = reason
+    }
+}
+
+/// JSON: `reason`은 예전처럼 한국어 문장(문자열)이고, 키 문구이면 `reasonText`에 `EngineText`를 함께 저장한다.
+/// 이전 버전 기록(`reason`만 있음)은 `verbatim`으로 읽고, 이전 버전은 `reasonText`를 무시하고 `reason`을 읽는다.
+extension CleanupFailure: Codable {
+    private enum CodingKeys: String, CodingKey {
+        case path, reason, reasonText
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        path = try c.decode(String.self, forKey: .path)
+        let plain = try c.decodeIfPresent(String.self, forKey: .reason) ?? ""
+        if let keyed = try? c.decodeIfPresent(EngineText.self, forKey: .reasonText), !keyed.isVerbatim {
+            reason = keyed
+        } else {
+            reason = .verbatim(plain)
+        }
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(path, forKey: .path)
+        try c.encode(reason.text, forKey: .reason)
+        if !reason.isVerbatim { try c.encode(reason, forKey: .reasonText) }
     }
 }
 

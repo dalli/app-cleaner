@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>%@ %@ — %@, %lld개 항목, 신뢰도 %@</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$@ %2$@ — %3$@, %4$#@items@, confidence %5$@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>%@ 세션의 항목 %lld개를 원래 위치로 되돌릴까요?</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Restore %2$#@items@ from the %1$@ session to the original locations?</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>%@ 외 %lld개 앱이 함께 사용 중</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>also used by %1$@ and %2$#@apps@</string>
+		<key>apps</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld other app</string>
+			<key>other</key>
+			<string>%lld other apps</string>
+		</dict>
+	</dict>
+	<key>%lld개 · %@</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@items@ · %2$@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>%lld개 · %@를 옮겼습니다 (휴지통 %lld, 보류 폴더 %lld).</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Moved %1$#@items@ · %2$@ (Trash %3$lld, holding folder %4$lld).</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>남겨두는 항목 %lld개 (공유 %lld · 사용자 데이터 %lld · 낮음 %lld) — --all로 표시</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@items@ kept (shared %2$lld · user data %3$lld · low %4$lld) — show with --all</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>선택 %lld개 · %@ / 찾은 항목 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Selected %1$lld · %2$@ / found %3$#@items@</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>원래 위치에 같은 이름이 있어 "(%@)"을 붙여 복원할 항목 %lld개:</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%2$#@items@ will be restored with "(%1$@)" added because the same name exists at the original location:</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>위 %lld개 항목(%@)을 휴지통으로 옮길까요?</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Move the %1$#@items@ above (%2$@) to the Trash?</string>
+		<key>items</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld item</string>
+			<key>other</key>
+			<string>%lld items</string>
+		</dict>
+	</dict>
+	<key>확인한 설치 앱 %lld개 · %@초</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Checked %1$#@apps@ · %2$@ s</string>
+		<key>apps</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld installed app</string>
+			<key>other</key>
+			<string>%lld installed apps</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

@@ -23,15 +23,21 @@ public enum PrivilegedScript {
     """#
 
     /// `osascript -e …` 줄. 사용자 값은 모두 argv로만 들어오고 `quoted form of`로 감싼다 (소스 조립 없음).
+    /// argv: 1 = 인증 창 안내 문구(`with prompt`, 현지화), 2 = 고정 셸 코드, 3… = 셸 코드 인자
     public static let appleScriptSource: [String] = [
         "on run argv",
-        "set cmd to \"/bin/sh -c \" & quoted form of (item 1 of argv) & \" appcleaner-op\"",
-        "repeat with i from 2 to (count of argv)",
+        "set cmd to \"/bin/sh -c \" & quoted form of (item 2 of argv) & \" appcleaner-op\"",
+        "repeat with i from 3 to (count of argv)",
         "set cmd to cmd & \" \" & quoted form of (item i of argv)",
         "end repeat",
-        "return do shell script cmd with administrator privileges without altering line endings",
+        "return do shell script cmd with prompt (item 1 of argv) with administrator privileges without altering line endings",
         "end run",
     ]
+
+    /// 관리자 인증 창 안내 문구 ("App Cleaner가 변경하려고 합니다." — macOS가 암호 입력 안내를 덧붙인다)
+    public static func authorizationPrompt(_ language: AppLanguage = .current) -> String {
+        EngineText(.adminPrompt).localized(language)
+    }
 
     /// 번들 리소스 위치. `.app`에서는 Contents/Resources, SwiftPM 실행 파일에서는 실행 파일 옆 번들(심볼릭 링크 해석 포함),
     /// 둘 다 없으면 Bundle.module.
@@ -54,28 +60,31 @@ public enum PrivilegedScript {
     }
 
     /// 스크립트 사유 코드 → 사용자 문구
-    public static func localizedReason(_ code: String) -> String {
+    public static func reason(_ code: String) -> EngineText {
         switch code {
-        case "outside-allowed-root": return "관리자 권한으로 옮길 수 있는 위치가 아닙니다"
-        case "dotdot", "bad-path", "not-absolute": return "경로 형식이 올바르지 않습니다"
-        case "bad-char": return "지원하지 않는 문자가 포함된 경로입니다"
-        case "symlink": return "경로에 심볼릭 링크가 있어 옮기지 않았습니다"
-        case "protected": return "보호된 항목이라 옮기지 않았습니다"
-        case "missing": return "항목을 찾을 수 없습니다"
-        case "exists": return "같은 이름의 항목이 이미 있습니다"
-        case "bad-identifier": return "레이블 또는 패키지 ID 형식이 올바르지 않습니다"
-        case "bad-session": return "작업 기록 ID가 올바르지 않습니다"
-        case "holding-unsafe": return "보류 폴더가 안전하지 않아 중단했습니다"
-        case "script-hash-mismatch": return "관리자 작업 스크립트가 변조되어 실행하지 않았습니다"
-        case "auth-cancelled": return "관리자 인증이 취소되었습니다"
-        case "not-root": return "관리자 권한을 얻지 못했습니다"
-        case "launch-failed", "ops-file-failed": return "관리자 작업을 시작하지 못했습니다"
-        case "move-failed", "mkdir-failed", "chown-failed", "chmod-failed", "remove-failed": return "파일 작업에 실패했습니다"
-        case "no-result": return "관리자 작업 결과를 받지 못했습니다"
+        case "outside-allowed-root": return EngineText(.adminOutsideAllowedRoot)
+        case "dotdot", "bad-path", "not-absolute": return EngineText(.adminBadPath)
+        case "bad-char": return EngineText(.adminBadChar)
+        case "symlink": return EngineText(.adminSymlink)
+        case "protected": return EngineText(.adminProtected)
+        case "missing": return EngineText(.itemMissing)
+        case "exists": return EngineText(.adminExists)
+        case "bad-identifier": return EngineText(.adminBadIdentifier)
+        case "bad-session": return EngineText(.adminBadSession)
+        case "holding-unsafe": return EngineText(.adminHoldingUnsafe)
+        case "script-hash-mismatch": return EngineText(.adminScriptTampered)
+        case "auth-cancelled": return EngineText(.adminAuthCancelled)
+        case "not-root": return EngineText(.adminNotRoot)
+        case "launch-failed", "ops-file-failed": return EngineText(.adminLaunchFailed)
+        case "move-failed", "mkdir-failed", "chown-failed", "chmod-failed", "remove-failed": return EngineText(.adminFileOperationFailed)
+        case "no-result": return EngineText(.adminNoResult)
         default:
-            if code.hasPrefix("launchctl-") { return "launchctl 실행에 실패했습니다 (\(code.dropFirst(10)))" }
-            if code.hasPrefix("pkgutil-") { return "pkgutil 실행에 실패했습니다 (\(code.dropFirst(8)))" }
-            return "관리자 작업에 실패했습니다 (\(code))"
+            if code.hasPrefix("launchctl-") { return EngineText(.adminLaunchctlFailed, String(code.dropFirst(10))) }
+            if code.hasPrefix("pkgutil-") { return EngineText(.adminPkgutilFailed, String(code.dropFirst(8))) }
+            return EngineText(.adminFailed, code)
         }
     }
+
+    /// 스크립트 사유 코드 → 한국어 문장
+    public static func localizedReason(_ code: String) -> String { reason(code).text }
 }

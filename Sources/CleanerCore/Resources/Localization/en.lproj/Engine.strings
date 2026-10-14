@@ -1,8 +1,9 @@
 /*
-  App Cleaner — 엔진 문구 (판정 근거·메모·공유 사유) 영어 번역
-  키는 CleanerCore `EngineText.Key.rawValue`, 한국어 원문은 `EngineText.Key.koreanFormat`.
+  App Cleaner — 엔진 문구 (판정 근거·메모·공유 사유·오류) 영어 번역
+  키는 `EngineText.Key.rawValue`, 한국어 원문은 `EngineText.Key.koreanFormat`.
   `%@` 자리에는 번들 ID·경로·앱 이름 등 번역하지 않는 값이 순서대로 들어간다 (`%1$@`처럼 위치 지정 가능).
-  한국어 UI는 엔진이 만든 문장을 그대로 쓰므로 ko.lproj에는 이 파일이 없다.
+  한국어는 엔진이 만든 문장(조사 처리 포함)을 그대로 쓰므로 ko.lproj에는 이 파일이 없다.
+  `parts`가 있는 문구는 `args` 다음 자리에 안에 든 문구(같은 언어로 번역됨)가 들어간다.
 */
 
 /* 판정 근거 — 앱 제거 정보원 */
@@ -94,3 +95,95 @@
 "sharedVendorItem" = "A shared item while other apps from the same developer are installed";
 "sharedVendorAppInstalled" = "Apps from the same developer are installed";
 "sharedTeamAppInstalled" = "Apps from the same developer (Team ID %@) are installed";
+
+/* 고아 그룹 이름 */
+"developerGroup" = "Developer %@";
+"unknownName" = "Unknown";
+
+/* 보호 판정 (진단용) */
+"protectedBundleID" = "Protected bundle ID: %@";
+"rootDirectory" = "Root directory";
+"symlinkToProtected" = "Following the symbolic link leads to a protected location: %@ (%@)";
+"protectedApp" = "Protected app: %@";
+"appleData" = "Apple data is never cleaned up: %@";
+"selfAppData" = "App Cleaner's own data: %@";
+"protectedFolder" = "Protected folder: %@";
+"protectedLocation" = "Protected location: %@";
+"containsProtectedLocation" = "Folder that contains a protected location: %@";
+
+/* 검사 오류 */
+"notAnApp" = "%@ isn't an app bundle (.app) or can't be found.";
+"missingBundleID" = "Can't inspect %@ because its bundle ID can't be read.";
+"appleApp" = "Apple apps (%@) can't be removed.";
+"cannotRemoveSelf" = "App Cleaner can't remove itself.";
+
+/* 정리 실패 사유 */
+"serviceStopFailed" = "Couldn't stop the service";
+"unresponsiveSkipped" = "Continued without quitting the unresponsive process (pid %@)";
+"protectedNotMoved" = "Not moved because the item is protected (%@)";
+"prefsCopyTrashFailed" = "Couldn't move the preferences copy to the Trash: %@";
+"itemMissing" = "The item can't be found";
+"trashFailed" = "Couldn't move to the Trash: %@";
+"trashLocationUnknown" = "Couldn't determine the location in the Trash";
+"holdingMoveFailed" = "Couldn't move to the holding folder: %@";
+"noResult" = "no result";
+"cancelledNotMoved" = "Not moved because the cleanup was canceled";
+"receiptForgetFailed" = "Couldn't remove the install record (pkgutil): %@";
+"privacyResetFailed" = "Couldn't reset the privacy permission records";
+"outsideSystemRootItem" = "Can't be moved with administrator privileges because it's outside the system root";
+
+/* 환경설정 캐시 */
+"prefsDomainInvalid" = "Invalid preferences domain name: %@";
+"prefsDomainInvalidNoName" = "Invalid preferences domain name";
+"prefsDomainProtected" = "Protected preferences domain: %@";
+"prefsFlushFailed" = "Couldn't flush the preferences cache (%@, code %@)";
+"prefsBackupMissing" = "No saved copy of the preferences: %@";
+"prefsRestoreFailed" = "Couldn't restore the preferences (%@, code %@)";
+
+/* 복원 */
+"sessionNotFound" = "The cleanup record can't be found";
+"restoreFailed" = "Couldn't restore: %@";
+"outsideSystemRootPath" = "The path is outside the system root";
+"holdingRestoreFailed" = "Couldn't restore from the holding folder: %@";
+"noAdminForHoldingRestore" = "Couldn't restore items from the holding folder because administrator privileges aren't available";
+"serviceReregisterFailed" = "Couldn't register the service again";
+"noAdminExecutor" = "Administrator privileges aren't available";
+"resultNotReceived" = "No result was received";
+"restoredSuffix" = "restored";
+
+/* 백그라운드 서비스 */
+"serviceLabelInvalid" = "Not stopped because the service label is invalid: %@";
+"serviceStopFailedCode" = "Couldn't stop the service (%@, code %@)";
+"serviceStopFailedError" = "Couldn't stop the service (%@): %@";
+"systemServiceStopFailed" = "Couldn't stop the system service (%@): %@";
+"plistLocationUnknown" = "Couldn't register the service again because the plist location is unknown (%@)";
+"serviceReregisterFailedCode" = "Couldn't register the service again (%@, code %@)";
+"serviceReregisterFailedError" = "Couldn't register the service again (%@): %@";
+"plistOutsideSystemRoot" = "The plist is outside the system root (%@)";
+"systemServiceReregisterFailed" = "Couldn't register the system service again (%@): %@";
+
+/* 명령 실행 */
+"commandLaunchFailed" = "Couldn't run %@: %@";
+"commandNonZeroExit" = "%@ exited with code %@: %@";
+
+/* 관리자 작업 */
+"adminDone" = "Done";
+"adminOutsideAllowedRoot" = "This location can't be moved with administrator privileges";
+"adminBadPath" = "The path format is invalid";
+"adminBadChar" = "The path contains unsupported characters";
+"adminSymlink" = "Not moved because the path contains a symbolic link";
+"adminProtected" = "Not moved because the item is protected";
+"adminExists" = "An item with the same name already exists";
+"adminBadIdentifier" = "The label or package ID format is invalid";
+"adminBadSession" = "The cleanup record ID is invalid";
+"adminHoldingUnsafe" = "Stopped because the holding folder isn't safe";
+"adminScriptTampered" = "Not run because the administrator script has been modified";
+"adminAuthCancelled" = "Administrator authentication was canceled";
+"adminNotRoot" = "Couldn't get administrator privileges";
+"adminLaunchFailed" = "Couldn't start the administrator task";
+"adminFileOperationFailed" = "The file operation failed";
+"adminNoResult" = "No result was received from the administrator task";
+"adminLaunchctlFailed" = "launchctl failed (%@)";
+"adminPkgutilFailed" = "pkgutil failed (%@)";
+"adminFailed" = "The administrator task failed (%@)";
+"adminPrompt" = "App Cleaner wants to make changes.";

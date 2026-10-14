@@ -74,7 +74,7 @@ public struct CleanupExecutor: CleanupExecuting {
                 if r.succeeded {
                     run.session.stoppedServices.append(r.service)
                 } else {
-                    run.fail(r.service.plistURL?.path ?? r.service.label, r.error ?? "서비스를 중지하지 못했습니다", emit: false)
+                    run.fail(r.service.plistURL?.path ?? r.service.label, r.error ?? EngineText(.serviceStopFailed), emit: false)
                 }
             }
             run.session.steps.append(CleanupStep.stopServices.rawValue)
@@ -95,7 +95,7 @@ public struct CleanupExecutor: CleanupExecuting {
                 return await finish(run)
             }
             for app in report.remaining {
-                run.fail(app.name, "응답하지 않는 프로세스를 종료하지 않고 계속했습니다 (pid \(app.pid))", emit: false)
+                run.fail(app.name, EngineText(.unresponsiveSkipped, String(app.pid)), emit: false)
             }
             await journalSave(run)
             progress(.stepFinished(.terminateApps))
@@ -113,7 +113,7 @@ public struct CleanupExecutor: CleanupExecuting {
                         flushed[domain] = backup
                     }
                 } catch {
-                    run.fail(domain, "\(error)", emit: false)
+                    run.fail(domain, .describing(error), emit: false)
                 }
             }
             run.session.steps.append(CleanupStep.flushPreferences.rawValue)
@@ -131,7 +131,7 @@ public struct CleanupExecutor: CleanupExecuting {
             // 이동 직전 SafetyGuard 재검사
             let verdict = safety.verdict(for: item.url, bundleID: plan.kind == .appRemoval ? plan.targetBundleID : nil)
             if case .blocked(_, let why) = verdict {
-                run.fail(item.path, "보호된 항목이라 옮기지 않았습니다 (\(why))")
+                run.fail(item.path, EngineText(.protectedNotMoved, parts: [why]))
                 continue
             }
             let meta = FileMetadataIO.capture(item.url) ?? premeta[item.path]
@@ -144,10 +144,10 @@ public struct CleanupExecutor: CleanupExecuting {
                         let dest = try await trash.trash(staged)
                         await moved(run, item, to: dest, .trash, meta)
                     } catch {
-                        run.fail(item.path, "환경설정 사본을 휴지통에 넣지 못했습니다: \(error.localizedDescription)")
+                        run.fail(item.path, EngineText(.prefsCopyTrashFailed, parts: [.describing(error)]))
                     }
                 } else {
-                    run.fail(item.path, "항목을 찾을 수 없습니다")
+                    run.fail(item.path, EngineText(.itemMissing))
                 }
                 continue
             }
@@ -171,7 +171,7 @@ public struct CleanupExecutor: CleanupExecuting {
                         continue
                     }
                 }
-                run.fail(item.path, "휴지통으로 옮기지 못했습니다: \(error.localizedDescription)")
+                run.fail(item.path, EngineText(.trashFailed, parts: [.describing(error)]))
             }
         }
 
@@ -187,12 +187,12 @@ public struct CleanupExecutor: CleanupExecuting {
                     let dest = AdminPaths.holdingURL(session: run.session.id, logical: entry.logical, holdingDir: paths.holdingDir)
                     await moved(run, entry.item, to: dest, .holding, entry.meta)
                 } else {
-                    run.fail(entry.item.path, "보류 폴더로 옮기지 못했습니다: \(r?.localizedReason ?? "결과 없음")")
+                    run.fail(entry.item.path, EngineText(.holdingMoveFailed, parts: [r?.reason ?? EngineText(.noResult)]))
                 }
             }
             receiptResults = Array(results.dropFirst(moveOps.count))
         } else if run.cancelled {
-            for entry in holdingQueue { run.fail(entry.item.path, "취소되어 옮기지 않았습니다") }
+            for entry in holdingQueue { run.fail(entry.item.path, EngineText(.cancelledNotMoved)) }
         }
         run.session.steps.append(CleanupStep.moveItems.rawValue)
         await journalSave(run)
@@ -207,7 +207,7 @@ public struct CleanupExecutor: CleanupExecuting {
                 for (k, id) in plan.receiptsToForget.enumerated() {
                     let r = k < results.count ? results[k] : nil
                     if r?.succeeded != true {
-                        run.fail(id, "설치 기록(pkgutil)을 지우지 못했습니다: \(r?.localizedReason ?? "결과 없음")", emit: false)
+                        run.fail(id, EngineText(.receiptForgetFailed, parts: [r?.reason ?? EngineText(.noResult)]), emit: false)
                     }
                 }
             }
@@ -215,7 +215,7 @@ public struct CleanupExecutor: CleanupExecuting {
                 for bid in privacyTargets(plan) {
                     let out = try? runner.run(Self.tccutil, ["reset", "All", bid])
                     if out?.succeeded != true {
-                        run.fail(bid, "개인정보 보호 권한 기록을 초기화하지 못했습니다", emit: false)
+                        run.fail(bid, EngineText(.privacyResetFailed), emit: false)
                     }
                 }
             }
@@ -250,7 +250,7 @@ public struct CleanupExecutor: CleanupExecuting {
                                           ruleDataVersion: plan.ruleDataVersion)
         }
 
-        func fail(_ path: String, _ reason: String, emit: Bool = true) {
+        func fail(_ path: String, _ reason: EngineText, emit: Bool = true) {
             failures.append(CleanupFailure(path: path, reason: reason))
             session.failures = failures
             if emit { progress(.itemFailed(path: path, reason: reason)) }
@@ -279,11 +279,11 @@ public struct CleanupExecutor: CleanupExecuting {
     private func enqueueHolding(_ item: Candidate, _ meta: FileMetadata?,
                                 into queue: inout [(item: Candidate, logical: String, meta: FileMetadata?)], run: Run) {
         guard let logical = AdminPaths.logicalPath(of: item.url, root: paths.root) else {
-            run.fail(item.path, "시스템 루트 밖의 항목이라 관리자 권한으로 옮길 수 없습니다")
+            run.fail(item.path, EngineText(.outsideSystemRootItem))
             return
         }
         if let issue = AdminOperation.moveToHolding(session: run.session.id, path: logical).preflightIssue {
-            run.fail(item.path, PrivilegedScript.localizedReason(issue))
+            run.fail(item.path, PrivilegedScript.reason(issue))
             return
         }
         queue.append((item, logical, meta))

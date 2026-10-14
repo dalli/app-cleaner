@@ -1,0 +1,124 @@
+/*
+  appcleaner CLI — English. Keys are the Korean source strings (except "usage").
+  Count phrases that need singular/plural forms are in CLI.stringsdict, not here.
+*/
+
+"usage" = "Usage: appcleaner <command> [options]
+
+Commands:
+  scan <app path|name>          Inspect an app and its leftovers only (nothing is removed)
+      --all                     Also show items that are kept
+      --json                    JSON output
+  remove <app path|name>        Move the default selection to the Trash or holding folder
+      --dry-run                 Print the cleanup plan without moving anything (JSON)
+      --yes                     Proceed without confirmation
+      --reset-privacy           Reset privacy permission records (TCC)
+  orphans                       Scan for orphaned leftovers of apps already deleted
+      --min-confidence <high|medium|low>
+      --include-dotfiles        Include hidden settings folders (~/.ssh and ~/.gnupg are always excluded)
+      --json
+  orphans clean                 Clean up orphaned leftovers (default: high confidence, not user data)
+      --dry-run | --yes | --json
+      --include-medium          Also include medium-confidence items
+  history [--json]              Cleanup history
+  restore <session ID> [--yes]  Restore a session
+  version                       Version
+
+Common options:
+  --lang <ko|en|ja>             Output language (default: APPCLEANER_LANG → LC_ALL/LANG → system language, otherwise English)
+                                --json output doesn't depend on the language
+  --demo                        (development) Use the fake data engine";
+
+/* 명령·옵션 오류 */
+"--demo는 GUI 전용입니다. CLI는 실제 엔진만 지원합니다." = "--demo is for the GUI only. The CLI supports only the real engine.";
+"--lang 값이 필요합니다 (ko, en, ja)" = "--lang needs a value (ko, en, ja)";
+"--lang은 ko, en, ja 중 하나입니다: %@" = "--lang must be one of ko, en, ja: %@";
+"--min-confidence 값이 필요합니다" = "--min-confidence needs a value";
+"--min-confidence는 high, medium, low 중 하나입니다" = "--min-confidence must be one of high, medium, low";
+"검사할 앱을 지정하세요" = "Specify the app to inspect";
+"제거할 앱을 지정하세요" = "Specify the app to remove";
+"되돌릴 세션 ID(UUID)를 지정하세요 — `appcleaner history`로 확인" = "Specify the session ID (UUID) to restore — see `appcleaner history`";
+"알 수 없는 명령: %@" = "Unknown command: %@";
+"알 수 없는 옵션: %@" = "Unknown option: %@";
+"알 수 없는 하위 명령: orphans %@" = "Unknown subcommand: orphans %@";
+"앱을 찾을 수 없습니다: %@" = "App not found: %@";
+"같은 이름의 앱이 여러 개입니다. 경로로 지정하세요:\n%@" = "Several apps have this name. Specify it by path:\n%@";
+"설치된 앱에서 '%@'을(를) 찾지 못했습니다. 경로로 지정하세요." = "Couldn't find '%@' among installed apps. Specify it by path.";
+"엔진을 초기화하지 못했습니다." = "Couldn't initialize the engine.";
+"오류: %@" = "Error: %@";
+
+/* 표시 이름 */
+"계산 중…" = "calculating…";
+"높음" = "high";
+"보통" = "medium";
+"낮음" = "low";
+"재생성 가능" = "regenerable";
+"설정" = "settings";
+"사용자 데이터" = "user data";
+"보호됨" = "protected";
+"신뢰도 %@" = "confidence %@";
+"공유" = "shared";
+"관리자" = "admin";
+"%@이(가) 함께 사용 중" = "also used by %@";
+"서비스 중지" = "Stop services";
+"앱 종료 요청" = "Ask apps to quit";
+"환경설정 캐시 비우기" = "Flush preferences cache";
+"이동" = "Move";
+"마무리" = "Finish";
+"복원 가능" = "restorable";
+"일부 복원 불가" = "partly not restorable";
+"되돌림" = "restored";
+"복원 불가" = "not restorable";
+"(추정)" = "(guessed)";
+"(삭제됨)" = "(deleted)";
+"고아 잔여물" = "Orphaned leftovers";
+"앱 제거" = "App removal";
+"고아 정리" = "Orphan cleanup";
+
+/* 검사 경고·정리 후 안내 */
+"앱이 실행 중입니다. 정리할 때 종료를 요청합니다." = "The app is running. It will be asked to quit during cleanup.";
+"같은 번들 ID의 다른 사본이 있습니다: %@" = "Other copies with the same bundle ID exist: %@";
+"전체 디스크 접근 권한이 없어 일부 항목을 찾지 못했을 수 있습니다." = "Without Full Disk Access, some items may not have been found.";
+"확인하지 못한 위치: %@" = "Locations that couldn't be checked: %@";
+"설치 앱 목록을 아직 만들지 못해 공유 여부를 확인할 항목은 남겨둡니다." = "The installed app list isn't ready yet, so items that need a sharing check are kept.";
+"시스템 설정 › 일반 › 로그인 항목에 남은 항목이 있는지 확인하세요." = "Check System Settings › General › Login Items for leftover entries.";
+"키체인 접근 앱에서 '%@'(으)로 검색해 남은 항목을 확인하세요." = "Search for '%@' in Keychain Access to check for leftover items.";
+"System Extension %@은(는) 자동으로 제거하지 않습니다." = "System extension %@ isn't removed automatically.";
+"커널 확장 %@은(는) 자동으로 제거하지 않습니다." = "Kernel extension %@ isn't removed automatically.";
+"Homebrew로 설치된 앱입니다: brew uninstall --zap --cask %@" = "This app was installed with Homebrew: brew uninstall --zap --cask %@";
+
+/* scan */
+"로그인 항목 · 키체인은 정리 후 안내합니다. 아무것도 지우지 않았습니다." = "Login items and keychain entries are covered after cleanup. Nothing was removed.";
+
+/* remove */
+"정리 미리보기 — %@. 아직 아무것도 바뀌지 않았습니다." = "Cleanup preview — %@. Nothing has changed yet.";
+"옮길 항목 %lld개 · 확보 용량 %@ · 남겨둘 항목 %lld개" = "Items to move: %1$lld · Space freed: %2$@ · Items kept: %3$lld";
+"진행 순서: %@" = "Steps: %@";
+"관리자 암호가 한 번 필요합니다: %@" = "Your administrator password is needed once: %@";
+"⚠︎ 직접 선택한 사용자 데이터·공유 항목:" = "⚠︎ User data or shared items you selected:";
+"옮길 항목이 없습니다." = "There's nothing to move.";
+"취소했습니다. 아무것도 바뀌지 않았습니다." = "Canceled. Nothing has changed.";
+"  실패: %@ — %@" = "  Failed: %@ — %@";
+"  %@이(가) 종료 요청에 응답하지 않아 건너뜁니다." = "  %@ isn't responding to the quit request, so it's skipped.";
+"실패 %lld개:" = "Failed: %lld";
+"되돌리기: appcleaner restore %@" = "To undo: appcleaner restore %@";
+"직접 확인할 것: %@" = "Check yourself: %@";
+
+/* orphans */
+"Spotlight 색인이 불완전해 일부 앱을 찾지 못했을 수 있습니다. 이름·번들 ID 기반 판정은 낮음으로 낮췄습니다." = "The Spotlight index is incomplete, so some apps may not have been found. Matches based on names or bundle IDs were lowered to low.";
+"정리할 잔여물이 없습니다." = "No leftovers to clean up.";
+"정리할 잔여물이 없습니다. (유지 목록에 숨긴 항목 %lld개)" = "No leftovers to clean up. (Hidden by the keep list: %lld)";
+"근거: %@" = "Evidence: %@";
+"유지 목록에 숨긴 항목 %lld개" = "Hidden by the keep list: %lld";
+"아무것도 지우지 않았습니다. 정리: appcleaner orphans clean [--dry-run]" = "Nothing was removed. To clean up: appcleaner orphans clean [--dry-run]";
+
+/* history · restore */
+"삭제 기록이 없습니다." = "No cleanup history.";
+"세션을 찾을 수 없습니다: %@" = "Session not found: %@";
+"이동 위치가 사라져 복원할 수 없는 항목 %lld개" = "Not restorable because the moved copy is gone: %lld";
+"되돌릴 항목이 없습니다." = "There's nothing to restore.";
+"취소했습니다." = "Canceled.";
+"복원 %lld개, 건너뜀 %lld개, 복원 불가 %lld개" = "Restored %lld, skipped %lld, not restorable %lld";
+
+/* version */
+"appcleaner %@ (규칙 데이터 %@)" = "appcleaner %@ (rule data %@)";

@@ -58,7 +58,7 @@ final class RecordingEngine: CleanerEngine, @unchecked Sendable {
 
 private func url(_ p: String) -> URL { URL(fileURLWithPath: p) }
 
-private func sampleEngine() -> RecordingEngine {
+func sampleEngine() -> RecordingEngine {
     let identity = AppIdentity(bundleURL: url("/Applications/Foo.app"), bundleID: "com.example.foo", name: "Foo")
     let candidates = [
         Candidate(url: url("/Applications/Foo.app"), category: .appBundle, confidence: .high, isSelected: true, size: 100),
@@ -109,7 +109,7 @@ private func sampleEngine() -> RecordingEngine {
     @Test func dryRunNeverExecutesAndUsesDefaultSelection() async throws {
         let engine = sampleEngine()
         var output = ""
-        let cli = CLI(engine: engine, out: { output += $0 + "\n" }, err: { _ in }, confirm: { _ in true })
+        let cli = CLI(engine: engine, language: .ko, out: { output += $0 + "\n" }, err: { _ in }, confirm: { _ in true })
         let status = await cli.run(.remove(app: "Foo", dryRun: true, yes: false, json: false, resetPrivacy: false))
         #expect(status == 0)
         #expect(engine.executedPlans.isEmpty)
@@ -123,7 +123,7 @@ private func sampleEngine() -> RecordingEngine {
         engine.orphanReport.groups[0].notes = [EngineText(.maybeOnExternalVolume)]
         engine.orphanReport.groups[0].items[0].evidence = [Evidence(.inventory, EngineText(.bundleIDAppNotInstalled, "com.gone"))]
         var output = ""
-        let cli = CLI(engine: engine, out: { output += $0 + "\n" }, err: { _ in })
+        let cli = CLI(engine: engine, language: .ko, out: { output += $0 + "\n" }, err: { _ in })
         _ = await cli.run(.scan(app: "Foo", json: false, showAll: true))
         _ = await cli.run(.orphans(options: OrphanScanOptions(), json: false))
         #expect(output.contains("      Bar가 함께 사용 중\n"))
@@ -133,7 +133,7 @@ private func sampleEngine() -> RecordingEngine {
 
     @Test func removeRequiresConfirmation() async {
         let engine = sampleEngine()
-        let cli = CLI(engine: engine, out: { _ in }, err: { _ in }, confirm: { _ in false })
+        let cli = CLI(engine: engine, language: .ko, out: { _ in }, err: { _ in }, confirm: { _ in false })
         let status = await cli.run(.remove(app: "Foo", dryRun: false, yes: false, json: false, resetPrivacy: false))
         #expect(status == 1)
         #expect(engine.executedPlans.isEmpty)
@@ -141,7 +141,7 @@ private func sampleEngine() -> RecordingEngine {
 
     @Test func removeWithYesMovesOnlyDefaultSelection() async {
         let engine = sampleEngine()
-        let cli = CLI(engine: engine, out: { _ in }, err: { _ in }, confirm: { _ in false })
+        let cli = CLI(engine: engine, language: .ko, out: { _ in }, err: { _ in }, confirm: { _ in false })
         _ = await cli.run(.remove(app: "Foo", dryRun: false, yes: true, json: true, resetPrivacy: false))
         let plan = engine.executedPlans.first
         #expect(Set(plan?.items.map(\.path) ?? []) == ["/Applications/Foo.app", "/u/Library/Caches/com.example.foo"])
@@ -149,7 +149,7 @@ private func sampleEngine() -> RecordingEngine {
 
     @Test func orphanCleanDefaultsToHighOnlyAndNeverUserData() async {
         let engine = sampleEngine()
-        let cli = CLI(engine: engine, out: { _ in }, err: { _ in }, confirm: { _ in true })
+        let cli = CLI(engine: engine, language: .ko, out: { _ in }, err: { _ in }, confirm: { _ in true })
         _ = await cli.run(.orphansClean(options: OrphanScanOptions(), dryRun: false, yes: true, json: true, includeMedium: false))
         #expect(engine.executedPlans.last?.items.map(\.path) == ["/u/Library/Caches/com.gone"])
         _ = await cli.run(.orphansClean(options: OrphanScanOptions(), dryRun: false, yes: true, json: true, includeMedium: true))
@@ -164,7 +164,7 @@ private func sampleEngine() -> RecordingEngine {
         engine.preview = RestorePreview(ready: ["/u/a"], conflicts: ["/u/b"], missing: ["/u/c"])
         var output = ""
         var question = ""
-        let cli = CLI(engine: engine, out: { output += $0 + "\n" }, err: { _ in }, confirm: { question = $0; return true })
+        let cli = CLI(engine: engine, language: .ko, out: { output += $0 + "\n" }, err: { _ in }, confirm: { question = $0; return true })
         #expect(await cli.run(.restore(sessionID: session.id, yes: false)) == 0)
         #expect(output.contains("복원할 수 없는 항목 1개"))
         #expect(output.contains("복원할 항목 1개:\n  /u/b"))
@@ -182,7 +182,7 @@ private func sampleEngine() -> RecordingEngine {
 
     @Test func appNameResolutionIsExactOnly() async throws {
         let engine = sampleEngine()
-        let cli = CLI(engine: engine, out: { _ in }, err: { _ in })
+        let cli = CLI(engine: engine, language: .ko, out: { _ in }, err: { _ in })
         #expect(try await cli.resolveApp("foo").path == "/Applications/Foo.app")
         await #expect(throws: UsageError.self) { try await cli.resolveApp("Fo") }
     }

@@ -133,7 +133,7 @@ final class InspectorViewModel {
         } catch is CancellationError {
             return
         } catch {
-            phase = .failed(error.localizedDescription)
+            phase = .failed(L10n.describe(error))
         }
     }
 

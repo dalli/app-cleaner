@@ -101,17 +101,25 @@ extension ShareStatus {
 }
 
 extension EngineText {
-    /// 현재 UI 언어의 문장 (판정 근거·메모·공유 사유)
-    var localized: String { localized(language: L10n.language) }
+    /// 현재 UI 언어의 문장 (판정 근거·메모·공유 사유·실패 사유). 번역은 CleanerCore 리소스의 `Engine.strings`.
+    var localized: String { localized(L10n.appLanguage) }
+}
 
-    /// 한국어는 엔진이 만든 문장(조사 처리 포함)을 그대로 쓰고, 그 밖의 언어는
-    /// `<언어>.lproj/Engine.strings`에서 키(`key.rawValue`)로 형식 문자열을 찾는다.
-    /// 키 없는 문구(`verbatim`)나 번역이 없는 키는 한국어 문장으로 보여 준다.
-    func localized(language: String) -> String {
-        guard !language.hasPrefix("ko"), !isVerbatim, let table = L10n.lproj(language) else { return text }
-        let missing = "\u{1}"
-        let format = table.localizedString(forKey: key.rawValue, value: missing, table: "Engine")
-        return format == missing ? text : EngineText.format(format, args)
+extension OrphanGroup {
+    /// 현재 UI 언어의 그룹 이름 ("개발자 …" 같은 엔진 문구 이름도 번역)
+    var title: String { title(L10n.appLanguage) }
+}
+
+extension JournalSession {
+    /// 대상 이름. 엔진이 고아 정리에 붙이는 고정 이름("고아 잔여물")은 UI 언어로 바꾼다 (이전 기록 포함).
+    var targetTitle: String { CleanupPlan.title(kind: kind, targetName: targetName) }
+}
+
+extension CleanupPlan {
+    var targetTitle: String { Self.title(kind: kind, targetName: targetName) }
+
+    static func title(kind: SessionKind, targetName: String) -> String {
+        kind == .orphanCleanup && targetName == CleanupPlanner.orphanTargetName ? L("고아 잔여물") : targetName
     }
 }
 
@@ -186,8 +194,10 @@ extension Candidate {
 
     /// 보조 설명 줄 (남겨두는 이유 등)
     var secondaryText: String? {
-        // 보호 항목의 SafetyGuard 메시지(verbatim)는 진단용이라 현지화된 보호 사유 설명을 대신 쓴다
-        if let protection { return notes.first(where: { !$0.isVerbatim })?.localized ?? protection.explanation }
+        // 보호 항목의 SafetyGuard 판정 문구는 진단용이라 보호 사유 설명을 대신 쓴다
+        if let protection {
+            return notes.first(where: { !$0.isVerbatim && !$0.key.isProtectionDetail })?.localized ?? protection.explanation
+        }
         if !notes.isEmpty { return notes.map(\.localized).joined(separator: " · ") }
         if let usage = share.usageText { return usage }
         return nil

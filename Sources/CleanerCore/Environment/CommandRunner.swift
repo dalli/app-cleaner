@@ -16,16 +16,18 @@ public struct CommandOutput: Sendable {
     public var lines: [String] { string.split(separator: "\n").map(String.init) }
 }
 
-public enum CommandError: Error, Sendable, CustomStringConvertible {
+public enum CommandError: EngineTextError, Sendable, CustomStringConvertible {
     case launchFailed(String, String)
     case nonZeroExit(String, Int32, String)
 
-    public var description: String {
+    public var text: EngineText {
         switch self {
-        case .launchFailed(let cmd, let why): return "\(cmd) 실행 실패: \(why)"
-        case .nonZeroExit(let cmd, let code, let err): return "\(cmd) 종료 코드 \(code): \(err)"
+        case .launchFailed(let cmd, let why): return EngineText(.commandLaunchFailed, cmd, why)
+        case .nonZeroExit(let cmd, let code, let err): return EngineText(.commandNonZeroExit, cmd, String(code), err)
         }
     }
+
+    public var description: String { text.text }
 }
 
 /// 외부 명령 실행 (pkgutil, launchctl, mdfind, mdutil, brew, defaults, tccutil, codesign …).

@@ -127,7 +127,7 @@ struct OrphanContainerIsUserData: DataNatureClassifying {
 struct OrphanBlockingSafety: SafetyChecking {
     let blocked: Set<String>
     func verdict(for url: URL, bundleID: String?) -> SafetyVerdict {
-        blocked.contains(url.standardizedFileURL.path) ? .blocked(.protectedPath, "test") : .allowed(resolved: url)
+        blocked.contains(url.standardizedFileURL.path) ? .blocked(.protectedPath, .verbatim("test")) : .allowed(resolved: url)
     }
 }
 

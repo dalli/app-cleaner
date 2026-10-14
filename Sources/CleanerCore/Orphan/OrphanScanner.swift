@@ -211,7 +211,7 @@ public struct OrphanScanner: OrphanScanning {
         }
         return OrphanGroup(id: g.key, displayName: g.displayName, nameIsGuess: g.nameIsGuess, bundleID: g.bundleID,
                            teamID: g.teamID, items: candidates, confidence: confidence, share: share, notes: notes,
-                           advisories: advisories)
+                           advisories: advisories, nameText: g.nameText)
     }
 
     /// 고아 스캔 기본 선택: High + 선택 가능한 데이터 성격 + 비공유 + 보호 아님 (Medium은 선택하지 않음 — plan.md 4.5.4)

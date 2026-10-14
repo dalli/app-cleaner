@@ -67,14 +67,14 @@ import CleanerTestSupport
         #expect(try String(contentsOf: b, encoding: .utf8) == "new-b")
 
         let renamed = await h.journal.restore(sessionID: result.sessionID, itemPaths: nil, options: RestoreOptions())
-        let renamedA = fx.home("Library/Preferences/com.example.a (복원됨).plist")
-        let renamedB = fx.home("Library/Caches/com.example.b (복원됨)")
+        let renamedA = fx.home("Library/Preferences/com.example.a (\(JournalStore.restoredSuffix)).plist")
+        let renamedB = fx.home("Library/Caches/com.example.b (\(JournalStore.restoredSuffix))")
         #expect(Set(renamed.restored) == [renamedA.path, renamedB.path])
         #expect(try String(contentsOf: renamedA, encoding: .utf8) == "old-a")
         #expect(try String(contentsOf: a, encoding: .utf8) == "new-a")
         #expect(try String(contentsOf: renamedB, encoding: .utf8) == "old-b")
         #expect(JournalStore.renamedURL(for: renamedA.deletingLastPathComponent().appendingPathComponent("com.example.a.plist"))
-                .lastPathComponent == "com.example.a (복원됨 2).plist")
+                .lastPathComponent == "com.example.a (\(JournalStore.restoredSuffix) 2).plist")
     }
 
     /// 복원 미리보기는 실제 복원과 같은 판정을 쓰고, 항목별 정책은 한 번의 호출로 지킨다
@@ -111,7 +111,7 @@ import CleanerTestSupport
                                               options: RestoreOptions(conflictPolicy: .renameRestored, itemPolicies: [a.path: .skip]))
         #expect(restore.skipped == [a.path])
         #expect(restore.missing == [c.path])
-        #expect(Set(restore.restored) == [fx.home("Library/Caches/com.example.b (복원됨)").path, d.path])
+        #expect(Set(restore.restored) == [fx.home("Library/Caches/com.example.b (\(JournalStore.restoredSuffix))").path, d.path])
         #expect(try String(contentsOf: a, encoding: .utf8) == "new-a")
         #expect(try String(contentsOf: b, encoding: .utf8) == "new-b")
 

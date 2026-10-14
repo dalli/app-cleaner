@@ -161,7 +161,7 @@ final class HistoryViewModel {
         return raw
     }
 
-    static func sessionTitle(_ s: JournalSession) -> String { s.targetName }
+    static func sessionTitle(_ s: JournalSession) -> String { s.targetTitle }
 
     /// "오늘 14:02 · 앱 제거 · 10개 · 3.0 GB"
     static func sessionSubtitle(_ s: JournalSession, now: Date = Date()) -> String {
