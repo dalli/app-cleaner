@@ -103,7 +103,7 @@ final class CleanupFlowModel: Identifiable {
         let plan = self.plan
         let engine = self.engine
         let (stream, continuation) = AsyncStream<CleanupProgress>.makeStream()
-        Task { [weak self] in
+        let consumer = Task { [weak self] in
             for await event in stream { self?.handle(event) }
         }
         Task {
@@ -113,6 +113,8 @@ final class CleanupFlowModel: Identifiable {
                 onUnresponsive: { [self] app in await self.askUnresponsive(app) }
             )
             continuation.finish()
+            // 남은 진행 이벤트를 모두 반영한 뒤 완료로 바꾼다 (마지막 단계 체크 누락 방지)
+            await consumer.value
             self.finish(result)
         }
     }
