@@ -3,9 +3,18 @@ import Foundation
 /// 4단계: 앱 단위 그룹화 (plan.md 4.5.6)
 /// 그룹 키: BID → 같은 BID 접두사 → (Homebrew cask·설치 패키지) → Team ID → 이름 순으로 병합한다.
 struct OrphanGrouper {
-    let casks: [HomebrewCask]
-    let caskZap: [(token: String, patterns: [ZapPattern])]
+    /// 토큰 → cask (규칙 데이터 스냅샷 + Caskroom 기록 병합)
+    private let casksByToken: [String: HomebrewCask]
+    /// 소문자 BID → 토큰
+    private let tokenByBID: [String: String]
+    /// zap 정확 경로 → 토큰
+    private let exactZap: [String: String]
+    /// 와일드카드 zap: 패턴의 상위 폴더(와일드카드 없음) → [(패턴, 토큰)]
+    private let wildcardZapByDir: [String: [(ZapPattern, String)]]
+    /// 상위 폴더에도 와일드카드가 있는 패턴 (드묾)
+    private let otherWildcardZap: [(ZapPattern, String)]
 
+    /// 스냅샷의 cask 수천 개 × zap 경로 수만 개를 항목마다 훑지 않도록 색인한다.
     init(casks: [HomebrewCask], caskRecords: [CaskRecord], paths: SystemPaths) {
         var merged: [String: HomebrewCask] = [:]
         for c in casks { merged[c.token] = c }
@@ -15,9 +24,37 @@ struct OrphanGrouper {
             for z in r.zap where !c.zap.contains(z) { c.zap.append(z) }
             merged[r.token] = c
         }
-        self.casks = merged.values.sorted { $0.token < $1.token }
-        caskZap = self.casks.map { c in (c.token, c.zap.map { ZapPattern($0, paths: paths) }) }
+        casksByToken = merged
+        // Caskroom에 기록된(설치했던) cask를 먼저, 나머지는 토큰 순 — 같은 BID·경로를 여러 cask가 가지면 앞의 것
+        let recorded = Set(caskRecords.map(\.token))
+        let order = merged.keys.sorted { (recorded.contains($0) ? 0 : 1, $0) < (recorded.contains($1) ? 0 : 1, $1) }
+        var byBID: [String: String] = [:]
+        var exact: [String: String] = [:]
+        var byDir: [String: [(ZapPattern, String)]] = [:]
+        var other: [(ZapPattern, String)] = []
+        let homePath = paths.home.standardizedFileURL.path
+        let rootIsSlash = paths.root.path == "/"
+        for token in order {
+            guard let c = merged[token] else { continue }
+            for b in c.bundleIDs where byBID[b.lowercased()] == nil { byBID[b.lowercased()] = token }
+            for z in c.zap {
+                let pattern = ZapPattern(z, homePath: homePath, rootIsSlash: rootIsSlash, paths: paths)
+                if !pattern.isWildcard {
+                    if exact[pattern.pattern] == nil { exact[pattern.pattern] = token }
+                } else if let dir = pattern.fixedParent {
+                    byDir[dir, default: []].append((pattern, token))
+                } else {
+                    other.append((pattern, token))
+                }
+            }
+        }
+        tokenByBID = byBID
+        exactZap = exact
+        wildcardZapByDir = byDir
+        otherWildcardZap = other
     }
+
+    func cask(_ token: String) -> HomebrewCask? { casksByToken[token] }
 
     struct Group {
         var items: [OrphanItem]
@@ -29,18 +66,33 @@ struct OrphanGrouper {
         var nameIsGuess: Bool
     }
 
-    /// Homebrew cask 데이터로 항목에 cask 토큰을 붙인다 (zap 경로 또는 BID 일치)
+    /// Homebrew cask 데이터로 항목에 cask 토큰을 붙인다 (BID 일치 또는 zap 경로)
     func attachCasks(_ items: inout [OrphanItem]) {
         for i in items.indices where items[i].caskToken == nil {
-            if let bid = items[i].bundleID,
-               let c = casks.first(where: { $0.bundleIDs.contains { BundleIDHeuristics.isSameOrChild(bid, of: $0) } }) {
-                items[i].caskToken = c.token
+            if let bid = items[i].bundleID, let token = token(forBundleID: bid) {
+                items[i].caskToken = token
                 continue
             }
-            if let hit = caskZap.first(where: { $0.patterns.contains { $0.matches(items[i].url) } }) {
-                items[i].caskToken = hit.token
-            }
+            items[i].caskToken = token(forPath: items[i].url)
         }
+    }
+
+    /// 항목 BID가 cask BID 자신이거나 그 하위(`<BID>.`)면 그 cask
+    private func token(forBundleID bid: String) -> String? {
+        var parts = bid.lowercased().split(separator: ".").map(String.init)
+        while parts.count >= 2 {
+            if let t = tokenByBID[parts.joined(separator: ".")] { return t }
+            parts.removeLast()
+        }
+        return nil
+    }
+
+    private func token(forPath url: URL) -> String? {
+        let path = url.standardizedFileURL.path
+        if let t = exactZap[path] { return t }
+        let dir = (path as NSString).deletingLastPathComponent
+        if let hit = wildcardZapByDir[dir]?.first(where: { $0.0.matches(url) }) { return hit.1 }
+        return otherWildcardZap.first { $0.0.matches(url) }?.1
     }
 
     func group(_ items: [OrphanItem]) -> [Group] {
@@ -74,7 +126,7 @@ struct OrphanGrouper {
             if let c = item.caskToken {
                 keys.append("cask:" + c)
                 // cask의 BID도 같은 키로 연결 (zap으로 붙은 이름 기반 항목 ↔ BID 항목)
-                if let cask = casks.first(where: { $0.token == c }) {
+                if let cask = casksByToken[c] {
                     for cb in cask.bundleIDs { keys.append("bid:" + (rootOf[cb.lowercased()] ?? cb.lowercased())) }
                 }
             }
@@ -122,7 +174,7 @@ struct OrphanGrouper {
         for item in g.items {
             for n in [item.name, item.appNameHint].compactMap({ $0 }) { names.insert(BundleIDHeuristics.normalizedName(n)) }
         }
-        if let c = g.caskToken, let cask = casks.first(where: { $0.token == c }) {
+        if let c = g.caskToken, let cask = casksByToken[c] {
             for n in cask.names { names.insert(BundleIDHeuristics.normalizedName(n)) }
             for a in cask.apps { names.insert(BundleIDHeuristics.normalizedName(String(a.dropLast(a.hasSuffix(".app") ? 4 : 0)))) }
         }
@@ -142,7 +194,7 @@ struct OrphanGrouper {
         let bids = g.items.compactMap(\.bundleID)
         let shortest = bids.min { $0.count < $1.count || ($0.count == $1.count && $0 < $1) }
         g.caskToken = g.items.compactMap(\.caskToken).sorted().first
-        let cask = g.caskToken.flatMap { t in casks.first { $0.token == t } }
+        let cask = g.caskToken.flatMap { casksByToken[$0] }
         g.bundleID = shortest ?? cask?.bundleIDs.first
         g.teamID = g.items.compactMap(\.teamID).sorted().first
         if let b = g.bundleID {

@@ -125,21 +125,38 @@ public enum Caskroom {
 struct ZapPattern: Sendable {
     let pattern: String
 
-    init(_ raw: String, paths: SystemPaths) {
-        let expanded: String
+    /// `homePath`는 표준화한 홈 경로 (패턴 수만 개를 만들 때 매번 계산하지 않도록 호출하는 쪽에서 한 번 구한다)
+    init(_ raw: String, homePath: String, rootIsSlash: Bool, paths: SystemPaths) {
         if raw.hasPrefix("~/") {
-            expanded = paths.home.standardizedFileURL.path + "/" + raw.dropFirst(2)
+            pattern = homePath + "/" + raw.dropFirst(2)
         } else if raw.hasPrefix("/") {
-            expanded = paths.resolveRecorded(raw).path
+            pattern = rootIsSlash ? raw : paths.resolveRecorded(raw).path
         } else {
-            expanded = raw
+            pattern = raw
         }
-        pattern = expanded
+    }
+
+    init(_ raw: String, paths: SystemPaths) {
+        self.init(raw, homePath: paths.home.standardizedFileURL.path, rootIsSlash: paths.root.path == "/", paths: paths)
+    }
+
+    var isWildcard: Bool { Self.hasWildcard(pattern) }
+
+    /// 와일드카드가 마지막 구성요소에만 있으면 그 상위 폴더 (색인 키)
+    var fixedParent: String? {
+        let utf8 = pattern.utf8
+        guard let slash = utf8.lastIndex(of: UInt8(ascii: "/")) else { return nil }
+        let parent = String(pattern[..<slash])
+        return Self.hasWildcard(parent) ? nil : parent
+    }
+
+    static func hasWildcard(_ s: String) -> Bool {
+        s.utf8.contains { $0 == UInt8(ascii: "*") || $0 == UInt8(ascii: "?") || $0 == UInt8(ascii: "[") }
     }
 
     func matches(_ url: URL) -> Bool {
         let path = url.standardizedFileURL.path
-        if !pattern.contains("*") && !pattern.contains("?") && !pattern.contains("[") { return pattern == path }
+        if !isWildcard { return pattern == path }
         return fnmatch(pattern, path, FNM_PATHNAME) == 0
     }
 }
