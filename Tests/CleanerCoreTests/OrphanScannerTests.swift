@@ -63,15 +63,18 @@ final class OrphanHarness: @unchecked Sendable {
     /// 앞으로 30일 뒤를 "현재"로 써서 픽스처 파일이 "최근 수정" 강등을 받지 않게 한다
     static let future: @Sendable () -> Date = { Date().addingTimeInterval(30 * 86400) }
 
+    /// 번들 규칙 데이터 (cask 스냅샷이 커서 테스트마다 다시 읽지 않는다)
+    static let bundledRules = BundledRuleData.load()
+
     func scan(options: OrphanScanOptions = OrphanScanOptions(),
-              rules: RuleData = BundledRuleData.load(),
+              rules: RuleData = OrphanHarness.bundledRules,
               now: @escaping @Sendable () -> Date = OrphanHarness.future,
               launchServices: @escaping LaunchServicesLookup = LaunchServicesRegistry.none,
               signatures: CodeSignatureReading = StubSignatureReader(),
               safety: SafetyChecking = AllowAllSafety(),
               classifier: DataNatureClassifying = PassthroughNatureClassifier(),
               computeSizes: Bool = false,
-              events: EventRecorder? = nil) async throws -> OrphanScanReport {
+              events: OrphanEventRecorder? = nil) async throws -> OrphanScanReport {
         let inventory = AppInventory(paths: fx.paths, runner: runner, signatureReader: signatures, isRunning: { _ in false },
                                      lastUsed: { _ in nil }, launchServices: launchServices, now: now)
         let scanner = OrphanScanner(paths: fx.paths, runner: runner, inventory: inventory, rules: StaticRuleDataProvider(rules),
@@ -81,7 +84,7 @@ final class OrphanHarness: @unchecked Sendable {
     }
 }
 
-final class EventRecorder: @unchecked Sendable {
+final class OrphanEventRecorder: @unchecked Sendable {
     private let lock = NSLock()
     private var _events: [OrphanScanEvent] = []
     func record(_ e: OrphanScanEvent) { lock.lock(); _events.append(e); lock.unlock() }
@@ -112,7 +115,7 @@ extension OrphanScanReport {
 }
 
 /// 컨테이너를 사용자 데이터로 분류하는 테스트용 분류기
-struct ContainerIsUserData: DataNatureClassifying {
+struct OrphanContainerIsUserData: DataNatureClassifying {
     func classify(_ candidate: Candidate) -> Candidate {
         var c = candidate
         if c.category == .container { c.nature = .userData }
@@ -121,7 +124,7 @@ struct ContainerIsUserData: DataNatureClassifying {
 }
 
 /// 특정 경로를 막는 SafetyChecking
-struct BlockingSafety: SafetyChecking {
+struct OrphanBlockingSafety: SafetyChecking {
     let blocked: Set<String>
     func verdict(for url: URL, bundleID: String?) -> SafetyVerdict {
         blocked.contains(url.standardizedFileURL.path) ? .blocked(.protectedPath, "test") : .allowed(resolved: url)
@@ -134,7 +137,7 @@ struct BlockingSafety: SafetyChecking {
         try h.fx.makeLaunchPlist(at: h.fx.home("Library/LaunchAgents/com.example.gone.agent.plist"), label: "com.example.gone.agent",
                                  arguments: ["/Applications/Gone.app/Contents/MacOS/agent"])
         try h.fx.file(h.fx.home("Library/Preferences/com.example.other.plist"))
-        let recorder = EventRecorder()
+        let recorder = OrphanEventRecorder()
         let report = try await h.scan(computeSizes: true, events: recorder)
         #expect(recorder.phases == [.buildingInventory, .collectingCandidates, .judging, .finished])
         #expect(Set(recorder.groups.map(\.id)) == Set(report.groups.map(\.id)))
@@ -173,7 +176,7 @@ struct BlockingSafety: SafetyChecking {
     @Test func userDataIsNeverSelectedByDefault() async throws {
         let h = try OrphanHarness()
         let container = try h.fx.makeContainer(bundleID: "com.example.notes.gone", documents: 2)
-        let report = try await h.scan(classifier: ContainerIsUserData())
+        let report = try await h.scan(classifier: OrphanContainerIsUserData())
         let item = try #require(report.item(container))
         #expect(item.confidence == .high)
         #expect(item.nature == .userData)
@@ -184,7 +187,7 @@ struct BlockingSafety: SafetyChecking {
         let h = try OrphanHarness()
         let blocked = try h.fx.file(h.fx.home("Library/Preferences/com.example.blocked.plist"))
         let allowed = try h.fx.file(h.fx.home("Library/Preferences/com.example.allowed.plist"))
-        let report = try await h.scan(safety: BlockingSafety(blocked: [blocked.standardizedFileURL.path]))
+        let report = try await h.scan(safety: OrphanBlockingSafety(blocked: [blocked.standardizedFileURL.path]))
         #expect(!report.contains(blocked))
         #expect(report.contains(allowed))
     }
@@ -240,5 +243,34 @@ struct BlockingSafety: SafetyChecking {
         #expect(g.displayName == "Widget")
         #expect(g.nameIsGuess)
         #expect(g.items.count == 3)
+    }
+
+    /// 실제 SafetyGuard·DataNatureClassifier와 함께 (통합 단계 조립과 같은 구성)
+    @Test func worksWithRealSafetyGuardAndClassifier() async throws {
+        let h = try OrphanHarness()
+        let agent = try h.fx.makeLaunchPlist(at: h.fx.home("Library/LaunchAgents/com.gonecorp.gone.agent.plist"),
+                                             label: "com.gonecorp.gone.agent", program: "/Applications/Gone.app/Contents/MacOS/a")
+        let container = try h.fx.makeContainer(bundleID: "com.gonecorp.notes", documents: 3)
+        let emptyContainer = try h.fx.makeContainer(bundleID: "com.gonecorp.viewer")
+        try h.addPackage("com.gonecorp.tool", files: ["Applications/Tool.app", "Applications/Tool.app/Contents/Info.plist"])
+        let caskroom = h.fx.root("opt/homebrew/Caskroom/gonecask")
+        try h.fx.symlink(caskroom.appendingPathComponent("1.0/GoneCask.app"), to: URL(fileURLWithPath: "/Applications/GoneCask.app"))
+        let backup = try h.fx.dir(h.fx.home("Library/Application Support/MobileSync/Backup"))
+        let report = try await h.scan(safety: SafetyGuard(paths: h.fx.paths), classifier: DataNatureClassifier())
+
+        #expect(report.item(agent)?.isSelected == true)
+        let c = try #require(report.item(container))
+        #expect(c.confidence == .high)
+        #expect(!c.isSelected || c.nature != .userData)
+        // 사용자 문서가 든 하위 항목은 선택되지 않는다
+        #expect(c.flattened.filter { $0.nature == .userData }.allSatisfy { !$0.isSelected })
+        #expect(report.item(emptyContainer)?.isSelected == true)
+        let receipt = try #require(report.item(h.fx.root("private/var/db/receipts/com.gonecorp.tool.plist")))
+        #expect(receipt.confidence == .high)
+        #expect(receipt.isSelected)
+        #expect(report.item(caskroom)?.isSelected == true)
+        #expect(!report.contains(backup.deletingLastPathComponent()))
+        // 카테고리 루트 자체는 절대 후보가 아니다
+        #expect(!report.contains(h.fx.home("Library/Caches")))
     }
 }

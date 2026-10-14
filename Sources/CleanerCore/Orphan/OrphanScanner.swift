@@ -181,10 +181,8 @@ public struct OrphanScanner: OrphanScanning {
     private func makeOrphanGroup(_ g: OrphanGrouper.Group) -> OrphanGroup? {
         var candidates: [Candidate] = []
         for item in g.items {
-            // 영수증은 이동하지 않고 `pkgutil --forget`으로 처리하므로 경로 보호 목록(/private/var/db)을 거치지 않는다
-            if item.category != .receipt {
-                guard safety.verdict(for: item.url, bundleID: item.bundleID).isAllowed else { continue }
-            }
+            // 보호 목록(SafetyGuard)에 걸리면 후보에서 뺀다. 영수증 파일(/private/var/db/receipts)은 SafetyGuard가 예외로 허용한다.
+            guard safety.verdict(for: item.url, bundleID: item.bundleID).isAllowed else { continue }
             var c = Candidate(
                 url: item.url.standardizedFileURL, category: item.category, domain: item.domain, confidence: item.confidence,
                 share: item.share, evidence: item.evidence, lastModified: item.lastModified,

@@ -5,7 +5,7 @@ import Testing
 import CleanerTestSupport
 
 /// 테스트용 규칙 데이터 서명기 (scripts/sign-rule-data.swift와 같은 형식)
-struct RuleSigner {
+struct RuleUpdateSigner {
     let key = Curve25519.Signing.PrivateKey()
     var verifier: RuleDataVerifier { RuleDataVerifier(publicKey: key.publicKey) }
 
@@ -26,10 +26,10 @@ struct RuleSigner {
     }
 }
 
-func json<T: Encodable>(_ value: T) throws -> Data { try JSONEncoder().encode(value) }
+func ruleJSON<T: Encodable>(_ value: T) throws -> Data { try JSONEncoder().encode(value) }
 
 /// 메모리 내 "원격 서버"
-final class FakeServer: @unchecked Sendable {
+final class RuleUpdateFakeServer: @unchecked Sendable {
     private let lock = NSLock()
     private var files: [String: Data]
     private var _requested: [URL] = []
@@ -58,9 +58,9 @@ final class FakeServer: @unchecked Sendable {
 
     func remoteFiles() throws -> [String: Data] {
         [
-            "orphan-exclusions.json": try json(remoteExclusions),
-            "homebrew-casks.json": try json(remoteCasks),
-            "common-names.json": try json(["widget"]),
+            "orphan-exclusions.json": try ruleJSON(remoteExclusions),
+            "homebrew-casks.json": try ruleJSON(remoteCasks),
+            "common-names.json": try ruleJSON(["widget"]),
         ]
     }
 
@@ -72,7 +72,7 @@ final class FakeServer: @unchecked Sendable {
 
     @Test func acceptsValidSignedDirectory() throws {
         let fx = try Fixture()
-        let signer = RuleSigner()
+        let signer = RuleUpdateSigner()
         let dir = fx.home("rules")
         try signer.write(try signer.bundle(version: "2099.1.1", files: try remoteFiles()), to: dir)
         let manifest = try signer.verifier.verify(directory: dir)
@@ -83,29 +83,29 @@ final class FakeServer: @unchecked Sendable {
 
     @Test func rejectsTamperedFile() throws {
         let fx = try Fixture()
-        let signer = RuleSigner()
+        let signer = RuleUpdateSigner()
         let dir = fx.home("rules")
         try signer.write(try signer.bundle(version: "2099.1.1", files: try remoteFiles()), to: dir)
         // 제외 목록을 비워 MobileSync 등을 지울 수 있게 하려는 변조
-        try json(OrphanExclusions()).write(to: dir.appendingPathComponent("orphan-exclusions.json"))
+        try ruleJSON(OrphanExclusions()).write(to: dir.appendingPathComponent("orphan-exclusions.json"))
         #expect(throws: RuleDataError.hashMismatch("orphan-exclusions.json")) { try signer.verifier.verify(directory: dir) }
     }
 
     @Test func rejectsTamperedManifest() throws {
         let fx = try Fixture()
-        let signer = RuleSigner()
+        let signer = RuleUpdateSigner()
         let dir = fx.home("rules")
         var bundle = try signer.bundle(version: "2099.1.1", files: try remoteFiles())
         // 매니페스트의 해시를 변조한 파일에 맞게 고쳐도 서명이 맞지 않는다
-        let evil = try json(OrphanExclusions())
+        let evil = try ruleJSON(OrphanExclusions())
         bundle["orphan-exclusions.json"] = evil
         var manifest = try JSONDecoder().decode(RuleManifest.self, from: bundle[RuleDataVerifier.manifestName]!)
         manifest.files["orphan-exclusions.json"] = RuleDataVerifier.sha256Hex(evil)
-        bundle[RuleDataVerifier.manifestName] = try json(manifest)
+        bundle[RuleDataVerifier.manifestName] = try ruleJSON(manifest)
         try signer.write(bundle, to: dir)
         #expect(throws: RuleDataError.signatureMismatch) { try signer.verifier.verify(directory: dir) }
         // 다른 키로 서명한 것도 거부
-        let other = RuleSigner()
+        let other = RuleUpdateSigner()
         let otherDir = fx.home("rules-other")
         try other.write(try other.bundle(version: "2099.1.1", files: try remoteFiles()), to: otherDir)
         #expect(throws: RuleDataError.signatureMismatch) { try signer.verifier.verify(directory: otherDir) }
@@ -113,7 +113,7 @@ final class FakeServer: @unchecked Sendable {
 
     @Test func rejectsMissingPiecesAndBadNames() throws {
         let fx = try Fixture()
-        let signer = RuleSigner()
+        let signer = RuleUpdateSigner()
         let dir = fx.home("rules")
         var bundle = try signer.bundle(version: "1", files: ["../escape.json": Data("[]".utf8)])
         bundle.removeValue(forKey: "../escape.json")
@@ -135,7 +135,7 @@ final class FakeServer: @unchecked Sendable {
 
     @Test func storeUsesBundledDataWithoutUpdate() throws {
         let fx = try Fixture()
-        let store = RuleDataStore(paths: fx.paths, verifier: RuleSigner().verifier)
+        let store = RuleDataStore(paths: fx.paths, verifier: RuleUpdateSigner().verifier)
         let bundled = BundledRuleData.load()
         #expect(store.current().version == bundled.version)
         #expect(!store.hasVerifiedUpdate)
@@ -145,7 +145,7 @@ final class FakeServer: @unchecked Sendable {
 
     @Test func storeOverlaysVerifiedUpdateAddingOnly() throws {
         let fx = try Fixture()
-        let signer = RuleSigner()
+        let signer = RuleUpdateSigner()
         let bundled = BundledRuleData.load()
         try signer.write(try signer.bundle(version: "2099.1.1", files: try remoteFiles()),
                          to: fx.paths.appDataDir.appendingPathComponent("RuleData"))
@@ -173,10 +173,10 @@ final class FakeServer: @unchecked Sendable {
 
     @Test func storeIgnoresTamperedOrOlderUpdateOnDisk() throws {
         let fx = try Fixture()
-        let signer = RuleSigner()
+        let signer = RuleUpdateSigner()
         let dir = fx.paths.appDataDir.appendingPathComponent("RuleData")
         try signer.write(try signer.bundle(version: "2099.1.1", files: try remoteFiles()), to: dir)
-        try json(OrphanExclusions()).write(to: dir.appendingPathComponent("orphan-exclusions.json"))
+        try ruleJSON(OrphanExclusions()).write(to: dir.appendingPathComponent("orphan-exclusions.json"))
         let tampered = RuleDataStore(paths: fx.paths, verifier: signer.verifier)
         #expect(!tampered.hasVerifiedUpdate)
         #expect(tampered.current().version == BundledRuleData.load().version)
@@ -189,8 +189,8 @@ final class FakeServer: @unchecked Sendable {
 
     @Test func updateDownloadsVerifiesAndSwaps() async throws {
         let fx = try Fixture()
-        let signer = RuleSigner()
-        let server = FakeServer(try signer.bundle(version: "2099.1.1", files: try remoteFiles()))
+        let signer = RuleUpdateSigner()
+        let server = RuleUpdateFakeServer(try signer.bundle(version: "2099.1.1", files: try remoteFiles()))
         let store = RuleDataStore(paths: fx.paths, verifier: signer.verifier)
         let info = try await store.update(from: URL(string: "https://rules.example.com/v1")!, fetch: server.fetch)
         #expect(info.version == "2099.1.1")
@@ -203,7 +203,7 @@ final class FakeServer: @unchecked Sendable {
         #expect(leftovers.isEmpty)
 
         // 두 번째 갱신으로 교체
-        let server2 = FakeServer(try signer.bundle(version: "2099.2.0", files: try remoteFiles()))
+        let server2 = RuleUpdateFakeServer(try signer.bundle(version: "2099.2.0", files: try remoteFiles()))
         _ = try await store.update(from: URL(string: "https://rules.example.com/v1")!, fetch: server2.fetch)
         #expect(store.current().version == "2099.2.0")
         #expect(RuleDataStore(paths: fx.paths, verifier: signer.verifier).current().version == "2099.2.0")
@@ -211,8 +211,8 @@ final class FakeServer: @unchecked Sendable {
 
     @Test func updateRejectsInsecureURL() async throws {
         let fx = try Fixture()
-        let signer = RuleSigner()
-        let server = FakeServer(try signer.bundle(version: "2099.1.1", files: try remoteFiles()))
+        let signer = RuleUpdateSigner()
+        let server = RuleUpdateFakeServer(try signer.bundle(version: "2099.1.1", files: try remoteFiles()))
         let store = RuleDataStore(paths: fx.paths, verifier: signer.verifier)
         await #expect(throws: RuleDataError.insecureURL("http://rules.example.com/v1")) {
             try await store.update(from: URL(string: "http://rules.example.com/v1")!, fetch: server.fetch)
@@ -222,32 +222,32 @@ final class FakeServer: @unchecked Sendable {
 
     @Test func failedUpdateKeepsPreviousData() async throws {
         let fx = try Fixture()
-        let signer = RuleSigner()
+        let signer = RuleUpdateSigner()
         let base = URL(string: "https://rules.example.com/v1")!
         let store = RuleDataStore(paths: fx.paths, verifier: signer.verifier)
-        _ = try await store.update(from: base, fetch: FakeServer(try signer.bundle(version: "2099.1.1", files: try remoteFiles())).fetch)
+        _ = try await store.update(from: base, fetch: RuleUpdateFakeServer(try signer.bundle(version: "2099.1.1", files: try remoteFiles())).fetch)
 
         // 파일 변조
-        let tamperedServer = FakeServer(try signer.bundle(version: "2099.3.0", files: try remoteFiles()))
-        tamperedServer.set("orphan-exclusions.json", try json(OrphanExclusions()))
+        let tamperedServer = RuleUpdateFakeServer(try signer.bundle(version: "2099.3.0", files: try remoteFiles()))
+        tamperedServer.set("orphan-exclusions.json", try ruleJSON(OrphanExclusions()))
         await #expect(throws: RuleDataError.hashMismatch("orphan-exclusions.json")) {
             try await store.update(from: base, fetch: tamperedServer.fetch)
         }
         // 매니페스트 변조
-        let badManifest = FakeServer(try signer.bundle(version: "2099.3.0", files: try remoteFiles()))
-        badManifest.set(RuleDataVerifier.manifestName, try json(RuleManifest(version: "2099.3.0", files: [:])))
+        let badManifest = RuleUpdateFakeServer(try signer.bundle(version: "2099.3.0", files: try remoteFiles()))
+        badManifest.set(RuleDataVerifier.manifestName, try ruleJSON(RuleManifest(version: "2099.3.0", files: [:])))
         await #expect(throws: RuleDataError.signatureMismatch) { try await store.update(from: base, fetch: badManifest.fetch) }
         // 다운그레이드
-        let downgrade = FakeServer(try signer.bundle(version: "2099.0.1", files: try remoteFiles()))
+        let downgrade = RuleUpdateFakeServer(try signer.bundle(version: "2099.0.1", files: try remoteFiles()))
         await #expect(throws: RuleDataError.downgrade(current: "2099.1.1", offered: "2099.0.1")) {
             try await store.update(from: base, fetch: downgrade.fetch)
         }
         // 내려받기 실패
-        let missing = FakeServer(try signer.bundle(version: "2099.3.0", files: try remoteFiles()))
+        let missing = RuleUpdateFakeServer(try signer.bundle(version: "2099.3.0", files: try remoteFiles()))
         missing.set("homebrew-casks.json", nil)
         await #expect(throws: RuleDataError.self) { try await store.update(from: base, fetch: missing.fetch) }
         // 서명은 맞지만 내용이 해석되지 않음
-        let garbage = FakeServer(try signer.bundle(version: "2099.3.0", files: ["orphan-exclusions.json": Data("not json".utf8)]))
+        let garbage = RuleUpdateFakeServer(try signer.bundle(version: "2099.3.0", files: ["orphan-exclusions.json": Data("not json".utf8)]))
         await #expect(throws: RuleDataError.invalidContent("orphan-exclusions.json")) {
             try await store.update(from: base, fetch: garbage.fetch)
         }

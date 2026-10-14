@@ -4,7 +4,7 @@ import Testing
 import CleanerTestSupport
 
 /// 호출 횟수를 세는 서명 리더 (캐시 적중 검증용)
-final class CountingSignatureReader: CodeSignatureReading, @unchecked Sendable {
+final class InventoryCountingSignatureReader: CodeSignatureReading, @unchecked Sendable {
     private let lock = NSLock()
     private var infos: [String: SigningInfo] = [:]
     private var counts: [String: Int] = [:]
@@ -33,12 +33,12 @@ final class CountingSignatureReader: CodeSignatureReading, @unchecked Sendable {
 }
 
 /// 인벤토리 테스트용 공통 스텁: Spotlight가 주어진 앱들을 돌려주고 색인은 켜져 있음
-func spotlightStub(_ runner: StubCommandRunner, apps: @escaping @Sendable () -> [URL], indexing: String = "Indexing enabled.") {
+func inventorySpotlightStub(_ runner: StubCommandRunner, apps: @escaping @Sendable () -> [URL], indexing: String = "Indexing enabled.") {
     runner.on("mdfind") { _ in CommandOutput(status: 0, stdout: Data(apps().map(\.path).joined(separator: "\n").utf8)) }
     runner.on("mdutil") { args in CommandOutput(status: 0, stdout: Data("\(args.last ?? "/"):\n\t\(indexing) \n".utf8)) }
 }
 
-func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatureReading = StubSignatureReader(),
+func inventoryUnderTest(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatureReading = StubSignatureReader(),
                    isRunning: @escaping @Sendable (String) -> Bool = { _ in false },
                    launchServices: @escaping LaunchServicesLookup = LaunchServicesRegistry.none) -> AppInventory {
     AppInventory(paths: fx.paths, runner: runner, signatureReader: reader, isRunning: isRunning,
@@ -60,8 +60,8 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         try fx.makeApp(name: "Hidden", bundleID: "com.example.hidden", in: fx.root("Applications/Some.framework"))
 
         let runner = StubCommandRunner()
-        spotlightStub(runner) { [setapp, idea, util, host] in [setapp, idea, util, host] }
-        let snap = try await makeInventory(fx, runner: runner).build()
+        inventorySpotlightStub(runner) { [setapp, idea, util, host] in [setapp, idea, util, host] }
+        let snap = try await inventoryUnderTest(fx, runner: runner).build()
         let paths = Set(snap.apps.map(\.url.standardizedFileURL.path))
         for url in [setapp, idea, util, core, host] { #expect(paths.contains(url.standardizedFileURL.path)) }
         #expect(!snap.apps.contains { $0.bundleID == "com.example.host.helper" })
@@ -86,8 +86,8 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         let ios = try fx.makeApp(name: "Game", bundleID: "com.example.game.wrapper", wrappedBundleID: "com.example.game")
 
         let runner = StubCommandRunner()
-        spotlightStub(runner) { [app, ios] in [app, ios] }
-        let snap = try await makeInventory(fx, runner: runner).build()
+        inventorySpotlightStub(runner) { [app, ios] in [app, ios] }
+        let snap = try await inventoryUnderTest(fx, runner: runner).build()
         let suite = try #require(snap.apps.first { $0.bundleID == "com.example.suite" })
         #expect(Set(suite.embeddedBundleIDs) == ["com.example.suite.share", "com.example.suite.launcher", "com.example.suite.agent",
                                                   "com.example.suite.helper", "com.example.suite.privhelper"])
@@ -106,14 +106,14 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         for url in [a, b, a.appendingPathComponent("Contents/Info.plist"), b.appendingPathComponent("Contents/Info.plist")] {
             try fx.setModified(url, old)
         }
-        let reader = CountingSignatureReader()
+        let reader = InventoryCountingSignatureReader()
         reader.set(SigningInfo(teamID: "ABCDE12345", appGroups: ["ABCDE12345.shared"]), for: a)
         reader.set(SigningInfo(teamID: "ABCDE12345", appGroups: ["group.com.example.widget"]),
                    for: a.appendingPathComponent("Contents/PlugIns/Widget.appex"))
 
         let runner = StubCommandRunner()
-        spotlightStub(runner) { [a, b] in [a, b] }
-        let inv = makeInventory(fx, runner: runner, reader: reader)
+        inventorySpotlightStub(runner) { [a, b] in [a, b] }
+        let inv = inventoryUnderTest(fx, runner: runner, reader: reader)
         let first = try await inv.build()
         let alpha = try #require(first.apps.first { $0.bundleID == "com.example.alpha" })
         #expect(alpha.teamID == "ABCDE12345")
@@ -125,7 +125,7 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         #expect(reader.count(a) == 1 && reader.count(b) == 1)
 
         // 새 인스턴스(디스크 캐시)로 재구축: 읽지 않음
-        let inv2 = makeInventory(fx, runner: runner, reader: reader)
+        let inv2 = inventoryUnderTest(fx, runner: runner, reader: reader)
         #expect(inv2.cached()?.apps.count == 2)
         let again = try await inv2.build()
         #expect(reader.count(a) == 1 && reader.count(b) == 1)
@@ -152,8 +152,8 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         let indexed = try fx.makeApp(name: "Indexed", bundleID: "com.example.indexed")
         let missing = try fx.makeApp(name: "Unindexed", bundleID: "com.example.unindexed", in: fx.root("Applications/Tools"))
         let runner = StubCommandRunner()
-        spotlightStub(runner) { [indexed] in [indexed] }
-        let snap = try await makeInventory(fx, runner: runner).build()
+        inventorySpotlightStub(runner) { [indexed] in [indexed] }
+        let snap = try await inventoryUnderTest(fx, runner: runner).build()
         #expect(snap.spotlight.indexingEnabled)
         #expect(!snap.spotlight.complete)
         #expect(!snap.spotlight.isReliable)
@@ -166,8 +166,8 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         let fx = try Fixture()
         let app = try fx.makeApp(name: "Indexed", bundleID: "com.example.indexed")
         let runner = StubCommandRunner()
-        spotlightStub(runner, apps: { [app] in [app] }, indexing: "Indexing disabled.")
-        let snap = try await makeInventory(fx, runner: runner).build()
+        inventorySpotlightStub(runner, apps: { [app] in [app] }, indexing: "Indexing disabled.")
+        let snap = try await inventoryUnderTest(fx, runner: runner).build()
         #expect(!snap.spotlight.indexingEnabled)
         #expect(!snap.spotlight.isReliable)
     }
@@ -178,8 +178,8 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         let inner = try fx.makeApp(name: "Inner", bundleID: "com.example.inner", in: odd.appendingPathComponent("Contents/Helpers"))
         let trashed = try fx.makeApp(name: "Trashed", bundleID: "com.example.trashed", in: fx.paths.trash)
         let runner = StubCommandRunner()
-        spotlightStub(runner) { [odd, inner, trashed] in [odd, inner, trashed] }
-        let snap = try await makeInventory(fx, runner: runner).build()
+        inventorySpotlightStub(runner) { [odd, inner, trashed] in [odd, inner, trashed] }
+        let snap = try await inventoryUnderTest(fx, runner: runner).build()
         #expect(snap.containsBundleID("com.example.portable"))
         #expect(!snap.apps.contains { $0.bundleID == "com.example.inner" })
         #expect(!snap.containsBundleID("com.example.trashed"))
@@ -192,10 +192,10 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         try fx.dir(fx.root("opt/homebrew/Caskroom/firefox/120.0"))
         try fx.file(fx.root("opt/homebrew/bin/brew"), text: "#!/bin/sh\n")
         let runner = StubCommandRunner()
-        spotlightStub(runner) { [] }
+        inventorySpotlightStub(runner) { [] }
         runner.on("brew", stdout: "firefox\niterm2\n")
         runner.on("pkgutil", stdout: "com.apple.pkg.Core\ncom.example.driver\n")
-        let snap = try await makeInventory(fx, runner: runner).build()
+        let snap = try await inventoryUnderTest(fx, runner: runner).build()
         #expect(snap.homebrewCasks == ["firefox", "iterm2", "slack"])
         #expect(snap.packageIDs == ["com.apple.pkg.Core", "com.example.driver"])
         #expect(runner.calls.contains { $0.executable.hasSuffix("opt/homebrew/bin/brew") && $0.arguments == ["list", "--cask"] })
@@ -206,8 +206,8 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
         let volume = fx.root("Volumes/External")
         let ext = try fx.makeApp(name: "Big", bundleID: "com.example.big", in: volume.appendingPathComponent("Apps"))
         let runner = StubCommandRunner()
-        spotlightStub(runner) { [ext] in FileManager.default.itemExists(ext) ? [ext] : [] }
-        let inv = makeInventory(fx, runner: runner)
+        inventorySpotlightStub(runner) { [ext] in FileManager.default.itemExists(ext) ? [ext] : [] }
+        let inv = inventoryUnderTest(fx, runner: runner)
         let mounted = try await inv.build()
         #expect(mounted.containsBundleID("com.example.big"))
         #expect(mounted.offlineVolumeBundleIDs.isEmpty)
@@ -228,7 +228,7 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
             let disabled = args.last?.hasSuffix("Volumes/USB") == true
             return CommandOutput(status: 0, stdout: Data("x:\n\t\(disabled ? "Indexing disabled." : "Indexing enabled.")\n".utf8))
         }
-        let snap = try await makeInventory(fx, runner: runner).build()
+        let snap = try await inventoryUnderTest(fx, runner: runner).build()
         #expect(snap.apps.contains { $0.url.standardizedFileURL == ext.standardizedFileURL })
         #expect(snap.spotlight.indexingEnabled)
     }
@@ -317,8 +317,8 @@ func makeInventory(_ fx: Fixture, runner: StubCommandRunner, reader: CodeSignatu
             .init("Contents/Resources/Updater.app", bundleID: "com.docker.updater"),
         ])
         let runner = StubCommandRunner()
-        spotlightStub(runner) { [docker] in [docker] }
-        let snap = try await makeInventory(fx, runner: runner).build()
+        inventorySpotlightStub(runner) { [docker] in [docker] }
+        let snap = try await inventoryUnderTest(fx, runner: runner).build()
         let app = try #require(snap.apps.first { $0.bundleID == "com.docker.docker" })
         for bid in ["com.electron.dockerdesktop", "com.electron.dockerdesktop.helper", "com.docker.pass", "com.docker.updater"] {
             #expect(app.embeddedBundleIDs.contains(bid), "\(bid)")
