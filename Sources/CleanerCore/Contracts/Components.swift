@@ -98,3 +98,23 @@ public struct StaticRuleDataProvider: RuleDataProviding {
     public init(_ data: RuleData) { self.data = data }
     public func current() -> RuleData { data }
 }
+
+// MARK: 공용 판정 도구
+
+/// 데이터 성격 분류 (plan.md 4.3.3). 앱 제거와 고아 스캔이 함께 쓴다.
+/// Container·Group Container는 하위 항목을 펼쳐 `children`을 채우고, 사용자 데이터면 `nature = .userData`.
+public protocol DataNatureClassifying: Sendable {
+    func classify(_ candidate: Candidate) -> Candidate
+}
+
+/// 아무것도 바꾸지 않는 분류기 (테스트·조립 전 기본값)
+public struct PassthroughNatureClassifier: DataNatureClassifying {
+    public init() {}
+    public func classify(_ candidate: Candidate) -> Candidate { candidate }
+}
+
+/// 모든 경로를 허용하는 SafetyChecking (테스트 전용 기본값 — 실제 조립에서는 SafetyGuard 사용)
+public struct AllowAllSafety: SafetyChecking {
+    public init() {}
+    public func verdict(for url: URL, bundleID: String?) -> SafetyVerdict { .allowed(resolved: url.resolvingSymlinksInPath()) }
+}
