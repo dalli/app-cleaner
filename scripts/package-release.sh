@@ -5,7 +5,7 @@
 #
 # 결과 (dist/):
 #   AppCleaner-<버전>-macos-arm64.zip       App Cleaner.app (GUI + Contents/Helpers/appcleaner)
-#   appcleaner-<버전>-macos-arm64.tar.gz    CLI 단독 (실행 파일 + 규칙 데이터 리소스 번들)
+#   appcleaner-<버전>-macos-arm64.tar.gz    CLI 단독 (실행 파일 + 리소스 번들: 규칙 데이터·관리자 스크립트·번역)
 #   SHA256SUMS.txt
 set -eu
 cd "$(dirname "$0")/.."
@@ -38,8 +38,12 @@ STAGE="$DIST/appcleaner-$VERSION-macos-$ARCH"
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
 cp "$APP/Contents/Helpers/appcleaner" "$STAGE/appcleaner"
-# CLI는 실행 파일 옆의 리소스 번들에서 규칙 데이터·관리자 스크립트를 찾는다
+# CLI는 실행 파일 옆의 리소스 번들에서 규칙 데이터·관리자 스크립트·번역(Localization/<언어>.lproj)을 찾는다
 cp -R "$APP/Contents/Resources/AppCleaner_CleanerCore.bundle" "$STAGE/"
+if ! find "$STAGE/AppCleaner_CleanerCore.bundle" -path '*/Localization/ja.lproj/CLI.strings' | grep -q .; then
+  echo "error: CLI 번역이 리소스 번들에 없습니다" >&2
+  exit 1
+fi
 cp README.md "$STAGE/"
 tar -C "$DIST" -czf "$DIST/$CLI_TGZ" "$(basename "$STAGE")"
 rm -rf "$STAGE"

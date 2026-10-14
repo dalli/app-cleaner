@@ -9,6 +9,8 @@
 #   Contents/MacOS/AppCleanerGUI        GUI 실행 파일
 #   Contents/Helpers/appcleaner         CLI
 #   Contents/Resources/*.bundle         SwiftPM 리소스 번들 (Bundle.module이 resourceURL에서 찾는다)
+#                                        AppCleaner_CleanerCore.bundle/Localization — 엔진·CLI 번역 (ko/en/ja)
+#   Contents/Resources/<언어>.lproj      앱 이름(InfoPlist.strings) — 시스템 메뉴 언어도 이 목록을 따른다
 # 서명은 ad-hoc(-s -). 배포용 Developer ID 서명·공증은 Phase 4에서 한다.
 set -eu
 cd "$(dirname "$0")/.."
@@ -45,8 +47,23 @@ if [ "$found_bundle" -eq 0 ]; then
   exit 1
 fi
 
-# 시스템 메뉴(종료, 숨기기 …)도 한국어/영어로 나오도록 빈 lproj를 둔다
-mkdir -p "$APP/Contents/Resources/ko.lproj" "$APP/Contents/Resources/en.lproj"
+# 지원 언어 (CleanerCore `AppLanguage`와 같게). 시스템 메뉴(종료, 숨기기 …)도 이 언어로 나오도록 lproj를 두고,
+# 앱 이름은 InfoPlist.strings로 언어마다 지정한다. 지원하지 않는 언어 사용자는 개발 지역(en)으로 본다.
+LANGUAGES="ko en ja"
+for lang in $LANGUAGES; do
+  mkdir -p "$APP/Contents/Resources/$lang.lproj"
+  cat > "$APP/Contents/Resources/$lang.lproj/InfoPlist.strings" <<STRINGS
+"CFBundleName" = "$APP_NAME";
+"CFBundleDisplayName" = "$APP_NAME";
+STRINGS
+done
+for lang in $LANGUAGES; do
+  if [ ! -d "$APP/Contents/Resources/AppCleaner_CleanerCore.bundle/Localization/$lang.lproj" ] \
+     && [ ! -d "$APP/Contents/Resources/AppCleaner_CleanerCore.bundle/Contents/Resources/Localization/$lang.lproj" ]; then
+    echo "error: CleanerCore 번역($lang.lproj)이 리소스 번들에 없습니다" >&2
+    exit 1
+  fi
+done
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -54,11 +71,12 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
   <key>CFBundleDevelopmentRegion</key>
-  <string>ko</string>
+  <string>en</string>
   <key>CFBundleLocalizations</key>
   <array>
     <string>ko</string>
     <string>en</string>
+    <string>ja</string>
   </array>
   <key>CFBundleExecutable</key>
   <string>AppCleanerGUI</string>
