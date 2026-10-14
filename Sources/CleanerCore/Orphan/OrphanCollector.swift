@@ -440,13 +440,27 @@ struct OrphanCollector {
                 guard let top = Self.categoryLevelPath(f), seen.insert(top).inserted, owners[top] == [pkg] else { continue }
                 let url = paths.system(top).standardizedFileURL
                 guard fm.itemExists(url), !exclusions.isExcludedPath(url) else { continue }
+                // 벤더 공용 폴더·Apple 이름·설치 앱 이름은 영수증 근거로 잡지 않는다
+                let leaf = Self.stripKnownExtension(url.lastPathComponent)
+                if exclusions.isVendorFolder(leaf) || exclusions.isAppleSystemName(leaf) || index.matchesInstalledName(leaf)
+                    || index.vendorNames.contains(BundleIDHeuristics.normalizedName(leaf)) { continue }
+                if BundleIDHeuristics.isBundleIDShaped(leaf),
+                   exclusions.isExcludedBundleID(leaf) || index.ownership(of: leaf) == .installed { continue }
                 let (category, launchDomain) = Self.systemCategory(of: top)
                 var item = OrphanItem(url: url, category: category, domain: .system, appNameHint: hint, packageID: pkg,
                                       confidence: .high,
                                       evidence: [Evidence(.receipt, "설치 패키지 \(pkg)가 설치한 파일 (앱 번들은 삭제됨)")])
-                if let launchDomain, let label = LaunchPlist.read(at: url)?.label {
+                if let launchDomain, let plist = LaunchPlist.read(at: url), let label = plist.label {
+                    if index.launchLabels.contains(label.lowercased())
+                        || (BundleIDHeuristics.isBundleIDShaped(label) && index.ownership(of: label) == .installed) { continue }
                     item.launchService = LaunchServiceRef(label: label, domain: launchDomain, plistURL: url)
                     if BundleIDHeuristics.isBundleIDShaped(label) { item.bundleID = label }
+                    // 서비스 실행 파일이 아직 있으면(드라이버·데몬을 계속 쓰는 중일 수 있음) 기본 선택하지 않는다
+                    if let exe = plist.effectiveExecutable, exe.hasPrefix("/"), fm.itemExists(paths.resolveRecorded(exe)) {
+                        item.confidence = .medium
+                        item.promotable = false
+                        item.addNote("서비스 실행 파일이 아직 남아 있음 — 다른 프로그램이 쓰고 있을 수 있음")
+                    }
                 }
                 out.append(item)
             }
