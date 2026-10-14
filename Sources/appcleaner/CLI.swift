@@ -281,5 +281,5 @@ struct PlanPreview: Encodable {
 }
 
 enum CLIVersion {
-    static let current = "0.1.1"
+    static let current = "0.2.0"
 }
