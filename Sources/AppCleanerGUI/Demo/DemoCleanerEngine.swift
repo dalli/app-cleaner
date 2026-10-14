@@ -164,7 +164,7 @@ final class DemoCleanerEngine: CleanerEngine, @unchecked Sendable {
             let dest: MoveDestination = c.domain == .system && c.category != .appBundle ? .holding : .trash
             let movedTo = dest == .trash
                 ? DemoData.home + "/.Trash/" + c.url.lastPathComponent
-                : "/Library/Application Support/App Cleaner/Holding/\(sessionID.uuidString)" + c.path
+                : DemoData.holdingDir + "/\(sessionID.uuidString)" + c.path
             return JournalItem(originalPath: c.path, movedTo: movedTo, destination: dest, size: c.size, category: c.category,
                                confidence: c.confidence, share: c.share, nature: c.nature, sources: c.evidence.map(\.source))
         }
@@ -259,7 +259,7 @@ final class DemoCleanerEngine: CleanerEngine, @unchecked Sendable {
             for (i, item) in session.items.enumerated() where itemPaths?.contains(item.originalPath) ?? true {
                 guard item.restoredAt == nil else { continue }
                 if session.missingItems.contains(item.originalPath) { result.missing.append(item.originalPath); continue }
-                if Self.simulatedConflict(item.originalPath) && restoreOptions.conflictPolicy == .skip {
+                if Self.simulatedConflict(item.originalPath) && restoreOptions.conflictPolicy(for: item.originalPath) == .skip {
                     result.skipped.append(item.originalPath)
                     continue
                 }
@@ -275,6 +275,23 @@ final class DemoCleanerEngine: CleanerEngine, @unchecked Sendable {
             return result
         }
     }
+
+    func restorePreview(sessionID: UUID, itemPaths: Set<String>?) async -> RestorePreview? {
+        try? await pause(0.1)
+        return withState { s in
+            guard let session = s.sessions.first(where: { $0.id == sessionID }) else { return nil }
+            var preview = RestorePreview()
+            for item in session.items where itemPaths?.contains(item.originalPath) ?? true {
+                if item.restoredAt != nil { preview.alreadyRestored.append(item.originalPath) }
+                else if session.missingItems.contains(item.originalPath) { preview.missing.append(item.originalPath) }
+                else if Self.simulatedConflict(item.originalPath) { preview.conflicts.append(item.originalPath) }
+                else { preview.ready.append(item.originalPath) }
+            }
+            return preview
+        }
+    }
+
+    var holdingFolderURL: URL { URL(filePath: DemoData.holdingDir, directoryHint: .isDirectory) }
 
     static func status(of session: JournalSession) -> SessionStatus {
         let remaining = session.items.filter { $0.restoredAt == nil }

@@ -9,6 +9,9 @@ final class RecordingEngine: CleanerEngine, @unchecked Sendable {
     var orphanReport: OrphanScanReport
     var executedPlans: [CleanupPlan] = []
     var apps: [InstalledApp]
+    var journal: [JournalSession] = []
+    var preview: RestorePreview?
+    var restoredSessions: [UUID] = []
 
     init(report: ScanReport, orphanReport: OrphanScanReport, apps: [InstalledApp] = []) {
         self.report = report
@@ -39,8 +42,13 @@ final class RecordingEngine: CleanerEngine, @unchecked Sendable {
     func keepList() -> [KeepEntry] { [] }
     func addToKeepList(_ entry: KeepEntry) {}
     func removeFromKeepList(id: String) {}
-    func sessions() async -> [JournalSession] { [] }
-    func restore(sessionID: UUID, itemPaths: Set<String>?, options: RestoreOptions) async -> RestoreResult { RestoreResult() }
+    func sessions() async -> [JournalSession] { journal }
+    func restore(sessionID: UUID, itemPaths: Set<String>?, options: RestoreOptions) async -> RestoreResult {
+        restoredSessions.append(sessionID)
+        return RestoreResult(restored: preview?.restorable ?? [])
+    }
+    func restorePreview(sessionID: UUID, itemPaths: Set<String>?) async -> RestorePreview? { preview }
+    var holdingFolderURL: URL { URL(fileURLWithPath: "/tmp/Holding") }
     func holdingUsage(retentionDays: Int) async -> HoldingUsage { HoldingUsage() }
     func purgeHolding(sessionIDs: [UUID]) async -> [CleanupFailure] { [] }
     func exportSession(id: UUID) async -> Data? { nil }
@@ -132,6 +140,29 @@ private func sampleEngine() -> RecordingEngine {
         _ = await cli.run(.orphansClean(options: OrphanScanOptions(), dryRun: false, yes: true, json: true, includeMedium: true))
         #expect(Set(engine.executedPlans.last?.items.map(\.path) ?? [])
                 == ["/u/Library/Caches/com.gone", "/u/Library/Preferences/com.gone.plist"])
+    }
+
+    @Test func restoreAnnouncesConflictsFromEnginePreview() async {
+        let engine = sampleEngine()
+        let session = JournalSession(kind: .appRemoval, targetName: "Foo", ruleDataVersion: "t")
+        engine.journal = [session]
+        engine.preview = RestorePreview(ready: ["/u/a"], conflicts: ["/u/b"], missing: ["/u/c"])
+        var output = ""
+        var question = ""
+        let cli = CLI(engine: engine, out: { output += $0 + "\n" }, err: { _ in }, confirm: { question = $0; return true })
+        #expect(await cli.run(.restore(sessionID: session.id, yes: false)) == 0)
+        #expect(output.contains("복원할 수 없는 항목 1개"))
+        #expect(output.contains("복원할 항목 1개:\n  /u/b"))
+        #expect(question.contains("항목 2개"))
+        #expect(engine.restoredSessions == [session.id])
+
+        // 되돌릴 항목이 없으면 복원을 호출하지 않는다
+        engine.preview = RestorePreview(missing: ["/u/a"], alreadyRestored: ["/u/b"])
+        #expect(await cli.run(.restore(sessionID: session.id, yes: true)) == 0)
+        #expect(engine.restoredSessions == [session.id])
+        // 세션이 없으면 실패
+        engine.preview = nil
+        #expect(await cli.run(.restore(sessionID: session.id, yes: true)) == 1)
     }
 
     @Test func appNameResolutionIsExactOnly() async throws {

@@ -5,6 +5,8 @@ import Foundation
 enum DemoData {
     static let ruleVersion = "2026.10.1"
     static let home = NSHomeDirectory()
+    /// 실제 엔진(`SystemPaths.live`)과 같은 보류 폴더 위치
+    static let holdingDir = "/Library/Application Support/\(SystemPaths.ourAppFolderName)/Holding"
 
     static let KB: Int64 = 1_000
     static let MB: Int64 = 1_000_000
@@ -309,7 +311,7 @@ enum DemoData {
             let full = path.hasPrefix("~") ? home + path.dropFirst() : path
             let moved = dest == .trash
                 ? home + "/.Trash/" + (full as NSString).lastPathComponent
-                : "/Library/Application Support/App Cleaner/Holding/\(sessionID.uuidString)" + full
+                : holdingDir + "/\(sessionID.uuidString)" + full
             return JournalItem(originalPath: full, movedTo: moved, destination: dest, size: size, category: cat,
                                confidence: conf, share: .exclusive, nature: cat.defaultNature, sources: [.bundleIdentifier],
                                restoredAt: restored)

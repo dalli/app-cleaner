@@ -20,8 +20,7 @@ struct AppCleanerApp: App {
             settings.onboardingCompleted = !launch.showOnboarding
             if let route = launch.route { settings.lastRoute = route }
         }
-        let pathExists: (@Sendable (String) -> Bool)? = demo ? { @Sendable in DemoCleanerEngine.simulatedConflict($0) } : nil
-        let model = AppModel(engine: engine, settings: settings, isDemo: demo, pathExists: pathExists)
+        let model = AppModel(engine: engine, settings: settings, isDemo: demo)
         self.model = model
         AppDelegate.pendingModel = model
         AppDelegate.launchOptions = launch

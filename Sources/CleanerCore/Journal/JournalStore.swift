@@ -86,22 +86,25 @@ public actor JournalStore: JournalStoring, JournalRecording {
         // 기록의 역순으로 되돌린다 (하위 항목 → 상위 폴더 순서를 거꾸로 적용)
         for i in session.items.indices.reversed() {
             let item = session.items[i]
-            guard item.restoredAt == nil else { continue }
             if let itemPaths, !itemPaths.contains(item.originalPath) { continue }
-            guard Self.isPresent(item, purged: purged) else {
-                result.missing.append(item.originalPath)
-                continue
-            }
             let original = URL(fileURLWithPath: item.originalPath)
             var target = original
-            if fm.itemExists(original) {
-                switch options.conflictPolicy {
+            switch Self.disposition(of: item, purged: purged) {
+            case .alreadyRestored:
+                continue
+            case .missing:
+                result.missing.append(item.originalPath)
+                continue
+            case .conflict:
+                switch options.conflictPolicy(for: item.originalPath) {
                 case .skip:
                     result.skipped.append(item.originalPath)
                     continue
                 case .renameRestored:
                     target = Self.renamedURL(for: original)
                 }
+            case .ready:
+                break
             }
 
             switch item.destination {
@@ -182,6 +185,22 @@ public actor JournalStore: JournalStoring, JournalRecording {
         return result
     }
 
+    public func restorePreview(sessionID: UUID, itemPaths: Set<String>?) async -> RestorePreview? {
+        guard let session = load(sessionID) else { return nil }
+        let purged = session.steps.contains(Self.purgedStep)
+        var preview = RestorePreview()
+        for item in session.items {
+            if let itemPaths, !itemPaths.contains(item.originalPath) { continue }
+            switch Self.disposition(of: item, purged: purged) {
+            case .alreadyRestored: preview.alreadyRestored.append(item.originalPath)
+            case .missing: preview.missing.append(item.originalPath)
+            case .conflict: preview.conflicts.append(item.originalPath)
+            case .ready: preview.ready.append(item.originalPath)
+            }
+        }
+        return preview
+    }
+
     public func holdingUsage(retentionDays: Int) async -> HoldingUsage {
         let cutoff = Date().addingTimeInterval(-Double(max(retentionDays, 0)) * 86_400)
         var usage = HoldingUsage()
@@ -259,6 +278,23 @@ public actor JournalStore: JournalStoring, JournalRecording {
             s.status = missing.count == pending.count ? .notRestorable : .partiallyRestorable
         }
         return s
+    }
+
+    /// 복원 전 항목 판정. `restore`와 `restorePreview`가 같은 기준을 쓴다.
+    enum RestoreDisposition {
+        case alreadyRestored
+        /// 이동 위치가 사라짐 (휴지통 비움, 보류 폴더 영구 삭제)
+        case missing
+        /// 원래 위치에 같은 이름이 있음 (심볼릭 링크 자체도 포함)
+        case conflict
+        case ready
+    }
+
+    static func disposition(of item: JournalItem, purged: Bool) -> RestoreDisposition {
+        if item.restoredAt != nil { return .alreadyRestored }
+        if !isPresent(item, purged: purged) { return .missing }
+        if FileManager.default.itemExists(URL(fileURLWithPath: item.originalPath)) { return .conflict }
+        return .ready
     }
 
     /// root 소유 `0700` 보류 폴더 안은 일반 사용자가 볼 수 없으므로 EACCES는 "있음"으로 본다.

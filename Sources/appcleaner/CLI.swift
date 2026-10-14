@@ -41,11 +41,24 @@ struct CLI {
                 let sessions = await engine.sessions()
                 if json { try printJSON(sessions) } else { printHistory(sessions) }
             case let .restore(id, yes):
-                guard let session = await engine.sessions().first(where: { $0.id == id }) else {
+                guard let session = await engine.sessions().first(where: { $0.id == id }),
+                      let preview = await engine.restorePreview(sessionID: id, itemPaths: nil) else {
                     err("세션을 찾을 수 없습니다: \(id)")
                     return 1
                 }
-                if !yes && !confirm("\(session.targetName) 세션의 항목 \(session.items.count)개를 원래 위치로 되돌릴까요?") {
+                // 복원과 같은 판정으로 미리 알린다: 충돌은 덮어쓰지 않고 이름을 바꿔 복원
+                if !preview.missing.isEmpty {
+                    out("이동 위치가 사라져 복원할 수 없는 항목 \(preview.missing.count)개")
+                }
+                if !preview.conflicts.isEmpty {
+                    out("원래 위치에 같은 이름이 있어 \"(\(JournalStore.restoredSuffix))\"을 붙여 복원할 항목 \(preview.conflicts.count)개:")
+                    for path in preview.conflicts { out("  \(path)") }
+                }
+                if preview.restorable.isEmpty {
+                    out("되돌릴 항목이 없습니다.")
+                    return 0
+                }
+                if !yes && !confirm("\(session.targetName) 세션의 항목 \(preview.restorable.count)개를 원래 위치로 되돌릴까요?") {
                     out("취소했습니다.")
                     return 1
                 }
