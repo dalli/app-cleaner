@@ -18,7 +18,8 @@ APP="$DIST/App Cleaner.app"
 ARCH="$ARCH" VERSION="$VERSION" ./scripts/build-app.sh
 
 # 아키텍처 확인 — arm64가 아니면 실패
-for bin in "$APP/Contents/MacOS/AppCleanerGUI" "$APP/Contents/MacOS/AppCleanerHelper" "$APP/Contents/Helpers/appcleaner"; do
+for bin in "$APP/Contents/MacOS/AppCleanerGUI" "$APP/Contents/MacOS/AppCleanerHelper" "$APP/Contents/Helpers/appcleaner" \
+  "$APP/Contents/Library/LoginItems/App Cleaner Sentinel.app/Contents/MacOS/AppCleanerSentinel"; do
   archs="$(lipo -archs "$bin")"
   if [ "$archs" != "arm64" ]; then
     echo "error: $bin 아키텍처가 arm64가 아닙니다: $archs" >&2
