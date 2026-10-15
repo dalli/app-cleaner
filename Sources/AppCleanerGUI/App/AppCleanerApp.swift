@@ -20,7 +20,7 @@ struct AppCleanerApp: App {
             settings.onboardingCompleted = !launch.showOnboarding
             if let route = launch.route { settings.lastRoute = route }
         }
-        let model = AppModel(engine: engine, settings: settings, isDemo: demo)
+        let model = AppModel(engine: engine, settings: settings, isDemo: demo, helper: makeHelperInstaller(arguments: args))
         self.model = model
         AppDelegate.pendingModel = model
         AppDelegate.launchOptions = launch

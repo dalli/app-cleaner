@@ -71,6 +71,7 @@ struct CleanupSheet: View {
 // MARK: - 미리보기
 
 private struct PreviewContent: View {
+    @Environment(AppModel.self) private var model
     @Bindable var flow: CleanupFlowModel
 
     var body: some View {
@@ -101,9 +102,14 @@ private struct PreviewContent: View {
         }
 
         if flow.requiresAdmin {
-            Banner(tone: .caution, systemImage: "lock.shield",
-                   text: L("관리자 암호가 한 번 필요합니다."),
-                   detail: adminDetail)
+            if model.helperState == .enabled {
+                Banner(tone: .accent, systemImage: "lock.shield",
+                       text: L("관리자 헬퍼가 처리하므로 암호를 묻지 않습니다."))
+            } else {
+                Banner(tone: .caution, systemImage: "lock.shield",
+                       text: L("관리자 암호가 한 번 필요합니다."),
+                       detail: adminDetail)
+            }
         }
 
         if !flow.riskyItems.isEmpty {

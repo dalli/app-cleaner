@@ -340,6 +340,7 @@ Spotlight 상태 검사: 인벤토리가 Spotlight에 의존하므로, 색인이
     - 루트부터 경로 구성요소마다 `openat(…, O_NOFOLLOW | O_DIRECTORY)`로 내려가며 각 단계의 소유자·심볼릭 링크 여부를 검사하고, 최종 이동은 확보한 디렉토리 fd 기준 `renameatx_np(…, RENAME_EXCL)`로 수행.
     - 이동 대상(보류 폴더)은 root 소유·`0700`으로 헬퍼가 생성한 디렉토리만 사용.
   - 헬퍼도 5.1절 보호 목록을 **독립적으로 재검증** (앱의 판단을 신뢰하지 않음).
+  - 구현 메모 (#17, development.md "권한 헬퍼"): 명령은 위 4종 + 보류 폴더 영구 삭제(세션 폴더만)·복원 시 서비스 재등록(`/Library/LaunchDaemons/*.plist`만). 헬퍼는 엔진의 후보 목록을 따로 알 수 없으므로 `bootout`·`pkgForget` 값은 서명이 확인된 클라이언트가 보낸 값을 형식·보호 목록(`com.apple.*`·본 앱)으로 검증한다. 헬퍼가 없으면 아래 MVP 방식을 대체 경로로 쓴다.
 - **MVP 임시 방식 (Phase 1~2)**: AppleScript `do shell script … with administrator privileges`.
   - 셸 문자열을 동적으로 조립하지 않는다. 앱 번들에 포함한 **고정 스크립트**(`privileged-op.sh`, 서명된 번들 내부·root 실행 전 해시 확인)에 `quoted form of`로 이스케이프한 인자만 넘긴다 — 2.1절 #3(명령 주입) 재발 방지.
   - 고정 스크립트도 허용 루트 검사·`[ -L ]` 검사·보호 목록 검사를 **권한 상승된 쪽에서 다시** 수행한다. (fd 기반 검증까지는 하지 못하므로 경쟁 조건 위험이 남는다는 점을 알려진 제한으로 기록하고 Phase 3에서 해소.)

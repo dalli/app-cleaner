@@ -32,7 +32,7 @@ public actor JournalStore: JournalStoring, JournalRecording {
 
     /// 실제 구현 조립 (관리자 실행기·launchctl·defaults)
     public static func live(paths: SystemPaths, runner: CommandRunning = ProcessCommandRunner()) -> JournalStore {
-        let admin = AppleScriptAdminExecutor(runner: ProcessCommandRunner(timeout: 900))
+        let admin = AdminExecutors.live()
         return JournalStore(paths: paths, admin: admin,
                             services: LaunchctlServiceController(paths: paths, runner: runner, admin: admin),
                             preferences: CFPreferencesFlusher(paths: paths, runner: runner))
