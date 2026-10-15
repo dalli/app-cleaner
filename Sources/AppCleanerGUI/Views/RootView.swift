@@ -104,7 +104,7 @@ struct SidebarView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
                 SidebarSettingsRow(isSelected: model.route == .settings) { model.select(.settings) }
-                PermissionCard(permissions: model.permissions) { model.openPermissionSettings() }
+                PermissionCard(permissions: model.permissions, helper: model.helperState) { model.openPermissionSettings() }
             }
             .padding(.horizontal, 10)
             .padding(.bottom, 12)
@@ -134,6 +134,7 @@ private struct SidebarSettingsRow: View {
 /// 맨 아래 권한 상태 카드 → 설정의 권한 섹션
 struct PermissionCard: View {
     var permissions: PermissionStatus
+    var helper: HelperInstallState
     var action: () -> Void
 
     var body: some View {
@@ -142,7 +143,11 @@ struct PermissionCard: View {
                 Text(L("권한 상태")).font(.caption.weight(.semibold))
                 statusLine(ok: permissions.fullDiskAccess == .granted,
                            text: permissions.fullDiskAccess == .granted ? L("전체 디스크 접근 허용됨") : L("전체 디스크 접근 필요"))
-                statusLine(ok: false, neutral: true, text: L("관리자 헬퍼 미설치"))
+                switch helper {
+                case .enabled: statusLine(ok: true, text: L("관리자 헬퍼 사용 중"))
+                case .requiresApproval: statusLine(ok: false, text: L("관리자 헬퍼 승인 필요"))
+                case .notInstalled, .unavailable: statusLine(ok: false, neutral: true, text: L("관리자 헬퍼 미설치"))
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(10)

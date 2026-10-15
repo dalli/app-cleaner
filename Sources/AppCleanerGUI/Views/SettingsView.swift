@@ -18,20 +18,7 @@ struct SettingsView: View {
                     PermissionRow(title: L("앱 관리"),
                                   detail: L("다른 개발자의 앱을 지울 때 필요합니다. 처음 지울 때 macOS가 요청합니다."),
                                   state: model.permissions.appManagement) { EmptyView() }
-                    LabeledContent {
-                        Button(L("헬퍼 설치…")) {}
-                            .disabled(true)
-                            .help(L("다음 버전에서 제공합니다"))
-                    } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text(L("관리자 헬퍼"))
-                                Badge(L("다음 버전"), tone: .neutral)
-                            }
-                            Text(L("설치하지 않으면 시스템 폴더를 정리할 때마다 관리자 암호를 묻습니다."))
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
+                    HelperRow()
                 } header: {
                     Text(L("권한")).id("permissions")
                 }
@@ -153,6 +140,66 @@ struct SettingsView: View {
         guard let anchor = model.settingsAnchor else { return }
         withAnimation { proxy.scrollTo(anchor, anchor: .top) }
         model.settingsAnchor = nil
+    }
+}
+
+/// 관리자 헬퍼 설치/제거 (plan.md 5.3). 등록 후 시스템 설정 › 일반 › 로그인 항목에서 사용자가 허용해야 실행된다.
+/// 헬퍼가 없거나 허용 전이면 관리자 작업은 지금처럼 관리자 암호를 묻는다.
+private struct HelperRow: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        LabeledContent {
+            HStack(spacing: 10) {
+                status
+                if model.helperBusy { ProgressView().controlSize(.small) }
+                switch model.helperState {
+                case .notInstalled:
+                    Button(L("헬퍼 설치…")) { model.installHelper() }
+                case .requiresApproval:
+                    Button(L("로그인 항목 열기")) { model.openHelperApproval() }
+                    Button(L("헬퍼 제거")) { model.uninstallHelper() }.disabled(model.helperBusy)
+                case .enabled:
+                    Button(L("헬퍼 제거")) { model.uninstallHelper() }.disabled(model.helperBusy)
+                case .unavailable:
+                    EmptyView()
+                }
+            }
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(L("관리자 헬퍼"))
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let error = model.helperError {
+                    Text(error).font(.caption).foregroundStyle(Tone.caution.foreground)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    private var detail: String {
+        switch model.helperState {
+        case .notInstalled:
+            return L("설치하지 않으면 시스템 폴더를 정리할 때마다 관리자 암호를 묻습니다.") + " "
+                + L("설치한 뒤 시스템 설정 › 일반 › 로그인 항목에서 허용해야 합니다.")
+        case .requiresApproval:
+            return L("시스템 설정 › 일반 › 로그인 항목에서 App Cleaner를 허용해야 동작합니다. 허용하기 전에는 관리자 암호를 묻습니다.")
+        case .enabled:
+            return L("시스템 폴더를 정리할 때 관리자 암호를 다시 묻지 않습니다.")
+        case .unavailable:
+            return L("이 실행 방식에서는 설치할 수 없습니다. 관리자 암호를 묻는 방식으로 동작합니다.")
+        }
+    }
+
+    @ViewBuilder
+    private var status: some View {
+        switch model.helperState {
+        case .enabled: Badge(L("설치됨"), tone: .positive, systemImage: "checkmark")
+        case .requiresApproval: Badge(L("승인 필요"), tone: .caution, systemImage: "exclamationmark")
+        case .notInstalled: Badge(L("설치 안 됨"), tone: .neutral)
+        case .unavailable: Badge(L("사용할 수 없음"), tone: .neutral)
+        }
     }
 }
 
