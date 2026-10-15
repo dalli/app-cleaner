@@ -50,6 +50,7 @@ appcleaner restore <세션 ID>                     # 되돌리기
 - 영구 삭제하지 않는다: 사용자 파일은 휴지통, root 소유 파일은 보류 폴더(`/Library/Application Support/AppCleaner/Holding`)로 옮기고 삭제 기록으로 되돌린다.
 - 신뢰도 낮음·다른 앱과 공유·사용자 데이터는 기본 선택하지 않는다. iCloud 데이터·기기 백업·`~/.ssh` 등은 선택할 수 없다.
 - 관리자 작업은 번들의 고정 스크립트(`privileged-op.sh`, 해시 확인)만 실행하며 권한 상승된 쪽에서 경로를 다시 검증한다.
+  설정에서 권한 헬퍼(LaunchDaemon)를 설치하면 서명이 확인된 앱만 XPC로 요청하고, 헬퍼가 fd 기반으로 경로를 검증해 옮긴다 (Developer ID 서명 #19 이후 사용 가능).
 
 ## 현재 상태 (v0.1.x — MVP)
 

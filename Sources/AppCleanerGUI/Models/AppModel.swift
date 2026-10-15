@@ -16,6 +16,8 @@ final class AppModel {
     let history: HistoryViewModel
     @ObservationIgnored let system: SystemActions
     @ObservationIgnored let sentinel: any SentinelServicing
+    /// 관리자 헬퍼 설치 (S7)
+    @ObservationIgnored let helper: any HelperInstalling
 
     var route: SidebarRoute {
         didSet { if route != oldValue { settings.lastRoute = route } }
@@ -29,6 +31,10 @@ final class AppModel {
     var completion: CompletionModel?
 
     private(set) var permissions: PermissionStatus
+    private(set) var helperState: HelperInstallState
+    /// 헬퍼 설치·제거 실패 문구 (설정 화면에 표시)
+    private(set) var helperError: String?
+    private(set) var helperBusy = false
     private(set) var ruleInfo: RuleDataInfo
     private(set) var keepList: [KeepEntry] = []
     private(set) var ruleCheck: RuleCheckState = .idle
@@ -46,12 +52,15 @@ final class AppModel {
     var settingsAnchor: String?
 
     init(engine: any CleanerEngine, settings: AppSettings, isDemo: Bool = false,
-         system: SystemActions = SystemActions(), sentinel: (any SentinelServicing)? = nil) {
+         system: SystemActions = SystemActions(), sentinel: (any SentinelServicing)? = nil,
+         helper: any HelperInstalling = UnavailableHelperInstaller()) {
         self.engine = engine
         self.settings = settings
         self.isDemo = isDemo
         self.system = system
         self.sentinel = sentinel ?? InMemorySentinelService()
+        self.helper = helper
+        self.helperState = helper.state()
         self.appList = AppListViewModel(engine: engine)
         self.orphans = OrphanViewModel(engine: engine)
         self.history = HistoryViewModel(engine: engine)
@@ -278,6 +287,45 @@ final class AppModel {
     /// 앱이 활성화될 때마다 다시 확인 (시스템 설정에서 돌아온 경우)
     func refreshPermissions() {
         permissions = engine.permissions()
+        helperState = helper.state()
+    }
+
+    // MARK: 관리자 헬퍼 (S7)
+
+    /// 등록 후 대부분 "승인 필요" 상태가 되므로 로그인 항목 설정을 바로 연다 (데모는 설정 화면의 안내만).
+    func installHelper() {
+        helperError = nil
+        do {
+            try helper.install()
+        } catch {
+            helperError = L("헬퍼를 설치하지 못했습니다: %@", EngineText.describing(error).localized)
+        }
+        helperState = helper.state()
+        if helperState == .requiresApproval && !(helper is DemoHelperInstaller) { system.openLoginItemsSettings() }
+    }
+
+    func uninstallHelper() {
+        helperError = nil
+        helperBusy = true
+        Task {
+            do {
+                try await helper.uninstall()
+            } catch {
+                helperError = L("헬퍼를 제거하지 못했습니다: %@", EngineText.describing(error).localized)
+            }
+            helperState = helper.state()
+            helperBusy = false
+        }
+    }
+
+    /// 시스템 설정 › 일반 › 로그인 항목 (돌아오면 앱 활성화 시 상태를 다시 확인한다)
+    func openHelperApproval() {
+        if let demo = helper as? DemoHelperInstaller {
+            demo.approve()
+            helperState = helper.state()
+            return
+        }
+        system.openLoginItemsSettings()
     }
 
     func finishOnboarding() {

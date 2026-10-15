@@ -176,6 +176,7 @@
 "adminBadIdentifier" = "ラベルまたはパッケージ ID の形式が正しくありません";
 "adminBadSession" = "整理の記録 ID が正しくありません";
 "adminHoldingUnsafe" = "保留フォルダが安全ではないため中止しました";
+"adminUnsafeParent" = "親フォルダの所有者または権限が安全ではないため移動しませんでした";
 "adminScriptTampered" = "管理者用スクリプトが改ざんされているため実行しませんでした";
 "adminAuthCancelled" = "管理者認証がキャンセルされました";
 "adminNotRoot" = "管理者権限を取得できませんでした";
@@ -186,3 +187,4 @@
 "adminPkgutilFailed" = "pkgutil の実行に失敗しました (%@)";
 "adminFailed" = "管理者の作業に失敗しました (%@)";
 "adminPrompt" = "App Cleaner が変更を加えようとしています。";
+"helperNotBundled" = "この実行方法には管理者ヘルパーが含まれていません";

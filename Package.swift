@@ -8,6 +8,7 @@ let package = Package(
     products: [
         .library(name: "CleanerCore", targets: ["CleanerCore"]),
         .executable(name: "appcleaner", targets: ["appcleaner"]),
+        .executable(name: "AppCleanerHelper", targets: ["AppCleanerHelper"]),
         .executable(name: "AppCleanerGUI", targets: ["AppCleanerGUI"]),
         .executable(name: "AppCleanerSentinel", targets: ["AppCleanerSentinel"]),
     ],
@@ -22,6 +23,11 @@ let package = Package(
         ),
         .executableTarget(
             name: "appcleaner",
+            dependencies: ["CleanerCore"]
+        ),
+        // 권한 헬퍼 (LaunchDaemon, #17) — scripts/build-app.sh가 Contents/MacOS에 넣는다
+        .executableTarget(
+            name: "AppCleanerHelper",
             dependencies: ["CleanerCore"]
         ),
         .executableTarget(

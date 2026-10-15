@@ -177,6 +177,7 @@
 "adminBadIdentifier" = "The label or package ID format is invalid";
 "adminBadSession" = "The cleanup record ID is invalid";
 "adminHoldingUnsafe" = "Stopped because the holding folder isn't safe";
+"adminUnsafeParent" = "Not moved because the owner or permissions of a parent folder aren't safe";
 "adminScriptTampered" = "Not run because the administrator script has been modified";
 "adminAuthCancelled" = "Administrator authentication was canceled";
 "adminNotRoot" = "Couldn't get administrator privileges";
@@ -187,3 +188,4 @@
 "adminPkgutilFailed" = "pkgutil failed (%@)";
 "adminFailed" = "The administrator task failed (%@)";
 "adminPrompt" = "App Cleaner wants to make changes.";
+"helperNotBundled" = "This build doesn't include the administrator helper";

@@ -22,7 +22,8 @@ struct AppCleanerApp: App {
         }
         // 데모 모드는 로그인 항목을 실제로 등록하지 않는다
         let sentinel: any SentinelServicing = demo ? InMemorySentinelService() : LiveSentinelService()
-        let model = AppModel(engine: engine, settings: settings, isDemo: demo, sentinel: sentinel)
+        let model = AppModel(engine: engine, settings: settings, isDemo: demo, sentinel: sentinel,
+                             helper: makeHelperInstaller(arguments: args))
         self.model = model
         AppDelegate.pendingModel = model
         AppDelegate.launchOptions = launch

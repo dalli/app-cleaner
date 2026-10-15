@@ -13,7 +13,8 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
 
     private let inventoryTask = InventoryRefresher()
 
-    /// - Parameter adminLauncher: GUI·CLI 모두 기본은 관리자 인증 대화상자. 이미 root로 실행 중이면 `.direct`.
+    /// - Parameter adminLauncher: 헬퍼가 없을 때의 대체 경로. GUI·CLI 모두 기본은 관리자 인증 대화상자,
+    ///   이미 root로 실행 중이면 `.direct`(헬퍼를 쓰지 않음).
     public init(paths: SystemPaths = .live(), runner: CommandRunning = ProcessCommandRunner(),
                 adminLauncher: AppleScriptAdminExecutor.Launcher? = nil) {
         self.paths = paths
@@ -33,9 +34,8 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
         orphans = OrphanScanner(paths: paths, runner: runner, inventory: inventory, rules: rules, safety: safety,
                                 classifier: DataNatureClassifier(), keepList: keep)
 
-        // 관리자 암호 입력을 기다려야 하므로 긴 시간 제한
-        let launcher = adminLauncher ?? (getuid() == 0 ? .direct : .osascript)
-        let admin = AppleScriptAdminExecutor(runner: ProcessCommandRunner(timeout: 900), launcher: launcher)
+        // 권한 헬퍼가 설치·허용되어 있으면 헬퍼(XPC), 아니면 관리자 암호(고정 스크립트) — plan.md 5.3
+        let admin = AdminExecutors.live(launcher: adminLauncher)
         let services = LaunchctlServiceController(paths: paths, runner: runner, admin: admin)
         let prefs = CFPreferencesFlusher(paths: paths, runner: runner)
         let journal = JournalStore(paths: paths, admin: admin, services: services, preferences: prefs)
