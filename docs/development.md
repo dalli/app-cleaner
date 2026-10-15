@@ -197,6 +197,7 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 ## 브랜치
 
 - `main`: 릴리즈. `dev`: 통합. 기능 브랜치는 `feature/*`로 `dev`에서 분기해 PR로 병합.
+- CI 없음: PR을 열기 전에 로컬에서 `./scripts/test.sh`를 돌린다. 릴리즈 워크플로(`v*` 태그)는 빌드·업로드만 한다.
 
 ## 알려진 제한 (v0.1.0)
 
