@@ -139,7 +139,6 @@
 "다른 위치를 가리키는 링크라 선택할 수 없습니다." = "A link pointing elsewhere; can't be selected.";
 "다시 검사" = "Inspect Again";
 "다시 스캔" = "Scan Again";
-"다음 버전" = "Next version";
 "닫기" = "Close";
 "대기 중" = "Waiting";
 "덮어쓰기 안 함 (이름 바꿔 복원)" = "Don't overwrite (restore with a new name)";
