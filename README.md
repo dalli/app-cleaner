@@ -38,7 +38,7 @@ Mac에서 소스를 빌드하므로(Swift 6이 든 Command Line Tools 또는 Xco
 - `appcleaner-<버전>-macos-arm64.tar.gz` — CLI 단독 (실행 파일 옆의 `AppCleaner_CleanerCore.bundle`을 함께 둘 것)
 
 ad-hoc 서명·미공증 빌드라 처음 실행 시 Gatekeeper가 막으면 Finder에서 우클릭 › 열기를 쓴다.
-릴리즈는 `v*` 태그를 푸시하면 GitHub Actions(`.github/workflows/release.yml`)가 macOS arm64 러너에서 빌드·테스트 후 올린다.
+릴리즈는 `v*` 태그를 푸시하면 GitHub Actions(`.github/workflows/release.yml`)가 macOS arm64 러너에서 빌드해 올린다. 테스트는 PR 전에 로컬에서 `./scripts/test.sh`로 돌린다 (CI 없음).
 로컬에서는 `VERSION=0.1.1 ./scripts/package-release.sh`.
 
 ## CLI

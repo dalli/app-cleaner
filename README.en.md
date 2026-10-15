@@ -38,7 +38,7 @@ Download from [Releases](https://github.com/dallisoft/app-cleaner/releases).
 - `appcleaner-<version>-macos-arm64.tar.gz` — standalone CLI (keep `AppCleaner_CleanerCore.bundle` next to the executable)
 
 Builds are ad-hoc signed and not notarized, so if Gatekeeper blocks the first launch, right-click the app in Finder and choose Open.
-Releases are published by GitHub Actions (`.github/workflows/release.yml`) when a `v*` tag is pushed: it builds and tests on a macOS arm64 runner, then uploads the artifacts.
+Releases are published by GitHub Actions (`.github/workflows/release.yml`) when a `v*` tag is pushed: it builds on a macOS arm64 runner, then uploads the artifacts. Tests are run locally with `./scripts/test.sh` before opening a PR (there is no CI).
 To package locally: `VERSION=0.1.1 ./scripts/package-release.sh`.
 
 ## CLI

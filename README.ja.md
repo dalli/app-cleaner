@@ -38,7 +38,7 @@ appcleaner version
 - `appcleaner-<バージョン>-macos-arm64.tar.gz` — CLI 単体（実行ファイルと同じ場所に `AppCleaner_CleanerCore.bundle` を置いてください）
 
 ad-hoc 署名・未公証のビルドのため、初回起動時に Gatekeeper にブロックされた場合は Finder で右クリック › 開く を使ってください。
-リリースは `v*` タグをプッシュすると、GitHub Actions（`.github/workflows/release.yml`）が macOS arm64 ランナーでビルド・テストしたうえでアップロードします。
+リリースは `v*` タグをプッシュすると、GitHub Actions（`.github/workflows/release.yml`）が macOS arm64 ランナーでビルドしてアップロードします。テストは PR の前にローカルで `./scripts/test.sh` を実行します（CI はありません）。
 ローカルでは `VERSION=0.1.1 ./scripts/package-release.sh` を実行します。
 
 ## CLI

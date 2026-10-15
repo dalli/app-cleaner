@@ -1,7 +1,7 @@
 name: Release
 
 # v* 태그를 푸시하면 Apple Silicon(arm64) 바이너리를 빌드해 GitHub 릴리즈에 올리고,
-# Homebrew tap의 formula를 그 태그로 갱신한다.
+# Homebrew tap의 formula를 그 태그로 갱신한다. 테스트는 여기서 돌리지 않는다 — PR 전에 로컬에서 ./scripts/test.sh.
 on:
   push:
     tags: ['v*']
@@ -28,8 +28,6 @@ jobs:
         run: |
           test "$(uname -m)" = arm64
           swift --version
-      - name: Test
-        run: ./scripts/test.sh
       - name: Package
         run: VERSION="${TAG#v}" ./scripts/package-release.sh
       - name: Upload to release
