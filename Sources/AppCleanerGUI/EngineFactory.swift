@@ -20,3 +20,8 @@ func makeEngine(arguments: [String] = CommandLine.arguments) -> any CleanerEngin
     engine.prewarm()
     return engine
 }
+
+/// 관리자 헬퍼 설치 (S7). 데모는 상태만 바꾸는 가짜, 그 외에는 `SMAppService`.
+func makeHelperInstaller(arguments: [String] = CommandLine.arguments) -> any HelperInstalling {
+    isDemoMode(arguments: arguments) ? DemoHelperInstaller() : SMAppServiceHelperInstaller()
+}

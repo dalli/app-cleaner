@@ -20,7 +20,10 @@ struct AppCleanerApp: App {
             settings.onboardingCompleted = !launch.showOnboarding
             if let route = launch.route { settings.lastRoute = route }
         }
-        let model = AppModel(engine: engine, settings: settings, isDemo: demo)
+        // 데모 모드는 로그인 항목을 실제로 등록하지 않는다
+        let sentinel: any SentinelServicing = demo ? InMemorySentinelService() : LiveSentinelService()
+        let model = AppModel(engine: engine, settings: settings, isDemo: demo, sentinel: sentinel,
+                             helper: makeHelperInstaller(arguments: args))
         self.model = model
         AppDelegate.pendingModel = model
         AppDelegate.launchOptions = launch
@@ -73,7 +76,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         if let model, !pendingURLs.isEmpty {
-            model.handleDrop(pendingURLs)
+            model.handleOpen(pendingURLs)
             pendingURLs = []
         }
         runDemoScript()
@@ -81,10 +84,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
-    /// Dock 아이콘 드롭, Finder "다음으로 열기 › App Cleaner" → S2
+    /// Dock 아이콘 드롭, Finder "다음으로 열기 › App Cleaner" → S2, Sentinel 링크 → S2·S5·S7 (ui-ux.md S10)
     func application(_ application: NSApplication, open urls: [URL]) {
         if let model {
-            model.handleDrop(urls)
+            model.handleOpen(urls)
             NSApp.activate(ignoringOtherApps: true)
         } else {
             pendingURLs.append(contentsOf: urls)
@@ -94,6 +97,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidBecomeActive(_ notification: Notification) {
         // 시스템 설정에서 전체 디스크 접근을 켜고 돌아오면 자동으로 다시 확인 (S8)
         model?.refreshPermissions()
+        // 시스템 설정에서 로그인 항목을 허용하고 돌아온 경우 (S7 Sentinel 상태)
+        model?.refreshSentinel()
     }
 
     /// 데모 모드 화면 확인용 자동 동작

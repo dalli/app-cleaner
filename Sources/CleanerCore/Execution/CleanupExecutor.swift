@@ -6,8 +6,9 @@ import Foundation
 /// - 이동 직전에 SafetyGuard를 다시 검사한다.
 /// - 항목 하나가 실패해도 나머지는 계속하고 실패 목록에 한국어 사유를 남긴다 (롤백하지 않음).
 /// - 옮길 때마다 기록을 저장해, 중간에 멈춰도 옮긴 항목까지는 되돌릴 수 있다.
-/// - 관리자 작업(보류 폴더 이동 + `pkgutil --forget`)은 한 번의 인증으로 묶는다. 시스템 데몬 중지는 프로세스 종료보다
-///   먼저 해야 하므로 별도 배치가 된다 (시스템 데몬이 있을 때만 인증 2회).
+/// - 관리자 작업(보류 폴더 이동 + `pkgutil --forget`)은 한 배치로 묶는다. 시스템 데몬 중지는 프로세스 종료보다
+///   먼저 해야 하므로 별도 배치가 된다. 권한 헬퍼가 있으면 인증을 묻지 않고, 대체 경로(관리자 암호)에서는
+///   시스템 데몬이 있을 때만 인증 2회 (docs/development.md "알려진 제한").
 public struct CleanupExecutor: CleanupExecuting {
     public let paths: SystemPaths
     public let runner: CommandRunning
@@ -38,8 +39,7 @@ public struct CleanupExecutor: CleanupExecuting {
     /// 실제 구현 조립. `journal`을 넘기면 엔진의 복원 기능과 같은 인스턴스를 공유한다.
     public static func live(paths: SystemPaths, runner: CommandRunning = ProcessCommandRunner(),
                             journal: JournalStore? = nil) -> CleanupExecutor {
-        // 관리자 암호 입력을 기다려야 하므로 긴 시간 제한
-        let admin = AppleScriptAdminExecutor(runner: ProcessCommandRunner(timeout: 900))
+        let admin = AdminExecutors.live()
         return CleanupExecutor(
             paths: paths,
             runner: runner,

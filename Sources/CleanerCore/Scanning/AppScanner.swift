@@ -82,7 +82,8 @@ public struct AppScanner: AppScanning {
     public func scan(appAt url: URL, inventory: InventorySnapshot?) async throws -> ScanReport {
         let identity = try identityResolver.resolve(appAt: url)
 
-        var found = [appBundleCandidate(identity)]
+        // 휴지통에 있는 앱(Sentinel "잔여물도 정리" — ui-ux.md S10)은 본체를 다시 옮기지 않고 잔여물만 찾는다.
+        var found = TrashedApp.isInTrash(identity.bundleURL) ? [] : [appBundleCandidate(identity)]
         found += await collect(identity)
         var candidates = Self.removeCoveredDescendants(found.mergedByPath())
         candidates = applySafety(candidates, identity)

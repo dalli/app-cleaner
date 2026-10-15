@@ -1,0 +1,113 @@
+import CleanerCore
+import Foundation
+import Testing
+@testable import AppCleanerGUI
+
+/// S7 Sentinel 설정과 Sentinel 링크 처리 (ui-ux.md S10). 로그인 항목은 메모리 구현으로만 바꾼다.
+@MainActor
+@Suite("Sentinel (S7·S10)")
+struct SentinelSettingsTests {
+    @Test func settingsPersistUnderSharedKeys() {
+        let store = InMemorySettingsStore()
+        let settings = AppSettings(defaults: store)
+        #expect(!settings.trashWatchEnabled && settings.periodicScan == .off)
+        settings.trashWatchEnabled = true
+        settings.periodicScan = .monthly
+        // Sentinel이 같은 키로 읽는다
+        #expect(store.object(forKey: SentinelIdentity.Keys.trashWatch) as? Bool == true)
+        #expect(store.object(forKey: SentinelIdentity.Keys.periodicScan) as? String == "monthly")
+        let reopened = AppSettings(defaults: store)
+        #expect(reopened.trashWatchEnabled && reopened.periodicScan == .monthly)
+
+        // Sentinel이 기록한 상태
+        let scanned = Date(timeIntervalSince1970: 1_000_000)
+        store.set(scanned, forKey: SentinelIdentity.Keys.statusLastScan)
+        store.set("denied", forKey: SentinelIdentity.Keys.statusNotifications)
+        let status = reopened.sentinelPreferences()
+        #expect(status.lastScan == scanned && status.notifications == .denied)
+    }
+
+    @Test func enablingAFeatureRegistersSentinelOnce() {
+        let sentinel = InMemorySentinelService()
+        let model = AppModel(engine: fastEngine(), settings: .inMemory(), sentinel: sentinel)
+        #expect(model.sentinelRegistration == .disabled)
+
+        model.setTrashWatch(true)
+        #expect(sentinel.registration == .enabled && model.sentinelRegistration == .enabled)
+        #expect(sentinel.settingsChangedCount == 1)
+        #expect(model.settings.trashWatchEnabled)
+
+        // 이미 등록돼 있으면 다시 등록하지 않고 설정 변경만 알린다 (메뉴에서 종료했으면 다시 띄움)
+        model.setPeriodicScan(.weekly)
+        #expect(sentinel.settingsChangedCount == 2 && sentinel.launchCount == 1)
+        #expect(model.settings.periodicScan == .weekly)
+    }
+
+    @Test func turningEverythingOffUnregisters() async {
+        let sentinel = InMemorySentinelService()
+        let model = AppModel(engine: fastEngine(), settings: .inMemory(), sentinel: sentinel)
+        model.setTrashWatch(true)
+        model.setPeriodicScan(.monthly)
+        model.setTrashWatch(false)
+        // 정기 스캔이 아직 켜져 있으므로 유지
+        #expect(sentinel.registration == .enabled)
+        model.setPeriodicScan(.off)
+        #expect(await waitUntil { model.sentinelRegistration == .disabled })
+        #expect(sentinel.registration == .disabled)
+        // 실행 중인 Sentinel은 알림을 받고 스스로 종료한다
+        #expect(sentinel.settingsChangedCount == 4)
+    }
+
+    @Test func registrationFailureIsShown() {
+        let sentinel = InMemorySentinelService()
+        sentinel.registerError = CocoaError(.featureUnsupported)
+        let model = AppModel(engine: fastEngine(), settings: .inMemory(), sentinel: sentinel)
+        model.setTrashWatch(true)
+        #expect(model.sentinelError != nil)
+        #expect(model.sentinelRegistration == .disabled)
+        // 다시 켜면 오류가 사라진다
+        model.setTrashWatch(false)
+        model.setTrashWatch(true)
+        #expect(model.sentinelError == nil && model.sentinelRegistration == .enabled)
+    }
+
+    // MARK: 링크 (com.dallisoft.appcleaner://)
+
+    @Test func inspectLinkOpensTrashedApp() throws {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "sentinel-\(UUID().uuidString)/.Trash/Gone.app")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir.deletingLastPathComponent().deletingLastPathComponent()) }
+
+        let model = AppModel(engine: fastEngine(), settings: .inMemory())
+        model.select(.history)
+        #expect(model.handleOpen([SentinelLink.inspect(path: dir.path).url]))
+        #expect(model.route == .apps)
+        let inspector = try #require(model.inspector)
+        #expect(inspector.appURL.standardizedFileURL.path == dir.standardizedFileURL.path)
+        #expect(inspector.isInTrash)
+    }
+
+    @Test func inspectLinkFallsBackToOrphansWhenTrashWasEmptied() {
+        let model = AppModel(engine: fastEngine(), settings: .inMemory())
+        model.open(.inspect(path: "/nonexistent-\(UUID().uuidString)/.Trash/Gone.app"))
+        #expect(model.route == .orphans)
+        #expect(model.inspector == nil)
+        #expect(model.orphans.isScanning || model.orphans.hasScanned)
+    }
+
+    @Test func orphansAndSettingsLinks() {
+        let model = AppModel(engine: fastEngine(), settings: .inMemory())
+        #expect(model.handleOpen([URL(string: "com.dallisoft.appcleaner://orphans")!]))
+        #expect(model.route == .orphans)
+        #expect(model.orphans.isScanning || model.orphans.hasScanned)
+        #expect(model.handleOpen([SentinelLink.settings.url]))
+        #expect(model.route == .settings)
+        // 모르는 링크·앱이 아닌 파일은 무시
+        #expect(!model.handleOpen([URL(string: "com.dallisoft.appcleaner://remove")!]))
+        #expect(!model.handleOpen([URL(filePath: "/tmp/readme.txt")]))
+        // 기존 드롭 경로는 그대로
+        #expect(model.handleOpen([slackURL]))
+        #expect(model.inspector?.appURL == slackURL)
+        #expect(!(model.inspector?.isInTrash ?? true))
+    }
+}

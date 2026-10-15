@@ -62,6 +62,7 @@ The output language (Korean, English, Japanese) is chosen from `--lang <ko|en|ja
 - Nothing is permanently deleted: user files go to the Trash, root-owned files go to a holding folder (`/Library/Application Support/AppCleaner/Holding`), and everything can be restored from the removal history.
 - Low-confidence items, items shared with other apps, and user data are never selected by default. iCloud data, device backups, `~/.ssh`, and similar paths cannot be selected at all.
 - Privileged operations run only the bundled fixed script (`privileged-op.sh`, hash-verified), and paths are re-validated on the elevated side.
+  If you install the privileged helper (LaunchDaemon) in Settings, only code-signature-verified clients can send requests over XPC, and the helper validates and moves paths using file descriptors (usable once Developer ID signing, #19, is in place).
 
 ## Current status (v0.1.x — MVP)
 
