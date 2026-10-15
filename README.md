@@ -37,6 +37,9 @@ appcleaner remove Foo --dry-run                  # 정리 계획 JSON
 appcleaner remove Foo                            # 확인 후 휴지통/보류 폴더로 이동
 appcleaner orphans --min-confidence medium       # 고아 잔여물 스캔
 appcleaner orphans clean --dry-run               # 고아 정리 계획 (기본: 높음 + 사용자 데이터 아님)
+appcleaner packages                              # npm·cargo·pipx·uv로 설치한 CLI 도구 + 이름이 같은 데이터
+appcleaner packages remove <이름> --dry-run      # CLI 도구 제거 계획 (--with-data: 데이터도)
+appcleaner packages caches clean --dry-run       # 패키지 매니저 다운로드 캐시 정리 계획
 appcleaner history                               # 삭제 기록
 appcleaner restore <세션 ID>                     # 되돌리기
 ```
@@ -59,3 +62,4 @@ plan.md의 Phase 1a·1b·2 범위. 남은 작업은 [`backlog` 라벨 이슈](ht
 - Phase 4: Developer ID 서명·공증, Sparkle (#19), Homebrew tap·cask (#15, #16), 규칙 데이터 서명 키 교체 (#20)
 - VM·실기기 QA 매트릭스 (#21), GUI 미비점 (#22)
 - 다국어: GUI·CLI 모두 한국어·영어·일본어 지원 (그 밖의 언어는 영어). 일본어 화면 확인·번역 검수는 #27
+- 패키지 매니저(npm·cargo·pipx·uv)로 설치한 CLI 도구·데이터·캐시 정리는 CLI만 — [docs/packages.md](docs/packages.md) (#39)

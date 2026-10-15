@@ -12,6 +12,8 @@ final class RecordingEngine: CleanerEngine, @unchecked Sendable {
     var journal: [JournalSession] = []
     var preview: RestorePreview?
     var restoredSessions: [UUID] = []
+    var packageReport = PackageScanReport(packages: [], ruleDataVersion: "t")
+    var packageScanOptions: [PackageScanOptions] = []
 
     init(report: ScanReport, orphanReport: OrphanScanReport, apps: [InstalledApp] = []) {
         self.report = report
@@ -54,6 +56,10 @@ final class RecordingEngine: CleanerEngine, @unchecked Sendable {
     func exportSession(id: UUID) async -> Data? { nil }
     func permissions() -> PermissionStatus { PermissionStatus(fullDiskAccess: .granted) }
     func ruleDataInfo() -> RuleDataInfo { RuleDataInfo(version: "t", updatedAt: nil, signatureVerified: true, caskCount: 0) }
+    func scanPackages(options: PackageScanOptions) async throws -> PackageScanReport {
+        packageScanOptions.append(options)
+        return packageReport
+    }
 }
 
 private func url(_ p: String) -> URL { URL(fileURLWithPath: p) }

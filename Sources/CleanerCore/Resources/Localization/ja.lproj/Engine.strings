@@ -87,6 +87,15 @@
 "brewZapRecommended" = "brew uninstall --zap --cask %@ で整理することをおすすめします";
 "homebrewRecordOnly" = "Homebrew の記録だけが残っています — brew uninstall --zap --cask %@ をおすすめします";
 "serviceExecutableRemains" = "サービスの実行ファイルがまだ残っています — ほかのプログラムが使用している可能性があります";
+"packageInstalled" = "%@ のインストール記録: %@";
+"packageExecutableLink" = "実行ファイルのリンク %2$@ (%1$@)";
+"packageDataByName" = "同じ名前のデータ (%@ パッケージ %@)";
+"packageDataMaybeOther" = "名前が同じだけの別のプログラムのデータの可能性があります";
+"packageDataShared" = "別のインストール (%@) も同じ名前を使用しています";
+"packageNeedsAdmin" = "管理者が所有する場所のため移動しません — %@ で削除してください";
+"cargoRecordRemains" = "cargo のインストール記録 (~/.cargo/.crates2.json) に %@ の項目が残ります — 再インストールすると更新されます";
+"packageManagerCache" = "%@ のダウンロードキャッシュ";
+"packageCacheRedownloaded" = "削除しても次回のインストール時に再ダウンロードされます";
 
 /* 共有理由 */
 "sharedAppGroup" = "同じ App Group (%@) をほかの App も使用";

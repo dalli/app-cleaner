@@ -20,6 +20,16 @@ Commands:
   orphans clean                 Clean up orphaned leftovers (default: high confidence, not user data)
       --dry-run | --yes | --json
       --include-medium          Also include medium-confidence items
+  packages                      CLI tools installed with a package manager (npm, cargo, pipx, uv) and data with the same name
+      --manager <npm|cargo|pipx|uv>  Only these managers (comma-separated)
+      --json
+  packages remove <name|path>…  Move the installed files (package folder, executable links) to the Trash
+      --with-data               Also data with the same name (except data shared with another installation)
+      --manager <…> | --dry-run | --yes | --json
+  packages caches               Package manager download caches
+      --manager <…> | --json
+  packages caches clean         Clean up the caches (downloaded again on the next install)
+      --manager <…> | --dry-run | --yes | --json
   history [--json]              Cleanup history
   restore <session ID> [--yes]  Restore a session
   version                       Version
@@ -122,3 +132,21 @@ Common options:
 
 /* version */
 "appcleaner %@ (규칙 데이터 %@)" = "appcleaner %@ (rule data %@)";
+
+/* 패키지 매니저 (docs/packages.md) */
+"다른 설치와 함께 쓰는 데이터라 남겨둡니다: %@" = "Keeping data shared with another installation: %@";
+"패키지 매니저로 설치한 패키지가 없습니다." = "No packages installed with a package manager.";
+"패키지 매니저 캐시가 없습니다." = "No package manager caches.";
+"아무것도 지우지 않았습니다. 정리: appcleaner packages caches clean [--dry-run]" = "Nothing was removed. To clean up: appcleaner packages caches clean [--dry-run]";
+"아무것도 지우지 않았습니다. 제거: appcleaner packages remove <이름> [--with-data] [--dry-run]" = "Nothing was removed. To remove: appcleaner packages remove <name> [--with-data] [--dry-run]";
+"패키지 매니저 캐시" = "Package manager caches";
+"실행 파일: %@" = "Executables: %@";
+"패키지 정리" = "Package cleanup";
+"참고: %@" = "Note: %@";
+"알 수 없는 하위 명령: packages %@" = "Unknown subcommand: packages %@";
+"알 수 없는 하위 명령: packages caches %@" = "Unknown subcommand: packages caches %@";
+"설치된 패키지에서 '%@'을(를) 찾지 못했습니다. `appcleaner packages`로 확인하세요." = "Couldn't find '%@' among installed packages. Check with `appcleaner packages`.";
+"제거할 패키지를 지정하세요" = "Specify the package to remove";
+"--manager 값이 필요합니다" = "--manager needs a value";
+"--manager는 npm, cargo, pipx, uv 중 하나입니다: %@" = "--manager must be one of npm, cargo, pipx, uv: %@";
+"'%@'에 해당하는 설치가 여러 개입니다. 경로로 지정하세요:\n%@" = "'%@' matches more than one installation. Specify it by path:\n%@";

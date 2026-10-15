@@ -37,6 +37,9 @@ appcleaner remove Foo --dry-run                  # 整理計画を JSON で出�
 appcleaner remove Foo                            # 確認後、ゴミ箱／保留フォルダへ移動
 appcleaner orphans --min-confidence medium       # 孤立ファイルをスキャン
 appcleaner orphans clean --dry-run               # 孤立ファイルの整理計画（既定: 信頼度「高」かつユーザデータ以外）
+appcleaner packages                              # npm・cargo・pipx・uv でインストールした CLI ツール＋同じ名前のデータ
+appcleaner packages remove <名前> --dry-run      # CLI ツールの削除計画（--with-data: データも）
+appcleaner packages caches clean --dry-run       # パッケージマネージャのダウンロードキャッシュの整理計画
 appcleaner history                               # 削除履歴
 appcleaner restore <セッション ID>                # 元に戻す
 ```
@@ -59,3 +62,4 @@ plan.md の Phase 1a・1b・2 の範囲です。残りの作業は [`backlog` �
 - Phase 4: Developer ID 署名・公証、Sparkle（#19）、Homebrew tap・cask（#15, #16）、ルールデータ署名鍵の更新（#20）
 - VM・実機での QA マトリクス（#21）、GUI の未対応事項（#22）
 - 多言語対応: GUI・CLI ともに韓国語・英語・日本語に対応（その他の言語では英語）。日本語画面の確認と翻訳の校正は #27
+- パッケージマネージャ（npm・cargo・pipx・uv）でインストールした CLI ツール・データ・キャッシュの整理は CLI のみ — [docs/packages.md](docs/packages.md)（#39）

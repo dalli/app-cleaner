@@ -205,6 +205,25 @@ extension EngineText {
         case homebrewRecordOnly
         case serviceExecutableRemains
 
+        // MARK: 패키지 매니저 (docs/packages.md)
+
+        /// `args`: 매니저, 패키지 이름
+        case packageInstalled
+        /// `args`: 패키지 이름, 실행 파일 이름
+        case packageExecutableLink
+        /// `args`: 매니저, 패키지 이름
+        case packageDataByName
+        case packageDataMaybeOther
+        /// `args`: 같은 이름을 찾은 다른 패키지들
+        case packageDataShared
+        /// `args`: 패키지 매니저 제거 명령
+        case packageNeedsAdmin
+        /// `args`: 패키지 이름
+        case cargoRecordRemains
+        /// `args`: 매니저
+        case packageManagerCache
+        case packageCacheRedownloaded
+
         // MARK: 공유 사유
 
         case sharedAppGroup
@@ -404,6 +423,16 @@ extension EngineText {
             case .brewZapRecommended: return "brew uninstall --zap --cask %@ 로 정리하는 것을 권장"
             case .homebrewRecordOnly: return "Homebrew 기록만 남아 있음 — brew uninstall --zap --cask %@ 권장"
             case .serviceExecutableRemains: return "서비스 실행 파일이 아직 남아 있음 — 다른 프로그램이 쓰고 있을 수 있음"
+
+            case .packageInstalled: return "%@ 설치 기록: %@"
+            case .packageExecutableLink: return "실행 파일 링크 %2$@ (%1$@)"
+            case .packageDataByName: return "이름이 같은 데이터 (%@ 패키지 %@)"
+            case .packageDataMaybeOther: return "이름만 같은 다른 프로그램의 데이터일 수 있음"
+            case .packageDataShared: return "다른 설치(%@)도 같은 이름을 씀"
+            case .packageNeedsAdmin: return "관리자 소유 위치라 옮기지 않음 — %@ 로 제거"
+            case .cargoRecordRemains: return "cargo 설치 기록(~/.cargo/.crates2.json)에 %@ 항목이 남음 — 다시 설치하면 갱신됨"
+            case .packageManagerCache: return "%@ 다운로드 캐시"
+            case .packageCacheRedownloaded: return "지우면 다음 설치 때 다시 내려받음"
 
             case .sharedAppGroup: return "같은 App Group(%@)을 다른 앱도 사용"
             case .sharedExternalLaunchService: return "실행 파일(%@)이 앱 밖에 있는 같은 개발사 공용 백그라운드 서비스"

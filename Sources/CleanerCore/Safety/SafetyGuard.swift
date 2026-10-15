@@ -61,6 +61,9 @@ public struct SafetyGuard: SafetyChecking {
         "Library/LaunchAgents", "Library/Internet Plug-Ins", "Library/QuickLook", "Library/Services",
         "Library/PreferencePanes", "Library/Spotlight", "Library/Frameworks",
         ".config", ".local", ".local/share", ".cache",
+        // 패키지 매니저 설치 위치의 상위 폴더 (docs/packages.md) — 그 안의 항목만 옮긴다
+        ".local/bin", ".local/state", ".local/lib", ".local/lib/node_modules", ".local/pipx", ".local/pipx/venvs",
+        ".local/share/uv", ".local/share/uv/tools", ".local/share/man", ".cargo/bin",
     ]
 
     /// 홈 기준, 하위 전체 보호

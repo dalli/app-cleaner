@@ -20,6 +20,16 @@
   orphans clean                 孤立した残存ファイルを整理 (デフォルト: 信頼度「高」かつユーザデータ以外)
       --dry-run | --yes | --json
       --include-medium          信頼度「中」の項目も含める
+  packages                      パッケージマネージャ (npm・cargo・pipx・uv) でインストールした CLI ツールと同じ名前のデータ
+      --manager <npm|cargo|pipx|uv>  マネージャを限定 (カンマ区切りで複数可)
+      --json
+  packages remove <名前|パス>…  インストールした項目 (パッケージフォルダ・実行ファイルのリンク) をゴミ箱に移動
+      --with-data               同じ名前のデータも一緒に (別のインストールと共有しているものは除外)
+      --manager <…> | --dry-run | --yes | --json
+  packages caches               パッケージマネージャのダウンロードキャッシュ
+      --manager <…> | --json
+  packages caches clean         キャッシュを整理 (次回のインストール時に再ダウンロード)
+      --manager <…> | --dry-run | --yes | --json
   history [--json]              削除履歴
   restore <セッション ID> [--yes]  セッションを復元
   version                       バージョン
@@ -132,3 +142,24 @@
 
 /* version */
 "appcleaner %@ (규칙 데이터 %@)" = "appcleaner %@ (ルールデータ %@)";
+
+/* 패키지 매니저 (docs/packages.md) */
+"다른 설치와 함께 쓰는 데이터라 남겨둡니다: %@" = "別のインストールと共有しているデータのため残します: %@";
+"패키지 매니저로 설치한 패키지가 없습니다." = "パッケージマネージャでインストールしたパッケージはありません。";
+"패키지 매니저 캐시가 없습니다." = "パッケージマネージャのキャッシュはありません。";
+"아무것도 지우지 않았습니다. 정리: appcleaner packages caches clean [--dry-run]" = "何も削除していません。整理: appcleaner packages caches clean [--dry-run]";
+"아무것도 지우지 않았습니다. 제거: appcleaner packages remove <이름> [--with-data] [--dry-run]" = "何も削除していません。削除: appcleaner packages remove <名前> [--with-data] [--dry-run]";
+"패키지 매니저 캐시" = "パッケージマネージャのキャッシュ";
+"실행 파일: %@" = "実行ファイル: %@";
+"패키지 정리" = "パッケージの整理";
+"참고: %@" = "参考: %@";
+"알 수 없는 하위 명령: packages %@" = "不明なサブコマンド: packages %@";
+"알 수 없는 하위 명령: packages caches %@" = "不明なサブコマンド: packages caches %@";
+"설치된 패키지에서 '%@'을(를) 찾지 못했습니다. `appcleaner packages`로 확인하세요." = "インストール済みのパッケージに「%@」が見つかりません。`appcleaner packages` で確認してください。";
+"제거할 패키지를 지정하세요" = "削除するパッケージを指定してください";
+"--manager 값이 필요합니다" = "--manager の値が必要です";
+"--manager는 npm, cargo, pipx, uv 중 하나입니다: %@" = "--manager は npm、cargo、pipx、uv のいずれかです: %@";
+"'%@'에 해당하는 설치가 여러 개입니다. 경로로 지정하세요:\n%@" = "「%@」に該当するインストールが複数あります。パスで指定してください:\n%@";
+"패키지 %lld개 · 설치 %@ · 이름이 같은 데이터 %@" = "パッケージ %lld 個 · インストール %@ · 同じ名前のデータ %@";
+"캐시 %lld개 · %@" = "キャッシュ %lld 個 · %@";
+"%@ — 패키지 %lld개" = "%@ — パッケージ %lld 個";

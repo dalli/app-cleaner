@@ -30,6 +30,7 @@ Xcode 없이 Command Line Tools만으로 빌드·테스트한다. XCTest는 사�
 | `Identity/`, `Discovery/`, `Selection/`, `Scanning/` | 앱 제거 탐지 | 4.1~4.3 |
 | `Safety/`, `Preflight/`, `Mover/`, `Journal/`, `Execution/` | 정리 실행·기록·복원 | 4.4, 5, 6 |
 | `Inventory/`, `Orphan/`, `RuleUpdate/` | 인벤토리·고아 스캔·규칙 데이터 서명 | 4.5, 4.6 |
+| `Packages/` | 패키지 매니저(npm·cargo·pipx·uv)로 설치한 CLI 도구·데이터·캐시 | [packages.md](packages.md) |
 | `Engine/` | `LiveCleanerEngine` 조립 | 8.2 |
 | `Localization/` | `AppLanguage`(언어 선택), `Translations`(엔진·CLI 번역 표 조회) | — |
 

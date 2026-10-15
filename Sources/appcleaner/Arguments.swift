@@ -7,6 +7,11 @@ enum Command: Equatable {
     case remove(app: String, dryRun: Bool, yes: Bool, json: Bool, resetPrivacy: Bool)
     case orphans(options: OrphanScanOptions, json: Bool)
     case orphansClean(options: OrphanScanOptions, dryRun: Bool, yes: Bool, json: Bool, includeMedium: Bool)
+    /// 패키지 매니저로 설치한 CLI 도구 (docs/packages.md)
+    case packages(options: PackageScanOptions, json: Bool)
+    case packagesRemove(targets: [String], options: PackageScanOptions, withData: Bool, dryRun: Bool, yes: Bool, json: Bool)
+    case packageCaches(options: PackageScanOptions, json: Bool)
+    case packageCachesClean(options: PackageScanOptions, dryRun: Bool, yes: Bool, json: Bool)
     case history(json: Bool)
     case restore(sessionID: UUID, yes: Bool)
     case help
@@ -53,6 +58,12 @@ enum ArgumentParser {
                 i += 2
                 continue
             }
+            if a == "--manager" {
+                guard i + 1 < rest.count else { throw UsageError("--manager 값이 필요합니다") }
+                values[a] = [values[a], rest[i + 1]].compactMap { $0 }.joined(separator: ",")
+                i += 2
+                continue
+            }
             if a.hasPrefix("--") { flags.insert(a) } else { positionals.append(a) }
             i += 1
         }
@@ -73,6 +84,17 @@ enum ArgumentParser {
                 }
             }
             return opts
+        }
+
+        func packageOptions(includeData: Bool = true) throws -> PackageScanOptions {
+            var managers = Set<PackageManager>()
+            for v in (values["--manager"] ?? "").split(separator: ",") {
+                guard let m = PackageManager(rawValue: v.trimmingCharacters(in: .whitespaces).lowercased()) else {
+                    throw UsageError("--manager는 npm, cargo, pipx, uv 중 하나입니다: %@", String(v))
+                }
+                managers.insert(m)
+            }
+            return PackageScanOptions(managers: managers, includeData: includeData)
         }
 
         switch first {
@@ -99,6 +121,30 @@ enum ArgumentParser {
             if let p = positionals.first { throw UsageError("알 수 없는 하위 명령: orphans %@", p) }
             try allow(["--json", "--include-dotfiles"])
             return .orphans(options: try orphanOptions(), json: flags.contains("--json"))
+        case "packages":
+            switch positionals.first {
+            case nil:
+                try allow(["--json"])
+                return .packages(options: try packageOptions(), json: flags.contains("--json"))
+            case "remove":
+                try allow(["--with-data", "--dry-run", "--yes", "--json"])
+                let targets = Array(positionals.dropFirst())
+                guard !targets.isEmpty else { throw UsageError("제거할 패키지를 지정하세요") }
+                let withData = flags.contains("--with-data")
+                return .packagesRemove(targets: targets, options: try packageOptions(includeData: withData), withData: withData,
+                                       dryRun: flags.contains("--dry-run"), yes: flags.contains("--yes"), json: flags.contains("--json"))
+            case "caches":
+                if positionals.count > 1 && positionals[1] == "clean" {
+                    try allow(["--dry-run", "--yes", "--json"])
+                    return .packageCachesClean(options: try packageOptions(includeData: false), dryRun: flags.contains("--dry-run"),
+                                               yes: flags.contains("--yes"), json: flags.contains("--json"))
+                }
+                if positionals.count > 1 { throw UsageError("알 수 없는 하위 명령: packages caches %@", positionals[1]) }
+                try allow(["--json"])
+                return .packageCaches(options: try packageOptions(includeData: false), json: flags.contains("--json"))
+            case let p?:
+                throw UsageError("알 수 없는 하위 명령: packages %@", p)
+            }
         case "history":
             try allow(["--json"])
             return .history(json: flags.contains("--json"))

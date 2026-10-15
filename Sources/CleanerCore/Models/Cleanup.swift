@@ -3,6 +3,8 @@ import Foundation
 public enum SessionKind: String, Codable, Sendable {
     case appRemoval
     case orphanCleanup
+    /// 패키지 매니저로 설치한 CLI 도구·데이터·캐시 정리
+    case packageRemoval
 }
 
 /// 정리 실행 계획 = S3 미리보기의 내용. CLI `--dry-run`은 이것을 JSON으로 출력한다.
