@@ -42,6 +42,20 @@ struct CLI {
                 }
                 let plan = engine.makePlan(for: report, selectedPaths: Set(items.map(\.path)))
                 return try await runPlan(plan, dryRun: dryRun, yes: yes, json: json)
+            case let .packages(options, json):
+                let report = try await engine.scanPackages(options: options)
+                if json { try printJSON(report) } else { printPackages(report) }
+            case let .packagesRemove(targets, options, withData, dryRun, yes, json):
+                return try await removePackages(targets, options: options, withData: withData, dryRun: dryRun, yes: yes, json: json)
+            case let .packageCaches(options, json):
+                let report = try await engine.scanPackages(options: options)
+                if json { try printJSON(report.caches) } else { printPackageCaches(report.caches) }
+            case let .packageCachesClean(options, dryRun, yes, json):
+                var report = try await engine.scanPackages(options: options)
+                report.packages = []
+                let selected = report.caches.filter { $0.isSelected && $0.isSelectable }.map(\.path)
+                let plan = engine.makePlan(for: report, selectedPaths: Set(selected))
+                return try await runPlan(plan, dryRun: dryRun, yes: yes, json: json)
             case let .history(json):
                 let sessions = await engine.sessions()
                 if json { try printJSON(sessions) } else { printHistory(sessions) }
@@ -126,6 +140,80 @@ struct CLI {
             for a in result.advisories { out(t("직접 확인할 것: %@", format.advisory(a))) }
         }
         return result.failures.isEmpty ? 0 : 2
+    }
+
+    // MARK: 패키지
+
+    /// 지정한 패키지의 설치 항목(+ `--with-data`면 다른 설치와 함께 쓰지 않는 데이터)을 옮긴다.
+    private func removePackages(_ targets: [String], options: PackageScanOptions, withData: Bool, dryRun: Bool, yes: Bool,
+                                json: Bool) async throws -> Int32 {
+        var scanOptions = options
+        scanOptions.computeSizes = false
+        var report = try await engine.scanPackages(options: scanOptions)
+        var chosen: [PackageReport] = []
+        for target in targets {
+            for p in try resolvePackage(target, in: report.packages) where !chosen.contains(where: { $0.id == p.id }) {
+                chosen.append(p)
+            }
+        }
+        let ids = Set(chosen.map(\.id))
+        var selected = Set<String>()
+        for i in chosen.indices {
+            chosen[i].candidates = await FileStatsCalculator.fill(chosen[i].candidates)
+            let r = chosen[i]
+            if !r.isRemovable && !json {
+                for c in r.installCandidates where !c.isSelectable {
+                    for n in c.notes { err("! \(r.package.name): \(format.engine(n))") }
+                }
+            }
+            for c in r.installCandidates where c.isSelected && c.isSelectable { selected.insert(c.path) }
+            guard withData else { continue }
+            for c in r.dataCandidates where c.isSelectable {
+                // 함께 찾은 다른 설치도 이번에 지우는 경우에만 옮긴다.
+                if report.packages(matching: c.path).allSatisfy({ ids.contains($0.id) }) {
+                    selected.insert(c.path)
+                } else if !json {
+                    // --dry-run의 표준 출력은 JSON이므로 안내는 표준 오류로
+                    err(t("다른 설치와 함께 쓰는 데이터라 남겨둡니다: %@", c.path))
+                }
+            }
+        }
+        report.packages = chosen
+        report.caches = []
+        let plan = engine.makePlan(for: report, selectedPaths: selected)
+        let code = try await runPlan(plan, dryRun: dryRun, yes: yes, json: json)
+        if code == 0 && !dryRun && !json && !plan.items.isEmpty {
+            for r in chosen { for n in r.notes { out(t("참고: %@", format.engine(n))) } }
+        }
+        return code
+    }
+
+    /// 이름(`@scope/name`·`name`), `매니저:이름`, 또는 설치 경로로 패키지를 찾는다. 이름이 같은 설치가 여럿이면 경로로 지정하게 한다.
+    func resolvePackage(_ arg: String, in packages: [PackageReport]) throws -> [PackageReport] {
+        let expanded = (arg as NSString).expandingTildeInPath
+        if expanded.contains("/") && !expanded.hasPrefix("@") {
+            let hits = packages.filter { $0.package.isInstallPath(expanded) }
+            guard !hits.isEmpty else { throw UsageError("설치된 패키지에서 '%@'을(를) 찾지 못했습니다. `appcleaner packages`로 확인하세요.", arg) }
+            return hits
+        }
+        var manager: PackageManager?
+        var name = arg
+        if let colon = arg.firstIndex(of: ":"), let m = PackageManager(rawValue: arg[..<colon].lowercased()) {
+            manager = m
+            name = String(arg[arg.index(after: colon)...])
+        }
+        let hits = packages.filter { r in
+            let p = r.package
+            guard manager == nil || p.manager == manager else { return false }
+            let base = p.name.split(separator: "/").last.map(String.init) ?? p.name
+            return p.name.caseInsensitiveCompare(name) == .orderedSame || base.caseInsensitiveCompare(name) == .orderedSame
+        }
+        if hits.isEmpty { throw UsageError("설치된 패키지에서 '%@'을(를) 찾지 못했습니다. `appcleaner packages`로 확인하세요.", arg) }
+        if hits.count > 1 {
+            let list = hits.map { "  \($0.package.manager.displayName)\($0.package.rootLabel.map { " (\($0))" } ?? "")  \($0.package.location.path)" }
+            throw UsageError("'%@'에 해당하는 설치가 여러 개입니다. 경로로 지정하세요:\n%@", arg, list.joined(separator: "\n"))
+        }
+        return hits
     }
 
     // MARK: 앱 찾기
@@ -228,6 +316,51 @@ struct CLI {
         out("\n" + t("아무것도 지우지 않았습니다. 정리: appcleaner orphans clean [--dry-run]"))
     }
 
+    private func printPackages(_ report: PackageScanReport) {
+        if report.packages.isEmpty {
+            out(t("패키지 매니저로 설치한 패키지가 없습니다."))
+            return
+        }
+        let install = report.packages.reduce(Int64(0)) { $0 + $1.installSize }
+        let data = report.dataSize
+        out(t("패키지 %lld개 · 설치 %@ · 이름이 같은 데이터 %@", report.packages.count, format.size(install), format.size(data)))
+        var groups: [(key: String, items: [PackageReport])] = []
+        for r in report.packages {
+            let key = r.package.manager.displayName + (r.package.rootLabel.map { " (\($0))" } ?? "")
+            if let i = groups.firstIndex(where: { $0.key == key }) { groups[i].items.append(r) } else { groups.append((key, [r])) }
+        }
+        for g in groups {
+            out("\n" + t("%@ — 패키지 %lld개", g.key, g.items.count))
+            for r in g.items {
+                var line = "  \(r.package.title)  \(format.size(r.installSize))"
+                if !r.package.executables.isEmpty { line += "  " + t("실행 파일: %@", r.package.executables.joined(separator: ", ")) }
+                if !r.isRemovable { line += "  [🔒]" }
+                out(line)
+                for c in r.installCandidates where !c.isSelectable {
+                    for n in c.notes { out("      \(format.engine(n))") }
+                    break
+                }
+                for c in r.dataCandidates {
+                    out("      · \(c.path)  \(format.size(c.size))  \(format.badges(c))")
+                }
+            }
+        }
+        out("\n" + t("아무것도 지우지 않았습니다. 제거: appcleaner packages remove <이름> [--with-data] [--dry-run]"))
+    }
+
+    private func printPackageCaches(_ caches: [Candidate]) {
+        if caches.isEmpty {
+            out(t("패키지 매니저 캐시가 없습니다."))
+            return
+        }
+        out(t("캐시 %lld개 · %@", caches.count, format.size(caches.reduce(0) { $0 + ($1.size ?? 0) })))
+        for c in caches {
+            out("  \(c.isSelected && c.isSelectable ? "[x]" : "[ ]") \(c.path)  \(format.size(c.size))  \(format.badges(c))")
+            if let e = c.evidence.first { out("        " + t("근거: %@", format.engine(e.detail))) }
+        }
+        out("\n" + t("아무것도 지우지 않았습니다. 정리: appcleaner packages caches clean [--dry-run]"))
+    }
+
     private func printHistory(_ sessions: [JournalSession]) {
         if sessions.isEmpty { out(t("삭제 기록이 없습니다.")); return }
         let df = DateFormatter()
@@ -235,19 +368,27 @@ struct CLI {
         df.dateStyle = .short
         df.timeStyle = .short
         for s in sessions {
-            let kind = s.kind == .appRemoval ? t("앱 제거") : t("고아 정리")
+            let kind: String
+            switch s.kind {
+            case .appRemoval: kind = t("앱 제거")
+            case .orphanCleanup: kind = t("고아 정리")
+            case .packageRemoval: kind = t("패키지 정리")
+            }
             out("\(s.id.uuidString)  \(df.string(from: s.startedAt))  \(kind)  \(sessionTitle(s))  "
                 + t("%lld개 · %@", s.items.count, format.size(s.totalSize)) + "  [\(format.status(s.status))]")
         }
     }
 
     /// 세션 대상 이름. 엔진이 고아 정리에 붙이는 고정 이름("고아 잔여물")은 출력 언어로 바꾼다.
-    func sessionTitle(_ s: JournalSession) -> String {
-        s.kind == .orphanCleanup && s.targetName == CleanupPlanner.orphanTargetName ? t("고아 잔여물") : s.targetName
-    }
+    func sessionTitle(_ s: JournalSession) -> String { title(kind: s.kind, targetName: s.targetName) }
 
-    private func planTitle(_ plan: CleanupPlan) -> String {
-        plan.kind == .orphanCleanup && plan.targetName == CleanupPlanner.orphanTargetName ? t("고아 잔여물") : plan.targetName
+    private func planTitle(_ plan: CleanupPlan) -> String { title(kind: plan.kind, targetName: plan.targetName) }
+
+    /// 엔진이 붙이는 고정 이름("고아 잔여물", "패키지 매니저 캐시")은 출력 언어로 바꾼다.
+    private func title(kind: SessionKind, targetName: String) -> String {
+        if kind == .orphanCleanup && targetName == CleanupPlanner.orphanTargetName { return t("고아 잔여물") }
+        if kind == .packageRemoval && targetName == CleanupPlanner.packageCacheTargetName { return t("패키지 매니저 캐시") }
+        return targetName
     }
 
     static func askYesNo(_ question: String) -> Bool {

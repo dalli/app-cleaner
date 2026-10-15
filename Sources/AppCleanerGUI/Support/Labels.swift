@@ -60,6 +60,7 @@ extension SessionKind {
         switch self {
         case .appRemoval: return L("앱 제거")
         case .orphanCleanup: return L("고아 정리")
+        case .packageRemoval: return L("패키지 정리")
         }
     }
 }
@@ -119,7 +120,9 @@ extension CleanupPlan {
     var targetTitle: String { Self.title(kind: kind, targetName: targetName) }
 
     static func title(kind: SessionKind, targetName: String) -> String {
-        kind == .orphanCleanup && targetName == CleanupPlanner.orphanTargetName ? L("고아 잔여물") : targetName
+        if kind == .orphanCleanup && targetName == CleanupPlanner.orphanTargetName { return L("고아 잔여물") }
+        if kind == .packageRemoval && targetName == CleanupPlanner.packageCacheTargetName { return L("패키지 매니저 캐시") }
+        return targetName
     }
 }
 
@@ -139,6 +142,7 @@ extension EvidenceSource {
         case .inventory: return L("설치 앱 인벤토리")
         case .homebrewRecord: return L("Homebrew Caskroom 기록")
         case .pathRule: return L("경로 규칙")
+        case .packageManager: return L("패키지 매니저 설치 기록")
         }
     }
 }

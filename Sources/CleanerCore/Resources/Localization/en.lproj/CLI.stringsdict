@@ -162,5 +162,53 @@
 			<string>%lld installed apps</string>
 		</dict>
 	</dict>
+	<key>패키지 %lld개 · 설치 %@ · 이름이 같은 데이터 %@</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@packages@ · installed %2$@ · data with the same name %3$@</string>
+		<key>packages</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld package</string>
+			<key>other</key>
+			<string>%lld packages</string>
+		</dict>
+	</dict>
+	<key>캐시 %lld개 · %@</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$#@caches@ · %2$@</string>
+		<key>caches</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld cache</string>
+			<key>other</key>
+			<string>%lld caches</string>
+		</dict>
+	</dict>
+	<key>%@ — 패키지 %lld개</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>%1$@ — %2$#@packages@</string>
+		<key>packages</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld package</string>
+			<key>other</key>
+			<string>%lld packages</string>
+		</dict>
+	</dict>
 </dict>
 </plist>

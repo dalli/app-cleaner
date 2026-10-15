@@ -10,6 +10,8 @@ import Foundation
 /// - 그 밖의 모든 후보는 `keptItems`.
 public enum CleanupPlanner {
     public static let orphanTargetName = "고아 잔여물"
+    /// 패키지 매니저 캐시만 정리할 때의 대상 이름
+    public static let packageCacheTargetName = "패키지 매니저 캐시"
 
     // MARK: 앱 제거
 
@@ -62,6 +64,32 @@ public enum CleanupPlanner {
             resetPrivacy: false,
             ruleDataVersion: report.ruleDataVersion
         )
+    }
+
+    // MARK: 패키지 (docs/packages.md)
+
+    /// 설치 항목·데이터·패키지 매니저 캐시. 서비스 중지·앱 종료·cfprefs 단계는 없다 (이동만).
+    public static func plan(for report: PackageScanReport, selectedPaths: Set<String>) -> CleanupPlan {
+        let all = report.packages.flatMap(\.candidates) + report.caches
+        var (moved, kept) = resolve(dedupByPath(all), selected: normalized(selectedPaths))
+        moved = dedupNested(moved)
+        let movedKeys = Set(moved.map { key($0.path) })
+        let names = report.packages.filter { r in r.candidates.contains { movedKeys.contains(key($0.path)) } }.map(\.package.name)
+        var unique: [String] = []
+        for n in names where !unique.contains(n) { unique.append(n) }
+        return CleanupPlan(
+            kind: .packageRemoval,
+            targetName: unique.isEmpty ? packageCacheTargetName : unique.joined(separator: ", "),
+            items: moved,
+            keptItems: kept,
+            ruleDataVersion: report.ruleDataVersion
+        )
+    }
+
+    /// 같은 경로가 여러 패키지의 후보로 나오면 한 번만 (첫 후보 기준)
+    static func dedupByPath(_ items: [Candidate]) -> [Candidate] {
+        var seen = Set<String>()
+        return items.filter { seen.insert(key($0.path)).inserted }
     }
 
     // MARK: 선택 해석

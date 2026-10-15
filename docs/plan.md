@@ -19,7 +19,7 @@ macOS에서 `.app`을 휴지통으로 옮기는 것만으로는 앱이 생성한
 - 오삭제를 구조적으로 방지한다 (신뢰도 점수, 공유 리소스 판정, 사용자 데이터 분류, 보호 목록, dry-run, 복원).
 
 ### 1.3 비목표 (Non-goals)
-- 시스템 전반 정리(브라우저 캐시, 개발 도구 캐시, 대용량 파일 탐색 등) — 범위 외.
+- 시스템 전반 정리(브라우저 캐시, 대용량 파일 탐색 등) — 범위 외. 단 패키지 매니저(npm·cargo·pipx·uv)로 설치한 CLI 도구와 그 데이터·다운로드 캐시는 [packages.md](packages.md)에서 다룬다 (#39).
 - Mac App Store 배포 (6.3절 참조 — 구조적으로 불가).
 - 커널 확장(kext)·System Extension의 자동 제거 (탐지 및 안내만 수행).
 - 키체인 항목 탐지·삭제 (안내만 수행 — 3.3절).
@@ -289,7 +289,7 @@ Spotlight 상태 검사: 인벤토리가 Spotlight에 의존하므로, 색인이
 | **iPhone/iPad 백업** | `Application Support/MobileSync` | **항상 제외** — 수십 GB의 대체 불가 데이터 |
 | **iCloud 데이터** | `~/Library/Mobile Documents/*` | **항상 제외** — 삭제가 다른 기기로 동기화됨 (5.1절) |
 | 공용 벤더 폴더 | `Adobe`, `Google`, `Microsoft`, `JetBrains` 등 | Low + 경고 |
-| CLI·런타임 데이터 | `~/.npm`, `~/.cargo`, `~/.pyenv`, `~/.ssh`, `~/.gnupg`, `~/.config/*` 등 dotfile 전체 | **고아 스캔에서 기본 제외**. "고급: dotfile 포함" 옵션을 켤 때만 Low로 표시 (`~/.ssh`, `~/.gnupg` 등 보안 폴더는 옵션과 무관하게 제외) |
+| CLI·런타임 데이터 | `~/.npm`, `~/.cargo`, `~/.pyenv`, `~/.ssh`, `~/.gnupg`, `~/.config/*` 등 dotfile 전체 | **고아 스캔에서 기본 제외**. "고급: dotfile 포함" 옵션을 켤 때만 Low로 표시 (`~/.ssh`, `~/.gnupg` 등 보안 폴더는 옵션과 무관하게 제외) <br>설치된 CLI 도구 자체와 그 데이터·캐시 정리는 고아 스캔이 아니라 `appcleaner packages`에서 한다 ([packages.md](packages.md)) |
 
 #### 4.5.6 4단계 — 앱 단위 그룹화
 파일 목록을 그대로 보여주지 않고 **"어떤 앱의 잔여물인지"** 단위로 묶는다. 예: `Slack (삭제됨) — 1.2 GB, 9개 항목, 마지막 수정 2025-03-02`.
@@ -407,7 +407,7 @@ Spotlight 상태 검사: 인벤토리가 Spotlight에 의존하므로, 색인이
 | Dry-run | 실제 이동 없이 결과만 표시 (기본값으로 제공) | MVP |
 | 삭제 기록·되돌리기 | 6.2절 | MVP |
 | 유지(무시) 목록 | 고아 스캔에서 사용자가 유지한 항목 숨김 | MVP |
-| CLI | `appcleaner scan <app>`, `appcleaner remove <app>`, `appcleaner orphans [--min-confidence high\|medium\|low] [--include-dotfiles] [--json]`, `appcleaner orphans clean [--dry-run]` | MVP |
+| CLI | `appcleaner scan <app>`, `appcleaner remove <app>`, `appcleaner orphans [--min-confidence high\|medium\|low] [--include-dotfiles] [--json]`, `appcleaner orphans clean [--dry-run]`, `appcleaner packages [remove\|caches]` ([packages.md](packages.md)) | MVP |
 | 권한 헬퍼 (SMAppService + XPC) | 5.3절 | 2차 |
 | 휴지통 감시 (Sentinel) | 메뉴바 상주, FSEvents로 `~/.Trash`에 `.app` 유입 감지 → 알림 (설계·결정: `ui-ux.md` S10) | 2차 |
 | 정기 고아 스캔 알림 | 설정한 주기(매주/매달)로 백그라운드 스캔 후 High 항목이 있으면 알림 — Sentinel 내부 스케줄러 + CLI 자식 프로세스 (`ui-ux.md` S10) | 2차 |

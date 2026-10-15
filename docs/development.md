@@ -35,6 +35,7 @@ Xcode 없이 Command Line Tools만으로 빌드·테스트한다. XCTest는 사�
 | `Safety/`, `Preflight/`, `Mover/`, `Journal/`, `Execution/` | 정리 실행·기록·복원 | 4.4, 5, 6 |
 | `Privileged/` | 권한 헬퍼: fd 기반 이동(`SecureFileOperations`), 명령 검증(`PrivilegedCommandProcessor`), XPC·서명 요구사항, `SMAppService` 설치 | 5.3 |
 | `Inventory/`, `Orphan/`, `RuleUpdate/` | 인벤토리·고아 스캔·규칙 데이터 서명 | 4.5, 4.6 |
+| `Packages/` | 패키지 매니저(npm·cargo·pipx·uv)로 설치한 CLI 도구·데이터·캐시 | [packages.md](packages.md) |
 | `Engine/` | `LiveCleanerEngine` 조립 | 8.2 |
 | `Localization/` | `AppLanguage`(언어 선택), `Translations`(엔진·CLI 번역 표 조회) | — |
 | `Sentinel/` | Sentinel 판단 로직: 휴지통 유입(`TrashSnapshot`·`TrashedApp`), 일정(`PeriodicScanSchedule`), 알림 여부(`OrphanAlertSummary`), 본 앱 링크(`SentinelLink`), 공용 설정 키 | 7.3 (ui-ux.md S10) |

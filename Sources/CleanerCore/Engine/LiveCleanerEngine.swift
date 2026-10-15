@@ -7,6 +7,7 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
     public let inventory: AppInventory
     public let scanner: AppScanner
     public let orphans: OrphanScanner
+    public let packages: PackageScanner
     public let keep: KeepListStore
     public let journal: JournalStore
     public let executor: CleanupExecutor
@@ -29,6 +30,7 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
             isRunning: LiveAppHooks.isRunning,
             hasFullDiskAccess: { PermissionProbe.fullDiskAccess(paths: fdaPaths) != .denied }
         )
+        packages = PackageScanner(paths: paths, rules: rules, safety: safety)
         let keep = KeepListStore(paths: paths)
         self.keep = keep
         orphans = OrphanScanner(paths: paths, runner: runner, inventory: inventory, rules: rules, safety: safety,
@@ -101,6 +103,12 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
     public func keepList() -> [KeepEntry] { keep.entries() }
     public func addToKeepList(_ entry: KeepEntry) { keep.add(entry) }
     public func removeFromKeepList(id: String) { keep.remove(id: id) }
+
+    // MARK: 패키지
+
+    public func scanPackages(options: PackageScanOptions) async throws -> PackageScanReport {
+        await packages.scan(options: options)
+    }
 
     // MARK: S6
 

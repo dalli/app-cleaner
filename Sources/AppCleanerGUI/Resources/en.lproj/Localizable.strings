@@ -420,3 +420,8 @@
 "휴지통으로 보낼 수 없는 시스템 파일을 보관합니다. 기간이 지나면 영구 삭제 전에 물어봅니다." = "Holds system files that can't go to the Trash. After the period, you're asked before they're deleted permanently.";
 "휴지통으로 이동" = "Move to Trash";
 "휴지통을 읽을 수 없음" = "Can't read the Trash";
+
+/* 패키지 매니저 (docs/packages.md) */
+"패키지 정리" = "Package cleanup";
+"패키지 매니저 설치 기록" = "Package manager install record";
+"패키지 매니저 캐시" = "Package manager caches";
