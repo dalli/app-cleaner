@@ -20,6 +20,18 @@ open -n "dist/App Cleaner.app" --args --demo   # preview the UI with fake data
 
 ## Install (Apple Silicon)
 
+### Homebrew (CLI)
+
+```sh
+brew install dallisoft/tap/appcleaner
+appcleaner version
+```
+
+The formula builds from source on your Mac (requires Command Line Tools or Xcode with Swift 6), so Gatekeeper does not block it even though it is not notarized.
+Update with `brew upgrade appcleaner`. For the app (GUI), use Releases below (a cask is tracked in #16).
+
+### Releases
+
 Download from [Releases](https://github.com/dallisoft/app-cleaner/releases).
 
 - `AppCleaner-<version>-macos-arm64.zip` — the app (the CLI is at `Contents/Helpers/appcleaner`)

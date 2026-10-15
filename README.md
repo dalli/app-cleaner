@@ -20,6 +20,18 @@ open -n "dist/App Cleaner.app" --args --demo   # 가짜 데이터로 화면 확�
 
 ## 설치 (Apple Silicon)
 
+### Homebrew (CLI)
+
+```sh
+brew install dallisoft/tap/appcleaner
+appcleaner version
+```
+
+Mac에서 소스를 빌드하므로(Swift 6이 든 Command Line Tools 또는 Xcode 필요) 공증 없이도 Gatekeeper에 막히지 않는다.
+업데이트는 `brew upgrade appcleaner`. 앱(GUI)은 아래 Releases에서 받는다 (cask는 #16).
+
+### Releases
+
 [Releases](https://github.com/dallisoft/app-cleaner/releases)에서 받는다.
 
 - `AppCleaner-<버전>-macos-arm64.zip` — 앱 (CLI는 `Contents/Helpers/appcleaner`)

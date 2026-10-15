@@ -97,6 +97,24 @@ CLT에는 `xcstringstool`이 없어 String Catalog 대신 `.strings` + `.strings
 | `CleanerCoreTests/SentinelLocalizationTests` | 소스의 모든 `S("…")` 키가 en·ja `Sentinel.*`에 있음, 지정자 일치, 영어 복수형 |
 | `CLITests/CLILocalizationTests` | 소스의 모든 `t("…")`·`UsageError("…")` 키가 en·ja `CLI.*`에 있음, ko/en/ja 출력, `--lang`·환경 변수·영어 대체, `--json`이 언어와 무관 |
 
+## Homebrew formula (CLI)
+
+- 원본: `packaging/homebrew/appcleaner.rb`. tap 저장소 `dallisoft/homebrew-tap`(public)의 `Formula/appcleaner.rb`로 배포되며 tap 쪽은 직접 고치지 않는다.
+- 릴리즈 태그의 소스 tarball을 받아 `swift build -c release --disable-sandbox --product appcleaner`로 빌드하고, 실행 파일과 `AppCleaner_CleanerCore.bundle`을 `libexec`에 두고 `bin`에 심볼릭 링크를 건다 (CLI는 링크를 해석해 번들을 찾는다 — `BundledResources`). Xcode.app 없이 CLT로 빌드된다.
+- 자동 갱신: `v*` 태그를 푸시하면 `release.yml`의 `homebrew-tap` 작업이 릴리즈 업로드 뒤 이 파일을 tap에 복사하고 `scripts/update-homebrew-formula.sh <태그>`로 url·sha256을 고쳐 커밋·푸시한다. 이 저장소의 원본 url·sha256은 갱신되지 않으므로 필요하면 `./scripts/update-homebrew-formula.sh v<버전>`을 실행해 함께 커밋한다.
+- 시크릿 `HOMEBREW_TAP_TOKEN`: `dallisoft/homebrew-tap`에만 **Contents: Read and write** 권한을 준 fine-grained PAT. 없으면 이 작업은 알림(notice)만 남기고 건너뛴다.
+- 로컬 확인 (임시 tap):
+
+  ```sh
+  brew tap-new --no-git dallisoft/localtest
+  cp packaging/homebrew/appcleaner.rb "$(brew --repository dallisoft/localtest)/Formula/"
+  brew install --build-from-source dallisoft/localtest/appcleaner
+  brew test dallisoft/localtest/appcleaner
+  brew audit --strict --new --online dallisoft/localtest/appcleaner
+  brew uninstall appcleaner && brew untap dallisoft/localtest
+  brew developer off   # tap-new·test·audit은 개발자 명령이라 developer mode가 켜진다
+  ```
+
 ## Sentinel (휴지통 감시·정기 스캔 알림)
 
 설계와 결정 근거는 `ui-ux.md` S10. 구성 요약:
