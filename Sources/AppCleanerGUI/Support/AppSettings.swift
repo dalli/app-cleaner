@@ -1,3 +1,4 @@
+import CleanerCore
 import Foundation
 import Observation
 
@@ -38,6 +39,12 @@ final class AppSettings {
     var autoUpdateRules: Bool { didSet { defaults.set(autoUpdateRules, forKey: Keys.autoUpdate) } }
     var onboardingCompleted: Bool { didSet { defaults.set(onboardingCompleted, forKey: Keys.onboarding) } }
     var lastRoute: SidebarRoute { didSet { defaults.set(lastRoute.rawValue, forKey: Keys.lastRoute) } }
+    /// 휴지통 감시 (Sentinel — ui-ux.md S10). 키는 Sentinel과 함께 쓴다
+    var trashWatchEnabled: Bool { didSet { defaults.set(trashWatchEnabled, forKey: SentinelIdentity.Keys.trashWatch) } }
+    /// 정기 고아 스캔 주기 (Sentinel이 실행)
+    var periodicScan: PeriodicScanInterval {
+        didSet { defaults.set(periodicScan.rawValue, forKey: SentinelIdentity.Keys.periodicScan) }
+    }
 
     init(defaults: SettingsStore) {
         self.defaults = defaults
@@ -48,6 +55,16 @@ final class AppSettings {
         autoUpdateRules = defaults.object(forKey: Keys.autoUpdate) as? Bool ?? true
         onboardingCompleted = defaults.object(forKey: Keys.onboarding) as? Bool ?? false
         lastRoute = (defaults.object(forKey: Keys.lastRoute) as? String).flatMap(SidebarRoute.init(rawValue:)) ?? .apps
+        let sentinel = SentinelPreferences(read: defaults.object(forKey:))
+        trashWatchEnabled = sentinel.trashWatch
+        periodicScan = sentinel.periodicScan
+    }
+
+    /// Sentinel 설정과 Sentinel이 기록한 상태(마지막 정기 스캔, 휴지통 읽기, 알림 허용)를 저장소에서 다시 읽는다
+    func sentinelPreferences() -> SentinelPreferences {
+        // Sentinel(다른 프로세스)이 쓴 값을 읽기 전에 동기화
+        if defaults is UserDefaults { CFPreferencesAppSynchronize(kCFPreferencesCurrentApplication) }
+        return SentinelPreferences(read: defaults.object(forKey:))
     }
 
     /// 테스트용 메모리 저장소

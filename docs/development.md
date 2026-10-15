@@ -11,6 +11,8 @@ APPCLEANER_PERF=1 ./scripts/test.sh --filter slackLikeEndToEnd   # 성능 목표
 
 Xcode 없이 Command Line Tools만으로 빌드·테스트한다. XCTest는 사용하지 않고 Swift Testing(`import Testing`)만 쓴다.
 
+실제 환경에서 잰 성능(앱 검사·고아 스캔)과 남은 VM·실기기 QA 항목은 [QA 보고서](qa-report.md)에 기록한다.
+
 ## 패키지 구조
 
 | 타깃 | 역할 |
@@ -18,7 +20,9 @@ Xcode 없이 Command Line Tools만으로 빌드·테스트한다. XCTest는 사�
 | `CleanerCore` | 엔진 (UI 무관). GUI·CLI가 공유 |
 | `CleanerTestSupport` | 픽스처(`Fixture`), `StubCommandRunner`, `StubSignatureReader` |
 | `appcleaner` | CLI |
+| `AppCleanerHelper` | 권한 헬퍼 (LaunchDaemon). 리스너만 열고 처리는 `CleanerCore/Privileged` ("권한 헬퍼") |
 | `AppCleanerGUI` | SwiftUI 앱 (`scripts/build-app.sh`로 `.app` 번들 생성) |
+| `AppCleanerSentinel` | 메뉴 막대 상주 Sentinel — 휴지통 감시·정기 고아 스캔 알림 (AppKit만, 본 앱 `Contents/Library/LoginItems`에 들어감) |
 
 ### CleanerCore 폴더 소유
 
@@ -29,10 +33,12 @@ Xcode 없이 Command Line Tools만으로 빌드·테스트한다. XCTest는 사�
 | `Contracts/` | 구성 요소 프로토콜, `CleanerEngine` 파사드, `RuleData` 모델 | 8.2 |
 | `Identity/`, `Discovery/`, `Selection/`, `Scanning/` | 앱 제거 탐지 | 4.1~4.3 |
 | `Safety/`, `Preflight/`, `Mover/`, `Journal/`, `Execution/` | 정리 실행·기록·복원 | 4.4, 5, 6 |
+| `Privileged/` | 권한 헬퍼: fd 기반 이동(`SecureFileOperations`), 명령 검증(`PrivilegedCommandProcessor`), XPC·서명 요구사항, `SMAppService` 설치 | 5.3 |
 | `Inventory/`, `Orphan/`, `RuleUpdate/` | 인벤토리·고아 스캔·규칙 데이터 서명 | 4.5, 4.6 |
 | `Packages/` | 패키지 매니저(npm·cargo·pipx·uv)로 설치한 CLI 도구·데이터·캐시 | [packages.md](packages.md) |
 | `Engine/` | `LiveCleanerEngine` 조립 | 8.2 |
 | `Localization/` | `AppLanguage`(언어 선택), `Translations`(엔진·CLI 번역 표 조회) | — |
+| `Sentinel/` | Sentinel 판단 로직: 휴지통 유입(`TrashSnapshot`·`TrashedApp`), 일정(`PeriodicScanSchedule`), 알림 여부(`OrphanAlertSummary`), 본 앱 링크(`SentinelLink`), 공용 설정 키 | 7.3 (ui-ux.md S10) |
 
 ## 규칙
 
@@ -66,6 +72,7 @@ CLT에는 `xcstringstool`이 없어 String Catalog 대신 `.strings` + `.strings
 | GUI 개수 문구 | 위와 같음 | 키 자체 | 같은 폴더 `Localizable.stringsdict` (.strings와 키가 겹치면 안 됨, 일본어는 `other`만) |
 | 엔진 문구 (판정 근거·메모·실패 사유·오류) | `EngineText.Key.rawValue` | `EngineText.Key.koreanFormat` (조사 처리 포함) | `Sources/CleanerCore/Resources/Localization/<언어>.lproj/Engine.strings` |
 | CLI 출력 | 한국어 원문 — `t("…")`, `UsageError("…")` | 키 자체 (사용법만 `ko.lproj/CLI.strings`의 `"usage"`) | 같은 폴더 `CLI.strings` (+ 개수 문구 `CLI.stringsdict`, 일본어는 .strings에 둠) |
+| Sentinel 메뉴·알림 | 한국어 원문 — `S("…")` | 키 자체 (`ko.lproj`에 표 없음) | 같은 폴더 `Sentinel.strings` (+ 영어 복수형 `Sentinel.stringsdict`). Sentinel 번들에도 CleanerCore 리소스 번들을 복사해 넣는다 |
 
 - 형식 인자는 키에 `%@`(문자열)·`%lld`(정수)로 직접 쓴다. 번역에서 어순이 바뀌면 `%2$@`처럼 위치를 지정한다. 지정자 개수·종류·인자 순서가 원문과 같아야 한다.
 - 엔진 문구 안에 다른 엔진 문구가 들어가면(예: "보류 폴더로 옮기지 못했습니다: <관리자 작업 사유>") 문자열로 합치지 말고 `EngineText(…, parts: [inner])`로 넘긴다. `parts`는 `args` 다음 `%@` 자리에 같은 언어로 번역되어 들어간다.
@@ -87,7 +94,87 @@ CLT에는 `xcstringstool`이 없어 String Catalog 대신 `.strings` + `.strings
 |---|---|
 | `AppCleanerGUITests/LocalizationTests` | 소스의 모든 `L("…")` 키가 en·ja에 있음(누락·미사용 0), 지정자 순서·종류 일치, 번역에 한글 없음, 복수형 해석(en 1/2 구분, ja other), 선호 언어 fr → en, 조사가 en·ja에 붙지 않음 |
 | `CleanerCoreTests/LocalizationResourceTests` | 모든 `EngineText.Key`가 en·ja `Engine.strings`에 있음, `parts` 번역·JSON 저장, 실패 사유 JSON 하위 호환, CLI 언어 선택 순서(`APPCLEANER_LANG`·`LC_*`·`LANG`) |
+| `CleanerCoreTests/SentinelLocalizationTests` | 소스의 모든 `S("…")` 키가 en·ja `Sentinel.*`에 있음, 지정자 일치, 영어 복수형 |
 | `CLITests/CLILocalizationTests` | 소스의 모든 `t("…")`·`UsageError("…")` 키가 en·ja `CLI.*`에 있음, ko/en/ja 출력, `--lang`·환경 변수·영어 대체, `--json`이 언어와 무관 |
+
+## Sentinel (휴지통 감시·정기 스캔 알림)
+
+설계와 결정 근거는 `ui-ux.md` S10. 구성 요약:
+
+| 부분 | 위치 |
+|---|---|
+| 판단 로직 (테스트 대상) | `CleanerCore/Sentinel/` — `SentinelTests`, `SentinelLocalizationTests` |
+| 메뉴 막대·FSEvents·알림·CLI 실행 | `Sources/AppCleanerSentinel/` (AppKit, SwiftUI 없음) |
+| S7 설정·로그인 항목 등록 | `AppCleanerGUI` `SentinelService`(`SMAppService.loginItem`, 테스트·데모는 메모리 구현), `AppModel.setTrashWatch`·`setPeriodicScan` |
+| 본 앱으로 넘기기 | URL 스킴 `com.dallisoft.appcleaner://` (`SentinelLink`) → `AppModel.handleOpen` |
+| 번들 | `build-app.sh` → `App Cleaner.app/Contents/Library/LoginItems/App Cleaner Sentinel.app` (`LSUIElement`) |
+
+로그인 항목 등록은 `.app` 번들로 실행했을 때만 된다(`swift run`이면 S7에 "사용할 수 없음"). 이 Mac의 설정을 바꾸지 않고 동작을 보려면
+번들 안의 실행 파일을 개발용 인자로 직접 띄운다:
+
+```sh
+./scripts/build-app.sh
+S="dist/App Cleaner.app/Contents/Library/LoginItems/App Cleaner Sentinel.app/Contents/MacOS/AppCleanerSentinel"
+"$S" --log-only --watch-trash --trash /tmp/fake-trash   # 가짜 휴지통 감시, 알림 대신 표준 출력
+"$S" --log-only --scan-now                              # 정기 스캔 한 번 (번들 CLI를 자식 프로세스로)
+footprint <pid>                                         # 상주 메모리 (phys_footprint)
+```
+
+`--log-only`는 알림 권한을 묻지 않고 본 앱 설정(`com.dallisoft.AppCleaner`)에 상태를 쓰지 않는다.
+
+## 권한 헬퍼 (#17, plan.md 5.3)
+
+관리자 작업(보류 폴더 이동·복원·영구 삭제, 시스템 서비스 중지·재등록, `pkgutil --forget`)은 두 경로로 실행된다.
+
+| 경로 | 언제 | 인증 | 경쟁 조건(TOCTOU) |
+|---|---|---|---|
+| **권한 헬퍼** (`HelperAdminExecutor`, XPC) | 헬퍼가 등록·허용되어 있고 서명 요구사항이 맞을 때 | 등록 시 로그인 항목 승인 1회, 이후 묻지 않음 | fd 기반 이동으로 막음 |
+| 대체 경로 (`AppleScriptAdminExecutor`, `privileged-op.sh`) | 헬퍼 미설치·미승인·연결 실패·서명 불일치 (예: Homebrew CLI, `swift run`, ad-hoc 빌드) | 배치마다 관리자 암호 (최대 2회) | 줄였지만 남음 ("알려진 제한") |
+
+`FallbackAdminExecutor`가 먼저 헬퍼에 `ping`하고, 응답이 없을 때만 대체 경로로 보낸다. 작업 요청을 보낸 뒤 연결이 끊기면
+결과를 알 수 없으므로 대체 경로로 다시 보내지 않고 실패(`helper-no-reply`)로 기록한다 (같은 항목을 두 번 옮기지 않게).
+대체 경로를 남긴 이유: 서명되지 않은 빌드·Homebrew CLI도 지금처럼 동작해야 하고, 사용자가 헬퍼를 승인하지 않을 수 있다.
+
+**번들 구성** (`scripts/build-app.sh`)
+
+| 위치 | 내용 |
+|---|---|
+| `Contents/MacOS/AppCleanerHelper` | 헬퍼 실행 파일 (서명 식별자 `<BID>.Helper`, Hardened Runtime) |
+| `Contents/Library/LaunchDaemons/<BID>.Helper.plist` | `Label`·`MachServices` = `<BID>.Helper`, `BundleProgram`, `AssociatedBundleIdentifiers` |
+| `Contents/Helpers/appcleaner` | 번들 CLI (서명 식별자 `<BID>.cli`) — 헬퍼에 연결할 수 있는 두 번째 클라이언트 |
+
+GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등록·해제한다. 등록 후 시스템 설정 › 일반 › 로그인 항목에서
+허용해야 실행된다 (앱이 그 화면을 연다). CLI에는 설치 명령이 없다 — GUI에서 설치하면 번들 CLI도 헬퍼를 쓴다.
+
+**서명·Team ID** — 헬퍼와 앱은 각자 **자기 서명의 Team ID**로 상대 요구사항을 만든다 (설정 파일에서 읽지 않음).
+
+- 헬퍼 → 클라이언트: `anchor apple generic and certificate leaf[subject.OU] = "<TEAM>" and (identifier "<BID>" or identifier "<BID>.cli")`
+- 앱 → 헬퍼: `anchor apple generic and certificate leaf[subject.OU] = "<TEAM>" and identifier "<BID>.Helper"`
+- `NSXPCConnection.setCodeSigningRequirement(_:)`는 메시지마다 audit token으로 검사한다 (PID 검증 없음).
+- 빌드: `SIGN_IDENTITY="Developer ID Application: … (XXXXXXXXXX)" TEAM_ID=XXXXXXXXXX ./scripts/build-app.sh` —
+  `XXXXXXXXXX`는 자리표시자. 실제 값은 #19(Developer ID 서명)에서 정한다. `TEAM_ID`를 주면 서명 후 Team ID를 확인한다.
+- 기본(ad-hoc) 빌드는 Team ID가 없어 헬퍼가 **연결을 받지 않는다** → 항상 대체 경로.
+- **개발 모드** `HELPER_DEV=1 ./scripts/build-app.sh`: 헬퍼를 `APPCLEANER_HELPER_DEV` 조건으로 컴파일해 Team ID 없이
+  서명 식별자만 확인한다. 같은 식별자로 서명한 아무 프로그램이나 root 작업을 요청할 수 있으므로 **배포 금지**, 로컬 확인용.
+- `BUNDLE_ID`를 바꾸면 헬퍼 레이블·Mach 서비스·식별자가 모두 따라 바뀐다 (`PrivilegedHelperIdentity`).
+
+**헬퍼가 다시 검증하는 것** (`PrivilegedCommandProcessor` — 앱의 판단을 신뢰하지 않음)
+
+- 명령은 `AdminOperation` 6종뿐 (JSON 필드별 검증, 모르는 명령 거부). 임의 셸 명령·임의 경로 쓰기 없음.
+  plan.md의 4종에 더해 보류 폴더 영구 삭제(`purgeHolding`, 세션 폴더만)와 복원 시 서비스 재등록
+  (`bootstrap`, `/Library/LaunchDaemons/*.plist`만)을 같은 검증으로 둔다 — 기존 엔진 기능(보관 기간·복원)에 필요.
+- 경로: 절대 경로·빈/`.`/`..` 구성요소·제어 문자 금지 → 허용 루트 화이트리스트 아래만 → 헬퍼 고정 보호 목록 +
+  `SafetyGuard`(plan.md 5.1) → fd 기반 이동.
+- fd 기반 이동 (`SecureFileOperations`): 루트부터 `openat(…, O_NOFOLLOW | O_DIRECTORY)`로 내려가며 허용 루트까지는
+  소유자(root)·다른 사용자 쓰기 불가(sticky 제외)를 확인, 앱 번들 ID는 fd로 연 Info.plist에서 읽고, 최종 이동은
+  `renameatx_np(…, RENAME_EXCL)`. 보류 폴더는 헬퍼가 만든 root 소유 `Holding`(0700)·세션 폴더(0700)만 쓴다.
+- 레이블·패키지 ID: `[A-Za-z0-9._-]`, `com.apple.*`·본 앱(헬퍼 포함) 금지. `launchctl`·`pkgutil`은 고정 경로 + 인자 배열.
+
+**테스트** (`CleanerCoreTests/PrivilegedHelperTests`) — 헬퍼가 실행하는 처리기·fd 이동을 일반 사용자로 픽스처 루트에서
+실행한다 (plan.md 9장 "권한 경로 보안 테스트"): 허용 루트 밖, 상위 폴더 링크, 검사 직후 상위 폴더·마지막 구성요소를 링크로
+바꾸는 훅, 다른 스레드가 링크로 계속 바꾸는 경쟁 조건 반복 실행, 셸 메타문자, RENAME_EXCL 충돌, 보호 목록, 소유자·권한,
+보류 폴더 링크. XPC는 같은 프로세스의 익명 리스너로 요구사항 일치·불일치(클라이언트·헬퍼 양쪽)와 대체 경로를 확인한다.
+**검증하지 못한 것**: launchd 등록·root 실행·로그인 항목 승인, 실제 Developer ID 서명에서의 요구사항 (#19 이후 수동 확인).
 
 ## 브랜치
 
@@ -97,9 +184,12 @@ CLT에는 `xcstringstool`이 없어 String Catalog 대신 `.strings` + `.strings
 
 | 항목 | 내용 | 해소 시점 |
 |---|---|---|
-| 관리자 경로 TOCTOU | `privileged-op.sh`는 구성요소별 `[ -L ]` 검사·허용 루트·보호 목록을 재검증하지만 검사와 `mv` 사이 경쟁 조건은 남는다 | Phase 3 헬퍼 (#17) |
-| 관리자 인증 횟수 | 시스템 데몬 중지(종료 전)와 이동·`pkgutil --forget`(종료 후)이 순서상 분리되어 최대 2회 | Phase 3 헬퍼 (#17) |
+| 관리자 경로 TOCTOU (대체 경로만) | 권한 헬퍼는 fd 기반 이동으로 막는다. 헬퍼가 없을 때 쓰는 `privileged-op.sh`는 구성요소별 `[ -L ]` 검사·허용 루트·보호 목록을 재검증하지만 검사와 `mv` 사이 경쟁 조건이 남는다 | 대체 경로를 쓰는 한 유지 |
+| 관리자 인증 횟수 (대체 경로만) | 헬퍼가 있으면 묻지 않는다. 대체 경로에서는 시스템 데몬 중지(종료 전)와 이동·`pkgutil --forget`(종료 후)이 순서상 분리되어 최대 2회 | 대체 경로를 쓰는 한 유지 |
+| 권한 헬퍼 서명 | Developer ID가 없어 기본 빌드의 헬퍼는 연결을 받지 않는다 (항상 대체 경로). 실제 등록·승인·서명 요구사항은 수동 확인 전 | #19 |
 | 규칙 데이터 서명 키 | `RuleDataVerifier`의 내장 공개키는 개발용. 배포 전 `swift scripts/sign-rule-data.swift keygen`으로 교체 | #20 |
 | SwiftUI `@State` | macOS 27 SDK에서 매크로가 되어 CLT에 플러그인이 없음 → 모든 상태를 뷰 모델에 둔다 | — |
 | String Catalog | CLT에 `xcstringstool`이 없어 `<언어>.lproj`의 `.strings`·`.stringsdict` 사용 ("번역 추가 절차") | — |
+| Sentinel 휴지통 읽기 | `~/.Trash`는 TCC로 보호되어 Sentinel(별도 앱)에도 전체 디스크 접근이 필요할 수 있다. 읽지 못하면 메뉴·S7에 안내만 한다. 외장 볼륨 휴지통(`.Trashes`)은 감시하지 않는다 | — |
+| Sentinel 실기기 확인 | 로그인 항목 등록(ad-hoc 서명 포함)·실제 알림 표시·알림 동작 버튼은 아직 실기기에서 확인하지 않았다 (가짜 휴지통 폴더로 감지·메모리만 확인) | #18 |
 | 픽스처 경로 표기 | 픽스처는 `/var/folders`, 엔진이 해석한 실제 경로는 `/private/var/folders` — 테스트에서 경로 비교 시 realpath로 맞춘다 | — |
