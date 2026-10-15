@@ -1,4 +1,5 @@
 import Foundation
+import Security
 import Testing
 @testable import CleanerCore
 import CleanerTestSupport
@@ -513,6 +514,9 @@ import CleanerTestSupport
         try fx.file(fx.root("Library/Caches/com.example.xpc/x"))
         let me = try #require(SelfCodeSignature.current()?.identifier, "테스트 프로세스에 서명 식별자가 없음")
         let requirement = try #require(CodeSigningRequirement.development(identifiers: [me]))
+        // 같은 요구사항을 먼저 자기 프로세스에 검사한다 — 실패 원인이 서명인지 XPC인지 구분하고, CI 러너에서는 이 검사 없이
+        // 첫 동적 검증을 XPC가 하면 연결이 거부되는 경우가 있었다 (로컬은 항상 통과)
+        try #require(SelfCodeCheck.status(requirement) == errSecSuccess, "테스트 프로세스가 자기 서명 요구사항을 통과하지 못함")
         let server = AnonymousHelper(processor: processor(fx), clientRequirement: requirement)
 
         let results = try #require(await server.executor().runIfReachable([
@@ -572,6 +576,18 @@ import CleanerTestSupport
     }
 }
 
+/// 테스트 프로세스가 요구사항을 동적 서명 검사로 통과하는지 (XPC가 audit token으로 하는 검사와 같은 종류)
+enum SelfCodeCheck {
+    static func status(_ text: String) -> OSStatus {
+        var code: SecCode?
+        var requirement: SecRequirement?
+        guard SecCodeCopySelf([], &code) == errSecSuccess, let code,
+              SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess, let requirement
+        else { return errSecParam }
+        return SecCodeCheckValidity(code, [], requirement)
+    }
+}
+
 /// 같은 프로세스 안의 익명 XPC 리스너에 헬퍼 서비스를 띄운다 (테스트 전용).
 final class AnonymousHelper: @unchecked Sendable {
     let listener = NSXPCListener.anonymous()
@@ -588,7 +604,8 @@ final class AnonymousHelper: @unchecked Sendable {
 
     func executor(helperRequirement: String? = nil) -> HelperAdminExecutor {
         let endpoint = EndpointBox(listener.endpoint)
-        return HelperAdminExecutor(identity: .default, helperRequirement: helperRequirement, pingTimeout: 5, operationTimeout: 30) {
+        // CI 러너에서는 첫 서명 검증(큰 테스트 바이너리 해시)이 수 초 걸려 짧은 ping 제한 시간을 넘긴다
+        return HelperAdminExecutor(identity: .default, helperRequirement: helperRequirement, pingTimeout: 60, operationTimeout: 60) {
             NSXPCConnection(listenerEndpoint: endpoint.value)
         }
     }
