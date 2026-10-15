@@ -11,6 +11,8 @@ APPCLEANER_PERF=1 ./scripts/test.sh --filter slackLikeEndToEnd   # 성능 목표
 
 Xcode 없이 Command Line Tools만으로 빌드·테스트한다. XCTest는 사용하지 않고 Swift Testing(`import Testing`)만 쓴다.
 
+실제 환경에서 잰 성능(앱 검사·고아 스캔)과 남은 VM·실기기 QA 항목은 [QA 보고서](qa-report.md)에 기록한다.
+
 ## 패키지 구조
 
 | 타깃 | 역할 |
