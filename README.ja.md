@@ -34,6 +34,7 @@ appcleaner version
 
 [Releases](https://github.com/dallisoft/app-cleaner/releases) からダウンロードします。
 
+- `AppCleaner-<バージョン>-macos-arm64.dmg` — アプリのインストール用ディスクイメージ（App Cleaner を「アプリケーション」へドラッグ）
 - `AppCleaner-<バージョン>-macos-arm64.zip` — アプリ（CLI は `Contents/Helpers/appcleaner`）
 - `appcleaner-<バージョン>-macos-arm64.tar.gz` — CLI 単体（実行ファイルと同じ場所に `AppCleaner_CleanerCore.bundle` を置いてください）
 
