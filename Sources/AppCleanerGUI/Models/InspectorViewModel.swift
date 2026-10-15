@@ -278,6 +278,9 @@ final class InspectorViewModel {
 
     // MARK: 배너
 
+    /// 휴지통에 있는 앱 (Sentinel "잔여물도 정리") — 앱 본체는 후보에 없다
+    var isInTrash: Bool { TrashedApp.isInTrash(identity?.bundleURL ?? appURL) }
+
     func banners(permissions: PermissionStatus) -> [ScanWarning] {
         var w = report?.warnings ?? []
         if permissions.fullDiskAccess != .granted && !w.contains(.noFullDiskAccess) { w.append(.noFullDiskAccess) }

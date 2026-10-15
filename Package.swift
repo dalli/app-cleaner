@@ -10,6 +10,7 @@ let package = Package(
         .executable(name: "appcleaner", targets: ["appcleaner"]),
         .executable(name: "AppCleanerHelper", targets: ["AppCleanerHelper"]),
         .executable(name: "AppCleanerGUI", targets: ["AppCleanerGUI"]),
+        .executable(name: "AppCleanerSentinel", targets: ["AppCleanerSentinel"]),
     ],
     targets: [
         .target(
@@ -33,6 +34,11 @@ let package = Package(
             name: "AppCleanerGUI",
             dependencies: ["CleanerCore"],
             resources: [.process("Resources")]
+        ),
+        // 메뉴 막대 상주 Sentinel (휴지통 감시·정기 고아 스캔 알림). build-app.sh가 본 앱의 Contents/Library/LoginItems에 넣는다
+        .executableTarget(
+            name: "AppCleanerSentinel",
+            dependencies: ["CleanerCore"]
         ),
         .testTarget(
             name: "CleanerCoreTests",

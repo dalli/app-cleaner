@@ -409,8 +409,8 @@ Spotlight 상태 검사: 인벤토리가 Spotlight에 의존하므로, 색인이
 | 유지(무시) 목록 | 고아 스캔에서 사용자가 유지한 항목 숨김 | MVP |
 | CLI | `appcleaner scan <app>`, `appcleaner remove <app>`, `appcleaner orphans [--min-confidence high\|medium\|low] [--include-dotfiles] [--json]`, `appcleaner orphans clean [--dry-run]` | MVP |
 | 권한 헬퍼 (SMAppService + XPC) | 5.3절 | 2차 |
-| 휴지통 감시 (Sentinel) | 메뉴바 상주, FSEvents로 `~/.Trash`에 `.app` 유입 감지 → 알림 | 2차 |
-| 정기 고아 스캔 알림 | 설정한 주기(예: 월 1회)로 백그라운드 스캔 후 High 항목이 있으면 알림 | 2차 |
+| 휴지통 감시 (Sentinel) | 메뉴바 상주, FSEvents로 `~/.Trash`에 `.app` 유입 감지 → 알림 (설계·결정: `ui-ux.md` S10) | 2차 |
+| 정기 고아 스캔 알림 | 설정한 주기(매주/매달)로 백그라운드 스캔 후 High 항목이 있으면 알림 — Sentinel 내부 스케줄러 + CLI 자식 프로세스 (`ui-ux.md` S10) | 2차 |
 | Finder 확장 | 우클릭 메뉴 "완전 삭제" | 3차 |
 
 ---
@@ -451,7 +451,7 @@ graph TD
 ### 8.3 성능 목표 (측정 전 목표치)
 - 앱 1개 스캔: 2초 이내 (SSD, 일반 사용자 환경)
 - 고아 잔여물 전체 스캔: 첫 실행 30초 이내, 인벤토리 캐시 사용 시 10초 이내 (크기 계산은 결과 표시 후 백그라운드로 이어서 수행)
-- Sentinel 상주 메모리: 수십 MB 이하를 목표로 하고 Phase 3에서 Instruments로 측정 후 확정
+- Sentinel 상주 메모리: 수십 MB 이하 목표 → **측정 14 MB** (`footprint`의 phys_footprint, release arm64 번들, 메뉴 막대 대기·휴지통 감시 중, 앱 유입 처리 후·30초 뒤에도 같음. 공유 프레임워크 페이지를 포함한 RSS는 약 54 MB). 정기 스캔은 CLI 자식 프로세스(측정 중 RSS 약 100 MB)가 맡고 끝나면 반환되므로 Sentinel 상주 메모리는 그대로였다. Instruments 장시간 측정은 아직 하지 않았다 (2026-10-15, `docs/development.md` "Sentinel")
 - 크기 계산은 `URLResourceValues.totalFileAllocatedSize`를 `TaskGroup`으로 병렬 수행, UI는 점진 표시
 
 ---

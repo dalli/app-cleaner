@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>삭제된 앱 %lld개의 잔여물 %@를 찾았습니다 (신뢰도 높음).</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>Found %2$@ of leftovers from %1$#@apps@ (high confidence).</string>
+		<key>apps</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lld</string>
+			<key>one</key>
+			<string>%lld deleted app</string>
+			<key>other</key>
+			<string>%lld deleted apps</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

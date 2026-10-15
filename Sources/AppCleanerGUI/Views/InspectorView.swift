@@ -59,8 +59,14 @@ struct InspectorView: View {
         InspectorHeader(vm: vm)
         Divider()
         let banners = vm.banners(permissions: model.permissions)
-        if !banners.isEmpty {
+        if !banners.isEmpty || vm.isInTrash {
             VStack(spacing: 8) {
+                // Sentinel "잔여물도 정리"로 연 앱 (ui-ux.md S10)
+                if vm.isInTrash {
+                    Banner(tone: .accent, systemImage: "trash",
+                           text: L("이 앱은 이미 휴지통에 있습니다."),
+                           detail: L("앱 본체는 휴지통에 그대로 두고 남은 잔여물만 정리합니다."))
+                }
                 ForEach(banners, id: \.stableID) { WarningBanner(warning: $0, appName: vm.identity?.title ?? "") }
             }
             .padding(.horizontal, 20)

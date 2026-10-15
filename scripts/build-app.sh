@@ -17,6 +17,7 @@
 #   Contents/MacOS/AppCleanerHelper     권한 헬퍼 (LaunchDaemon, SMAppService로 등록)
 #   Contents/Library/LaunchDaemons/<BID>.Helper.plist   헬퍼 launchd plist (BundleProgram)
 #   Contents/Helpers/appcleaner         CLI
+#   Contents/Library/LoginItems/App Cleaner Sentinel.app   메뉴 막대 Sentinel (SMAppService.loginItem — ui-ux.md S10)
 #   Contents/Resources/*.bundle         SwiftPM 리소스 번들 (Bundle.module이 resourceURL에서 찾는다)
 #                                        AppCleaner_CleanerCore.bundle/Localization — 엔진·CLI 번역 (ko/en/ja)
 #   Contents/Resources/<언어>.lproj      앱 이름(InfoPlist.strings) — 시스템 메뉴 언어도 이 목록을 따른다
@@ -39,9 +40,10 @@ fi
 VERSION="${VERSION:-0.1.0}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}"
 
-echo "==> swift build -c $CONFIG --arch $ARCH (AppCleanerGUI, appcleaner)"
+echo "==> swift build -c $CONFIG --arch $ARCH (AppCleanerGUI, appcleaner, AppCleanerSentinel)"
 swift build -c "$CONFIG" --arch "$ARCH" --product AppCleanerGUI
 swift build -c "$CONFIG" --arch "$ARCH" --product appcleaner
+swift build -c "$CONFIG" --arch "$ARCH" --product AppCleanerSentinel
 # 헬퍼는 마지막에 (개발 모드 컴파일 조건이 GUI·CLI 빌드에 섞이지 않게)
 if [ "$HELPER_DEV" = "1" ]; then
   echo "==> swift build AppCleanerHelper (개발 모드: APPCLEANER_HELPER_DEV — 배포 금지)"
@@ -115,6 +117,46 @@ for lang in $LANGUAGES; do
   fi
 done
 
+# Sentinel (메뉴 막대 상주, Dock 아이콘 없음). 번역·규칙 데이터를 읽도록 CleanerCore 리소스 번들을 함께 넣는다.
+SENTINEL_ID="$BUNDLE_ID.Sentinel"
+SENTINEL="$APP/Contents/Library/LoginItems/$APP_NAME Sentinel.app"
+mkdir -p "$SENTINEL/Contents/MacOS" "$SENTINEL/Contents/Resources"
+cp "$BIN_DIR/AppCleanerSentinel" "$SENTINEL/Contents/MacOS/AppCleanerSentinel"
+cp -R "$APP/Contents/Resources/AppCleaner_CleanerCore.bundle" "$SENTINEL/Contents/Resources/"
+cat > "$SENTINEL/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleExecutable</key>
+  <string>AppCleanerSentinel</string>
+  <key>CFBundleIdentifier</key>
+  <string>$SENTINEL_ID</string>
+  <key>CFBundleName</key>
+  <string>$APP_NAME Sentinel</string>
+  <key>CFBundleDisplayName</key>
+  <string>$APP_NAME Sentinel</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$VERSION</string>
+  <key>CFBundleVersion</key>
+  <string>$BUILD_NUMBER</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>14.0</string>
+  <key>LSUIElement</key>
+  <true/>
+  <key>NSPrincipalClass</key>
+  <string>NSApplication</string>
+</dict>
+</plist>
+PLIST
+printf 'APPL????' > "$SENTINEL/Contents/PkgInfo"
+
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -154,6 +196,17 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <true/>
   <key>NSSupportsAutomaticTermination</key>
   <false/>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>$BUNDLE_ID.sentinel</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>com.dallisoft.appcleaner</string>
+      </array>
+    </dict>
+  </array>
   <key>CFBundleDocumentTypes</key>
   <array>
     <dict>
@@ -181,10 +234,11 @@ set -- --force --options runtime -s "$SIGN_IDENTITY"
 if [ "$SIGN_IDENTITY" != "-" ]; then set -- "$@" --timestamp; fi
 codesign "$@" -i "$HELPER_LABEL" "$APP/Contents/MacOS/AppCleanerHelper"
 codesign "$@" -i "$BUNDLE_ID.cli" "$APP/Contents/Helpers/appcleaner"
+codesign "$@" "$SENTINEL"
 codesign "$@" "$APP"
 codesign --verify --strict "$APP"
 if [ -n "$TEAM_ID" ]; then
-  for code in "$APP" "$APP/Contents/MacOS/AppCleanerHelper"; do
+  for code in "$APP" "$APP/Contents/MacOS/AppCleanerHelper" "$SENTINEL"; do
     team="$(codesign -dv "$code" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
     if [ "$team" != "$TEAM_ID" ]; then
       echo "error: $code Team ID가 $TEAM_ID가 아닙니다 ($team)" >&2

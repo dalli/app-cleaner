@@ -30,6 +30,7 @@
 "<번들 ID>.savedState" = "<bundle ID>.savedState";
 "App Cleaner 시작하기" = "Welcome to App Cleaner";
 "App Cleaner 자신의 파일입니다." = "This is App Cleaner's own file.";
+"App Cleaner.app으로 설치해 실행했을 때만 사용할 수 있습니다." = "Available only when running the installed App Cleaner.app.";
 "App Group (entitlements)" = "App Group (entitlements)";
 "Apple 기본 구성 요소라 선택할 수 없습니다." = "Built-in Apple component; can't be selected.";
 "Apple 기본 앱(com.apple.*)은 목록에 표시하지 않습니다." = "Built-in Apple apps (com.apple.*) are not listed.";
@@ -48,6 +49,8 @@
 "Microsoft AutoUpdate — 같은 개발사의 다른 앱이 사용" = "Microsoft AutoUpdate — used by other apps from the same developer";
 "Program이 /Applications/Slack.app/Contents/Frameworks/Squirrel.framework/Resources/ShipIt을 가리킴" = "Program points to /Applications/Slack.app/Contents/Frameworks/Squirrel.framework/Resources/ShipIt";
 "Program이 /Library/PrivilegedHelperTools/com.docker.vmnetd를 가리킴" = "Program points to /Library/PrivilegedHelperTools/com.docker.vmnetd";
+"Sentinel에도 전체 디스크 접근 권한이 필요합니다. 목록에서 “App Cleaner Sentinel”을 켜세요." = "Sentinel also needs Full Disk Access. Turn on “App Cleaner Sentinel” in the list.";
+"Sentinel을 등록하지 못했습니다: %@" = "Couldn't register Sentinel: %@";
 "Spotlight 색인이 불완전해 일부 설치 앱을 확인하지 못했습니다." = "The Spotlight index is incomplete, so some installed apps couldn't be checked.";
 "Team ID" = "Team ID";
 "iCloud 컨테이너 이름이 번들 ID와 일치" = "iCloud container name matches the bundle ID";
@@ -113,6 +116,7 @@
 "기록을 불러오는 중…" = "Loading history…";
 "기본값은 설정에서 바꿀 수 있습니다." = "You can change the default in Settings.";
 "기본으로는 남겨 두는 항목입니다. 옮기면 아래 내용이 사라질 수 있습니다." = "These are kept by default. Moving them may lose the following.";
+"꺼짐" = "Off";
 "끔" = "Off";
 "나머지 항목은 정리했습니다. 실패한 항목은 그대로 남아 있습니다." = "The rest were cleaned up. Failed items were left in place.";
 "나중에 하기" = "Later";
@@ -135,7 +139,6 @@
 "다른 위치를 가리키는 링크라 선택할 수 없습니다." = "A link pointing elsewhere; can't be selected.";
 "다시 검사" = "Inspect Again";
 "다시 스캔" = "Scan Again";
-"다음 버전" = "Next version";
 "닫기" = "Close";
 "대기 중" = "Waiting";
 "덮어쓰기 안 함 (이름 바꿔 복원)" = "Don't overwrite (restore with a new name)";
@@ -153,7 +156,10 @@
 "마지막 수정" = "Last modified";
 "마지막 수정 %@" = "modified %@";
 "마지막 수정일" = "Last Modified";
+"마지막 스캔: %@" = "Last scan: %@";
 "매달" = "Monthly";
+"매주" = "Weekly";
+"메뉴 막대에 상주하며 휴지통 감시와 정기 스캔을 맡습니다. 로그인할 때 함께 실행됩니다." = "Stays in the menu bar to watch the Trash and run periodic scans. Starts when you log in.";
 "메시지 데이터베이스 포함 · 기본으로 남겨 둡니다" = "Contains the message database · kept by default";
 "메시지 데이터베이스(*.sqlite) 포함" = "Contains the message database (*.sqlite)";
 "명령 복사" = "Copy Command";
@@ -238,6 +244,7 @@
 "시스템 보호 위치라 선택할 수 없습니다." = "System-protected location; can't be selected.";
 "시스템 서비스를 멈추고 설치 기록을 정리하는 데 필요합니다." = "Needed to stop system services and clean up install records.";
 "시스템 설정 › 개인정보 보호 및 보안 › 전체 디스크 접근 권한에서 App Cleaner를 켜세요. 돌아오면 자동으로 확인합니다." = "Turn on App Cleaner in System Settings › Privacy & Security › Full Disk Access. It's checked again automatically when you come back.";
+"시스템 설정 › 알림에서 “App Cleaner Sentinel”의 알림을 허용하세요." = "Allow notifications for “App Cleaner Sentinel” in System Settings › Notifications.";
 "시스템 설정 › 일반 › 로그인 항목에서 App Cleaner를 허용해야 동작합니다. 허용하기 전에는 관리자 암호를 묻습니다." = "Allow App Cleaner in System Settings › General › Login Items to turn it on. Until then, you're asked for your administrator password.";
 "시스템 설정 열기" = "Open System Settings";
 "시스템 폴더 (관리자 권한)" = "System Folders (administrator)";
@@ -256,16 +263,21 @@
 "실행 파일이 앱 밖(/Library/Application Support/Microsoft/MAU2.0)에 있고 같은 개발사의 다른 앱이 설치되어 있습니다." = "The executable is outside the app (/Library/Application Support/Microsoft/MAU2.0) and other apps from the same developer are installed.";
 "아무것도 옮기지 않았습니다." = "Nothing was moved.";
 "아무것도 지우지 않습니다" = "Nothing is removed";
+"아직 스캔하지 않음" = "Not scanned yet";
 "아직 아무것도 옮기지 않습니다. 옮길 항목을 한 번 더 보여 줍니다. (⌘⌫)" = "Nothing is moved yet. Shows the items to move first. (⌘⌫)";
 "아직 아무것도 옮기지 않았습니다. 아래 내용을 확인한 뒤 진행하세요." = "Nothing has been moved yet. Review the details below before continuing.";
 "아직 정리한 기록이 없습니다" = "No cleanups yet";
 "아직 허용 안 됨" = "Not allowed yet";
+"알림 설정 열기" = "Open Notification Settings";
+"알림 허용은 Sentinel이 처음 실행될 때 macOS가 묻습니다." = "macOS asks to allow notifications the first time Sentinel runs.";
+"알림이 꺼져 있음" = "Notifications are off";
 "앱" = "App";
 "앱 검색" = "Search apps";
 "앱 관리" = "App Management";
 "앱 목록" = "Apps";
 "앱 목록으로 돌아가기 (Esc)" = "Back to the app list (Esc)";
 "앱 본체" = "App Bundle";
+"앱 본체는 휴지통에 그대로 두고 남은 잔여물만 정리합니다." = "The app itself stays in the Trash; only its leftovers are cleaned up.";
 "앱 이름 또는 번들 ID" = "App name or bundle ID";
 "앱 제거" = "Uninstall Apps";
 "앱 종료 요청" = "Ask apps to quit";
@@ -275,6 +287,7 @@
 "앱보다 먼저 멈춰야 종료 후 다시 실행되지 않습니다." = "Stopped before the app so it doesn't relaunch after quitting.";
 "앱을 지울 때 남는 설정·캐시·백그라운드 서비스까지 찾아 안전하게 정리합니다." = "Finds the settings, caches and background services an app leaves behind and cleans them up safely.";
 "앱을 지울 때 카메라·마이크 등 권한 기록을 함께 지우도록 기본 선택합니다." = "Selects resetting camera, microphone and other permission records by default when removing an app.";
+"앱을 휴지통으로 옮기면 남은 잔여물도 정리할지 알려 줍니다. 검사만 하고 아무것도 지우지 않습니다." = "When you move an app to the Trash, offers to clean up its leftovers too. It only inspects and removes nothing.";
 "약 %@" = "about %@";
 "어제" = "Yesterday";
 "어제 %@" = "Yesterday %@";
@@ -301,6 +314,7 @@
 "이 그룹을 유지 목록에 넣고 다음 스캔부터 숨깁니다" = "Adds this group to the keep list and hides it from future scans";
 "이 신뢰도에 해당하는 그룹이 없습니다" = "No groups with this confidence";
 "이 실행 방식에서는 설치할 수 없습니다. 관리자 암호를 묻는 방식으로 동작합니다." = "The helper can't be installed when App Cleaner runs this way. Your administrator password is requested instead.";
+"이 앱은 이미 휴지통에 있습니다." = "This app is already in the Trash.";
 "이 폴더를 지우면 세 앱의 로그인 정보와 최근 문서 목록이 초기화됩니다." = "Removing this folder resets sign-in information and recent documents for all three apps.";
 "이름" = "Name";
 "이름 기반 dotfile" = "Name-based dotfile";
@@ -363,6 +377,7 @@
 "컨테이너 메타데이터 (containermanagerd)" = "Container metadata (containermanagerd)";
 "컨테이너 메타데이터의 번들 ID가 %@와 일치" = "Bundle ID in the container metadata matches %@";
 "컨테이너 메타데이터의 앱이 설치되어 있지 않음" = "The app in the container metadata isn't installed";
+"켜짐" = "On";
 "코드 서명의 App Group과 정확히 일치" = "Exactly matches the App Group in the code signature";
 "크기" = "Size";
 "크기 계산 중" = "size being calculated";
@@ -398,7 +413,10 @@
 "환경설정 캐시 비우기" = "Clear preferences cache";
 "후보 수집" = "Collecting candidates";
 "휴지통" = "Trash";
+"휴지통 감시" = "Watch the Trash";
+"휴지통 감시 (Sentinel)" = "Trash Watch (Sentinel)";
 "휴지통 열기" = "Open Trash";
 "휴지통에서 비워짐 — 복원 불가" = "Emptied from Trash — not restorable";
 "휴지통으로 보낼 수 없는 시스템 파일을 보관합니다. 기간이 지나면 영구 삭제 전에 물어봅니다." = "Holds system files that can't go to the Trash. After the period, you're asked before they're deleted permanently.";
 "휴지통으로 이동" = "Move to Trash";
+"휴지통을 읽을 수 없음" = "Can't read the Trash";

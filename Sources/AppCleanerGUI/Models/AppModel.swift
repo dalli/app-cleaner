@@ -15,6 +15,7 @@ final class AppModel {
     let orphans: OrphanViewModel
     let history: HistoryViewModel
     @ObservationIgnored let system: SystemActions
+    @ObservationIgnored let sentinel: any SentinelServicing
     /// 관리자 헬퍼 설치 (S7)
     @ObservationIgnored let helper: any HelperInstalling
 
@@ -37,6 +38,11 @@ final class AppModel {
     private(set) var ruleInfo: RuleDataInfo
     private(set) var keepList: [KeepEntry] = []
     private(set) var ruleCheck: RuleCheckState = .idle
+    /// Sentinel 로그인 항목 상태와 Sentinel이 기록한 상태 (S7 — ui-ux.md S10)
+    private(set) var sentinelRegistration: SentinelRegistration = .unavailable
+    private(set) var sentinelStatus = SentinelPreferences()
+    /// 등록·해제 실패 문장
+    private(set) var sentinelError: String?
 
     var showOnboarding: Bool
     var isDropTargeted = false
@@ -46,11 +52,13 @@ final class AppModel {
     var settingsAnchor: String?
 
     init(engine: any CleanerEngine, settings: AppSettings, isDemo: Bool = false,
-         system: SystemActions = SystemActions(), helper: any HelperInstalling = UnavailableHelperInstaller()) {
+         system: SystemActions = SystemActions(), sentinel: (any SentinelServicing)? = nil,
+         helper: any HelperInstalling = UnavailableHelperInstaller()) {
         self.engine = engine
         self.settings = settings
         self.isDemo = isDemo
         self.system = system
+        self.sentinel = sentinel ?? InMemorySentinelService()
         self.helper = helper
         self.helperState = helper.state()
         self.appList = AppListViewModel(engine: engine)
@@ -61,13 +69,14 @@ final class AppModel {
         self.ruleInfo = engine.ruleDataInfo()
         self.showOnboarding = !settings.onboardingCompleted
         self.keepList = engine.keepList()
+        refreshSentinel()
     }
 
     // MARK: 사이드바
 
     func select(_ r: SidebarRoute) {
         route = r
-        if r == .settings { refreshKeepList() }
+        if r == .settings { refreshKeepList(); refreshSentinel() }
     }
 
     func openPermissionSettings() {
@@ -97,6 +106,36 @@ final class AppModel {
         guard let app = urls.first(where: { $0.pathExtension.lowercased() == "app" }) else { return false }
         openApp(at: app)
         return true
+    }
+
+    /// 앱 열기 요청: Sentinel 링크(`com.dallisoft.appcleaner://`), Dock 아이콘 드롭, Finder "다음으로 열기"
+    @discardableResult
+    func handleOpen(_ urls: [URL]) -> Bool {
+        if let link = urls.lazy.compactMap(SentinelLink.init(url:)).first {
+            open(link)
+            return true
+        }
+        return handleDrop(urls)
+    }
+
+    /// Sentinel 알림·메뉴 → S2 / S5 / S7 (ui-ux.md S10). 정리가 진행 중이면 화면을 바꾸지 않는다.
+    func open(_ link: SentinelLink) {
+        if let flow = cleanupFlow, flow.phase != .preview { return }
+        switch link {
+        case .inspect(let path):
+            // 알림을 누르기 전에 휴지통을 비웠으면 앱 검사를 할 수 없다 → 남은 파일은 이제 고아 잔여물
+            if FileManager.default.fileExists(atPath: path) {
+                openApp(at: URL(filePath: path, directoryHint: .isDirectory))
+            } else {
+                cleanupFlow = nil
+                startOrphanScan()
+            }
+        case .orphans:
+            cleanupFlow = nil
+            if !orphans.isScanning { startOrphanScan() } else { route = .orphans }
+        case .settings:
+            select(.settings)
+        }
     }
 
     // MARK: S3 미리보기
@@ -306,6 +345,50 @@ final class AppModel {
     func removeKeepEntry(_ entry: KeepEntry) {
         engine.removeFromKeepList(id: entry.id)
         refreshKeepList()
+    }
+
+    // MARK: Sentinel (S7 — ui-ux.md S10)
+
+    func setTrashWatch(_ on: Bool) {
+        settings.trashWatchEnabled = on
+        applySentinelSettings()
+    }
+
+    func setPeriodicScan(_ interval: PeriodicScanInterval) {
+        settings.periodicScan = interval
+        applySentinelSettings()
+    }
+
+    /// 휴지통 감시·정기 스캔 중 하나라도 켜져 있으면 Sentinel을 로그인 항목으로 등록, 둘 다 꺼지면 해제
+    func applySentinelSettings() {
+        sentinelError = nil
+        let wanted = settings.trashWatchEnabled || settings.periodicScan != .off
+        let current = sentinel.registration
+        if wanted {
+            if current == .disabled {
+                do { try sentinel.register() } catch { sentinelError = L10n.describe(error) }
+            } else {
+                sentinel.launchIfNeeded()
+            }
+            sentinel.notifySettingsChanged()
+            refreshSentinel()
+        } else {
+            // 실행 중인 Sentinel은 설정을 다시 읽고 스스로 종료한다
+            sentinel.notifySettingsChanged()
+            guard current == .enabled || current == .requiresApproval else {
+                refreshSentinel()
+                return
+            }
+            Task {
+                do { try await sentinel.unregister() } catch { sentinelError = L10n.describe(error) }
+                refreshSentinel()
+            }
+        }
+    }
+
+    func refreshSentinel() {
+        sentinelRegistration = sentinel.registration
+        sentinelStatus = settings.sentinelPreferences()
     }
 
     /// 규칙 데이터 "지금 확인"

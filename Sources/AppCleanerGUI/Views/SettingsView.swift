@@ -60,24 +60,27 @@ struct SettingsView: View {
                         }
                     }
                     LabeledContent {
-                        Picker("", selection: .constant(0)) {
-                            Text(L("끔")).tag(0)
-                            Text(L("매달")).tag(1)
+                        Picker("", selection: Binding(get: { settings.periodicScan }, set: { model.setPeriodicScan($0) })) {
+                            Text(L("끔")).tag(PeriodicScanInterval.off)
+                            Text(L("매주")).tag(PeriodicScanInterval.weekly)
+                            Text(L("매달")).tag(PeriodicScanInterval.monthly)
                         }
                         .labelsHidden()
                         .fixedSize()
-                        .disabled(true)
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text(L("정기 스캔 알림"))
-                                Badge(L("다음 버전"), tone: .neutral)
-                            }
+                            Text(L("정기 스캔 알림"))
                             Text(L("주기적으로 스캔해 “높음” 항목이 있으면 알려줍니다."))
                                 .font(.caption).foregroundStyle(.secondary)
+                            if settings.periodicScan != .off {
+                                Text(model.sentinelStatus.lastScan.map { L("마지막 스캔: %@", Fmt.date($0)) } ?? L("아직 스캔하지 않음"))
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
+
+                SentinelSection()
 
                 Section {
                     if model.keepList.isEmpty {
@@ -125,7 +128,7 @@ struct SettingsView: View {
             .onChange(of: model.settingsAnchor) { _, _ in scroll(proxy) }
         }
         .navigationTitle(L("설정"))
-        .onAppear { model.refreshKeepList(); model.refreshPermissions() }
+        .onAppear { model.refreshKeepList(); model.refreshPermissions(); model.refreshSentinel() }
     }
 
     private var ruleDetail: String {
@@ -140,6 +143,84 @@ struct SettingsView: View {
         guard let anchor = model.settingsAnchor else { return }
         withAnimation { proxy.scrollTo(anchor, anchor: .top) }
         model.settingsAnchor = nil
+    }
+}
+
+/// 휴지통 감시 (Sentinel) — ui-ux.md S10 "S7 설정"
+private struct SentinelSection: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let settings = model.settings
+        let status = model.sentinelStatus
+        Section {
+            Toggle(isOn: Binding(get: { settings.trashWatchEnabled }, set: { model.setTrashWatch($0) })) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("휴지통 감시"))
+                    Text(L("앱을 휴지통으로 옮기면 남은 잔여물도 정리할지 알려 줍니다. 검사만 하고 아무것도 지우지 않습니다."))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            if settings.trashWatchEnabled || settings.periodicScan != .off {
+                LabeledContent {
+                    HStack(spacing: 10) {
+                        registrationBadge
+                        if model.sentinelRegistration == .requiresApproval {
+                            Button(L("로그인 항목 열기")) { model.system.openLoginItemsSettings() }
+                        }
+                    }
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: "Sentinel")
+                        Text(L("메뉴 막대에 상주하며 휴지통 감시와 정기 스캔을 맡습니다. 로그인할 때 함께 실행됩니다."))
+                            .font(.caption).foregroundStyle(.secondary)
+                        if let error = model.sentinelError {
+                            Text(L("Sentinel을 등록하지 못했습니다: %@", error))
+                                .font(.caption).foregroundStyle(Tone.caution.foreground)
+                        }
+                    }
+                }
+                if settings.trashWatchEnabled && status.trashReadable == false {
+                    LabeledContent {
+                        Button(L("시스템 설정 열기")) { model.system.openFullDiskAccessSettings() }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L("휴지통을 읽을 수 없음"))
+                            Text(L("Sentinel에도 전체 디스크 접근 권한이 필요합니다. 목록에서 “App Cleaner Sentinel”을 켜세요."))
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                if status.notifications == .denied {
+                    LabeledContent {
+                        Button(L("알림 설정 열기")) { model.system.openNotificationSettings() }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L("알림이 꺼져 있음"))
+                            Text(L("시스템 설정 › 알림에서 “App Cleaner Sentinel”의 알림을 허용하세요."))
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                } else if status.notifications != .allowed {
+                    Text(L("알림 허용은 Sentinel이 처음 실행될 때 macOS가 묻습니다."))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text(L("휴지통 감시 (Sentinel)"))
+        }
+    }
+
+    @ViewBuilder
+    private var registrationBadge: some View {
+        switch model.sentinelRegistration {
+        case .enabled: Badge(L("켜짐"), tone: .positive, systemImage: "checkmark")
+        case .requiresApproval: Badge(L("승인 필요"), tone: .caution, systemImage: "exclamationmark")
+        case .disabled: Badge(L("꺼짐"), tone: .neutral)
+        case .unavailable:
+            Badge(L("사용할 수 없음"), tone: .caution)
+                .help(L("App Cleaner.app으로 설치해 실행했을 때만 사용할 수 있습니다."))
+        }
     }
 }
 
