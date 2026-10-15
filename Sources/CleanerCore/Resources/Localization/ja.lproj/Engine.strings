@@ -87,6 +87,15 @@
 "brewZapRecommended" = "brew uninstall --zap --cask %@ で整理することをおすすめします";
 "homebrewRecordOnly" = "Homebrew の記録だけが残っています — brew uninstall --zap --cask %@ をおすすめします";
 "serviceExecutableRemains" = "サービスの実行ファイルがまだ残っています — ほかのプログラムが使用している可能性があります";
+"packageInstalled" = "%@ のインストール記録: %@";
+"packageExecutableLink" = "実行ファイルのリンク %2$@ (%1$@)";
+"packageDataByName" = "同じ名前のデータ (%@ パッケージ %@)";
+"packageDataMaybeOther" = "名前が同じだけの別のプログラムのデータの可能性があります";
+"packageDataShared" = "別のインストール (%@) も同じ名前を使用しています";
+"packageNeedsAdmin" = "管理者が所有する場所のため移動しません — %@ で削除してください";
+"cargoRecordRemains" = "cargo のインストール記録 (~/.cargo/.crates2.json) に %@ の項目が残ります — 再インストールすると更新されます";
+"packageManagerCache" = "%@ のダウンロードキャッシュ";
+"packageCacheRedownloaded" = "削除しても次回のインストール時に再ダウンロードされます";
 
 /* 共有理由 */
 "sharedAppGroup" = "同じ App Group (%@) をほかの App も使用";
@@ -176,6 +185,7 @@
 "adminBadIdentifier" = "ラベルまたはパッケージ ID の形式が正しくありません";
 "adminBadSession" = "整理の記録 ID が正しくありません";
 "adminHoldingUnsafe" = "保留フォルダが安全ではないため中止しました";
+"adminUnsafeParent" = "親フォルダの所有者または権限が安全ではないため移動しませんでした";
 "adminScriptTampered" = "管理者用スクリプトが改ざんされているため実行しませんでした";
 "adminAuthCancelled" = "管理者認証がキャンセルされました";
 "adminNotRoot" = "管理者権限を取得できませんでした";
@@ -186,3 +196,4 @@
 "adminPkgutilFailed" = "pkgutil の実行に失敗しました (%@)";
 "adminFailed" = "管理者の作業に失敗しました (%@)";
 "adminPrompt" = "App Cleaner が変更を加えようとしています。";
+"helperNotBundled" = "この実行方法には管理者ヘルパーが含まれていません";

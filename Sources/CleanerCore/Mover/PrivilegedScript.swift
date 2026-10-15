@@ -63,7 +63,8 @@ public enum PrivilegedScript {
     public static func reason(_ code: String) -> EngineText {
         switch code {
         case "outside-allowed-root": return EngineText(.adminOutsideAllowedRoot)
-        case "dotdot", "bad-path", "not-absolute": return EngineText(.adminBadPath)
+        case "dotdot", "bad-path", "not-absolute", "bad-restore-target": return EngineText(.adminBadPath)
+        case "unsafe-parent": return EngineText(.adminUnsafeParent)
         case "bad-char": return EngineText(.adminBadChar)
         case "symlink": return EngineText(.adminSymlink)
         case "protected": return EngineText(.adminProtected)
@@ -75,7 +76,8 @@ public enum PrivilegedScript {
         case "script-hash-mismatch": return EngineText(.adminScriptTampered)
         case "auth-cancelled": return EngineText(.adminAuthCancelled)
         case "not-root": return EngineText(.adminNotRoot)
-        case "launch-failed", "ops-file-failed": return EngineText(.adminLaunchFailed)
+        case "launch-failed", "ops-file-failed", "helper-unavailable", "bad-request", "bad-version": return EngineText(.adminLaunchFailed)
+        case "helper-no-reply": return EngineText(.adminNoResult)
         case "move-failed", "mkdir-failed", "chown-failed", "chmod-failed", "remove-failed": return EngineText(.adminFileOperationFailed)
         case "no-result": return EngineText(.adminNoResult)
         default:

@@ -205,6 +205,25 @@ extension EngineText {
         case homebrewRecordOnly
         case serviceExecutableRemains
 
+        // MARK: 패키지 매니저 (docs/packages.md)
+
+        /// `args`: 매니저, 패키지 이름
+        case packageInstalled
+        /// `args`: 패키지 이름, 실행 파일 이름
+        case packageExecutableLink
+        /// `args`: 매니저, 패키지 이름
+        case packageDataByName
+        case packageDataMaybeOther
+        /// `args`: 같은 이름을 찾은 다른 패키지들
+        case packageDataShared
+        /// `args`: 패키지 매니저 제거 명령
+        case packageNeedsAdmin
+        /// `args`: 패키지 이름
+        case cargoRecordRemains
+        /// `args`: 매니저
+        case packageManagerCache
+        case packageCacheRedownloaded
+
         // MARK: 공유 사유
 
         case sharedAppGroup
@@ -309,6 +328,8 @@ extension EngineText {
         case adminBadIdentifier
         case adminBadSession
         case adminHoldingUnsafe
+        /// 권한 헬퍼: 허용 루트까지의 상위 폴더 소유자·쓰기 권한이 안전하지 않음
+        case adminUnsafeParent
         case adminScriptTampered
         case adminAuthCancelled
         case adminNotRoot
@@ -320,6 +341,8 @@ extension EngineText {
         case adminFailed
         /// 관리자 인증 창(osascript `with prompt`)의 안내 문구
         case adminPrompt
+        /// 권한 헬퍼 설치 (S7) — 번들에 헬퍼가 없는 실행 방식
+        case helperNotBundled
 
         /// 한국어 형식 문자열 (`%@` 자리에 `args`가 들어간다)
         public var koreanFormat: String {
@@ -405,6 +428,16 @@ extension EngineText {
             case .homebrewRecordOnly: return "Homebrew 기록만 남아 있음 — brew uninstall --zap --cask %@ 권장"
             case .serviceExecutableRemains: return "서비스 실행 파일이 아직 남아 있음 — 다른 프로그램이 쓰고 있을 수 있음"
 
+            case .packageInstalled: return "%@ 설치 기록: %@"
+            case .packageExecutableLink: return "실행 파일 링크 %2$@ (%1$@)"
+            case .packageDataByName: return "이름이 같은 데이터 (%@ 패키지 %@)"
+            case .packageDataMaybeOther: return "이름만 같은 다른 프로그램의 데이터일 수 있음"
+            case .packageDataShared: return "다른 설치(%@)도 같은 이름을 씀"
+            case .packageNeedsAdmin: return "관리자 소유 위치라 옮기지 않음 — %@ 로 제거"
+            case .cargoRecordRemains: return "cargo 설치 기록(~/.cargo/.crates2.json)에 %@ 항목이 남음 — 다시 설치하면 갱신됨"
+            case .packageManagerCache: return "%@ 다운로드 캐시"
+            case .packageCacheRedownloaded: return "지우면 다음 설치 때 다시 내려받음"
+
             case .sharedAppGroup: return "같은 App Group(%@)을 다른 앱도 사용"
             case .sharedExternalLaunchService: return "실행 파일(%@)이 앱 밖에 있는 같은 개발사 공용 백그라운드 서비스"
             case .sharedVendorItem: return "같은 개발사의 다른 앱이 설치되어 있는 공용 항목"
@@ -483,6 +516,7 @@ extension EngineText {
             case .adminBadIdentifier: return "레이블 또는 패키지 ID 형식이 올바르지 않습니다"
             case .adminBadSession: return "작업 기록 ID가 올바르지 않습니다"
             case .adminHoldingUnsafe: return "보류 폴더가 안전하지 않아 중단했습니다"
+            case .adminUnsafeParent: return "상위 폴더의 소유자나 권한이 안전하지 않아 옮기지 않았습니다"
             case .adminScriptTampered: return "관리자 작업 스크립트가 변조되어 실행하지 않았습니다"
             case .adminAuthCancelled: return "관리자 인증이 취소되었습니다"
             case .adminNotRoot: return "관리자 권한을 얻지 못했습니다"
@@ -493,6 +527,7 @@ extension EngineText {
             case .adminPkgutilFailed: return "pkgutil 실행에 실패했습니다 (%@)"
             case .adminFailed: return "관리자 작업에 실패했습니다 (%@)"
             case .adminPrompt: return "App Cleaner가 변경하려고 합니다."
+            case .helperNotBundled: return "이 실행 방식에는 관리자 헬퍼가 포함되어 있지 않습니다"
             }
         }
 

@@ -20,6 +20,16 @@
   orphans clean                 고아 잔여물 정리 (기본: 높음 + 사용자 데이터 아님)
       --dry-run | --yes | --json
       --include-medium          보통 신뢰도 항목도 포함
+  packages                      패키지 매니저(npm·cargo·pipx·uv)로 설치한 CLI 도구와 이름이 같은 데이터
+      --manager <npm|cargo|pipx|uv>  매니저 한정 (쉼표로 여러 개)
+      --json
+  packages remove <이름|경로>…  설치 항목(패키지 폴더·실행 파일 링크)을 휴지통으로 이동
+      --with-data               이름이 같은 데이터도 함께 (다른 설치와 함께 쓰는 것은 제외)
+      --manager <…> | --dry-run | --yes | --json
+  packages caches               패키지 매니저 다운로드 캐시
+      --manager <…> | --json
+  packages caches clean         캐시 정리 (다음 설치 때 다시 내려받음)
+      --manager <…> | --dry-run | --yes | --json
   history [--json]              삭제 기록
   restore <세션 ID> [--yes]     세션 되돌리기
   version                       버전

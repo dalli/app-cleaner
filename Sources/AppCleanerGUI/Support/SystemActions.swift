@@ -8,6 +8,7 @@ struct SystemActions {
     static let fullDiskAccessURL = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")!
     static let loginItemsURL = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension")!
     static let extensionsURL = URL(string: "x-apple.systempreferences:com.apple.ExtensionsPreferences")!
+    static let notificationsURL = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!
 
     init() {}
 
@@ -29,6 +30,7 @@ struct SystemActions {
     func openFullDiskAccessSettings() { open(Self.fullDiskAccessURL) }
     func openLoginItemsSettings() { open(Self.loginItemsURL) }
     func openExtensionsSettings() { open(Self.extensionsURL) }
+    func openNotificationSettings() { open(Self.notificationsURL) }
 
     func openTrash() {
         let trash = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".Trash", directoryHint: .isDirectory)

@@ -86,6 +86,8 @@ public enum ItemCategory: String, Codable, Sendable, CaseIterable {
     case receipt
     case kernelExtension
     case systemExtension
+    /// 패키지 매니저로 설치한 패키지 폴더·실행 파일 링크 (docs/packages.md)
+    case package
     case other
 
     /// 카테고리별 기본 데이터 성격. 실제 판정은 SelectionPolicy가 내용을 보고 덮어쓸 수 있다.
@@ -98,7 +100,7 @@ public enum ItemCategory: String, Codable, Sendable, CaseIterable {
             return .settings
         case .iCloudContainer:
             return .synced
-        case .appBundle:
+        case .appBundle, .package:
             return .regenerable
         case .container, .containerItem, .groupContainer, .applicationSupport, .dotfile, .other:
             return .settings
@@ -108,7 +110,7 @@ public enum ItemCategory: String, Codable, Sendable, CaseIterable {
     /// S2 검사기의 카테고리 묶음 (ui-ux.md S2)
     public var displayGroup: DisplayGroup {
         switch self {
-        case .appBundle: return .appBundle
+        case .appBundle, .package: return .appBundle
         case .container, .containerItem: return .container
         case .groupContainer, .iCloudContainer: return .groupContainer
         case .launchAgent, .launchDaemon, .privilegedHelper: return .background
@@ -139,6 +141,7 @@ public enum EvidenceSource: String, Codable, Sendable {
     case inventory          // 고아 스캔: 인벤토리 대조
     case homebrewRecord     // 고아 스캔: Caskroom 기록
     case pathRule           // 기타 경로 규칙
+    case packageManager     // 패키지 매니저 설치 기록 (npm·cargo·pipx·uv)
 }
 
 public struct Evidence: Codable, Sendable, Hashable {

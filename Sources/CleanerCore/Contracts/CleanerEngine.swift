@@ -67,4 +67,19 @@ public protocol CleanerEngine: Sendable {
     // S7 · S8
     func permissions() -> PermissionStatus
     func ruleDataInfo() -> RuleDataInfo
+
+    // 패키지 매니저로 설치한 CLI 도구 (docs/packages.md)
+    func scanPackages(options: PackageScanOptions) async throws -> PackageScanReport
+    func makePlan(for report: PackageScanReport, selectedPaths: Set<String>) -> CleanupPlan
+}
+
+/// 패키지 정리 기본 구현 — 지원하지 않는 엔진(GUI 데모 등)은 빈 결과
+extension CleanerEngine {
+    public func scanPackages(options: PackageScanOptions) async throws -> PackageScanReport {
+        PackageScanReport(packages: [], ruleDataVersion: ruleDataInfo().version)
+    }
+
+    public func makePlan(for report: PackageScanReport, selectedPaths: Set<String>) -> CleanupPlan {
+        CleanupPlanner.plan(for: report, selectedPaths: selectedPaths)
+    }
 }

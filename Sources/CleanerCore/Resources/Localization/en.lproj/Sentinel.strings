@@ -1,0 +1,27 @@
+/*
+  App Cleaner Sentinel (menu bar) — English. Keys are the Korean source strings. Keep sorted.
+  Count phrases that need singular/plural forms are in Sentinel.stringsdict, not here.
+*/
+
+"%@ 잔여물 정리…" = "Clean Up Leftovers of %@…";
+"%@ 휴지통으로 옮겼습니다" = "%@ was moved to the Trash";
+"App Cleaner 열기" = "Open App Cleaner";
+"Sentinel 종료" = "Quit Sentinel";
+"고아 잔여물 스캔…" = "Scan for Orphaned Leftovers…";
+"다음 로그인 때 다시 실행됩니다. 완전히 끄려면 App Cleaner 설정에서 끄세요." = "Sentinel starts again at your next login. To turn it off, use App Cleaner Settings.";
+"매달" = "Monthly";
+"매주" = "Weekly";
+"설정·캐시 같은 잔여물이 남아 있을 수 있습니다. 검사만 하고 아무것도 지우지 않습니다." = "Leftovers such as settings and caches may remain. App Cleaner only inspects them and removes nothing.";
+"설정…" = "Settings…";
+"알림이 꺼져 있음 — 알림 설정 열기…" = "Notifications are off — Open Notification Settings…";
+"잔여물도 정리" = "Clean Up Leftovers";
+"정기 스캔 꺼짐" = "Periodic scan off";
+"정기 스캔 중…" = "Periodic scan running…";
+"정기 스캔: %@ · 곧 실행" = "Periodic scan: %@ · runs soon";
+"정기 스캔: %@ · 다음 %@" = "Periodic scan: %1$@ · next %2$@";
+"정리할 수 있는 잔여물이 있습니다" = "Leftovers are ready to clean up";
+"최근 휴지통으로 간 앱" = "Recently Trashed Apps";
+"확인하기" = "Review";
+"휴지통 감시 꺼짐" = "Trash watch off";
+"휴지통 감시 중" = "Watching the Trash";
+"휴지통을 읽을 수 없음 — 전체 디스크 접근 필요…" = "Can't read the Trash — Full Disk Access needed…";

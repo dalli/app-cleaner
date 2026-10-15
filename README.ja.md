@@ -20,6 +20,18 @@ open -n "dist/App Cleaner.app" --args --demo   # ダミーデータで画面を�
 
 ## インストール（Apple シリコン）
 
+### Homebrew（CLI）
+
+```sh
+brew install dallisoft/tap/appcleaner
+appcleaner version
+```
+
+お使いの Mac でソースからビルドするため（Swift 6 を含む Command Line Tools または Xcode が必要）、公証されていなくても Gatekeeper にブロックされません。
+更新は `brew upgrade appcleaner` です。アプリ（GUI）は下記の Releases から入手してください（cask は #16 で対応予定）。
+
+### Releases
+
 [Releases](https://github.com/dallisoft/app-cleaner/releases) からダウンロードします。
 
 - `AppCleaner-<バージョン>-macos-arm64.zip` — アプリ（CLI は `Contents/Helpers/appcleaner`）
@@ -37,6 +49,9 @@ appcleaner remove Foo --dry-run                  # 整理計画を JSON で出�
 appcleaner remove Foo                            # 確認後、ゴミ箱／保留フォルダへ移動
 appcleaner orphans --min-confidence medium       # 孤立ファイルをスキャン
 appcleaner orphans clean --dry-run               # 孤立ファイルの整理計画（既定: 信頼度「高」かつユーザデータ以外）
+appcleaner packages                              # npm・cargo・pipx・uv でインストールした CLI ツール＋同じ名前のデータ
+appcleaner packages remove <名前> --dry-run      # CLI ツールの削除計画（--with-data: データも）
+appcleaner packages caches clean --dry-run       # パッケージマネージャのダウンロードキャッシュの整理計画
 appcleaner history                               # 削除履歴
 appcleaner restore <セッション ID>                # 元に戻す
 ```
@@ -50,6 +65,7 @@ appcleaner restore <セッション ID>                # 元に戻す
 - 完全には削除しません。ユーザのファイルはゴミ箱へ、root 所有のファイルは保留フォルダ（`/Library/Application Support/AppCleaner/Holding`）へ移動し、削除履歴から元に戻せます。
 - 信頼度の低い項目、他のアプリと共有されている項目、ユーザデータは既定では選択されません。iCloud のデータ、デバイスのバックアップ、`~/.ssh` などは選択自体ができません。
 - 管理者権限が必要な操作は、バンドル内の固定スクリプト（`privileged-op.sh`、ハッシュ検証済み）のみを実行し、権限昇格した側でパスを再検証します。
+  設定で特権ヘルパー（LaunchDaemon）をインストールすると、コード署名を確認できた App だけが XPC で依頼でき、ヘルパーがファイルディスクリプタ基準でパスを検証して移動します（Developer ID 署名 #19 の後に利用可能）。
 
 ## 現在の状況（v0.1.x — MVP）
 
@@ -59,3 +75,4 @@ plan.md の Phase 1a・1b・2 の範囲です。残りの作業は [`backlog` �
 - Phase 4: Developer ID 署名・公証、Sparkle（#19）、Homebrew tap・cask（#15, #16）、ルールデータ署名鍵の更新（#20）
 - VM・実機での QA マトリクス（#21）、GUI の未対応事項（#22）
 - 多言語対応: GUI・CLI ともに韓国語・英語・日本語に対応（その他の言語では英語）。日本語画面の確認と翻訳の校正は #27
+- パッケージマネージャ（npm・cargo・pipx・uv）でインストールした CLI ツール・データ・キャッシュの整理は CLI のみ — [docs/packages.md](docs/packages.md)（#39）

@@ -19,7 +19,7 @@ macOS에서 `.app`을 휴지통으로 옮기는 것만으로는 앱이 생성한
 - 오삭제를 구조적으로 방지한다 (신뢰도 점수, 공유 리소스 판정, 사용자 데이터 분류, 보호 목록, dry-run, 복원).
 
 ### 1.3 비목표 (Non-goals)
-- 시스템 전반 정리(브라우저 캐시, 개발 도구 캐시, 대용량 파일 탐색 등) — 범위 외.
+- 시스템 전반 정리(브라우저 캐시, 대용량 파일 탐색 등) — 범위 외. 단 패키지 매니저(npm·cargo·pipx·uv)로 설치한 CLI 도구와 그 데이터·다운로드 캐시는 [packages.md](packages.md)에서 다룬다 (#39).
 - Mac App Store 배포 (6.3절 참조 — 구조적으로 불가).
 - 커널 확장(kext)·System Extension의 자동 제거 (탐지 및 안내만 수행).
 - 키체인 항목 탐지·삭제 (안내만 수행 — 3.3절).
@@ -289,7 +289,7 @@ Spotlight 상태 검사: 인벤토리가 Spotlight에 의존하므로, 색인이
 | **iPhone/iPad 백업** | `Application Support/MobileSync` | **항상 제외** — 수십 GB의 대체 불가 데이터 |
 | **iCloud 데이터** | `~/Library/Mobile Documents/*` | **항상 제외** — 삭제가 다른 기기로 동기화됨 (5.1절) |
 | 공용 벤더 폴더 | `Adobe`, `Google`, `Microsoft`, `JetBrains` 등 | Low + 경고 |
-| CLI·런타임 데이터 | `~/.npm`, `~/.cargo`, `~/.pyenv`, `~/.ssh`, `~/.gnupg`, `~/.config/*` 등 dotfile 전체 | **고아 스캔에서 기본 제외**. "고급: dotfile 포함" 옵션을 켤 때만 Low로 표시 (`~/.ssh`, `~/.gnupg` 등 보안 폴더는 옵션과 무관하게 제외) |
+| CLI·런타임 데이터 | `~/.npm`, `~/.cargo`, `~/.pyenv`, `~/.ssh`, `~/.gnupg`, `~/.config/*` 등 dotfile 전체 | **고아 스캔에서 기본 제외**. "고급: dotfile 포함" 옵션을 켤 때만 Low로 표시 (`~/.ssh`, `~/.gnupg` 등 보안 폴더는 옵션과 무관하게 제외) <br>설치된 CLI 도구 자체와 그 데이터·캐시 정리는 고아 스캔이 아니라 `appcleaner packages`에서 한다 ([packages.md](packages.md)) |
 
 #### 4.5.6 4단계 — 앱 단위 그룹화
 파일 목록을 그대로 보여주지 않고 **"어떤 앱의 잔여물인지"** 단위로 묶는다. 예: `Slack (삭제됨) — 1.2 GB, 9개 항목, 마지막 수정 2025-03-02`.
@@ -340,6 +340,7 @@ Spotlight 상태 검사: 인벤토리가 Spotlight에 의존하므로, 색인이
     - 루트부터 경로 구성요소마다 `openat(…, O_NOFOLLOW | O_DIRECTORY)`로 내려가며 각 단계의 소유자·심볼릭 링크 여부를 검사하고, 최종 이동은 확보한 디렉토리 fd 기준 `renameatx_np(…, RENAME_EXCL)`로 수행.
     - 이동 대상(보류 폴더)은 root 소유·`0700`으로 헬퍼가 생성한 디렉토리만 사용.
   - 헬퍼도 5.1절 보호 목록을 **독립적으로 재검증** (앱의 판단을 신뢰하지 않음).
+  - 구현 메모 (#17, development.md "권한 헬퍼"): 명령은 위 4종 + 보류 폴더 영구 삭제(세션 폴더만)·복원 시 서비스 재등록(`/Library/LaunchDaemons/*.plist`만). 헬퍼는 엔진의 후보 목록을 따로 알 수 없으므로 `bootout`·`pkgForget` 값은 서명이 확인된 클라이언트가 보낸 값을 형식·보호 목록(`com.apple.*`·본 앱)으로 검증한다. 헬퍼가 없으면 아래 MVP 방식을 대체 경로로 쓴다.
 - **MVP 임시 방식 (Phase 1~2)**: AppleScript `do shell script … with administrator privileges`.
   - 셸 문자열을 동적으로 조립하지 않는다. 앱 번들에 포함한 **고정 스크립트**(`privileged-op.sh`, 서명된 번들 내부·root 실행 전 해시 확인)에 `quoted form of`로 이스케이프한 인자만 넘긴다 — 2.1절 #3(명령 주입) 재발 방지.
   - 고정 스크립트도 허용 루트 검사·`[ -L ]` 검사·보호 목록 검사를 **권한 상승된 쪽에서 다시** 수행한다. (fd 기반 검증까지는 하지 못하므로 경쟁 조건 위험이 남는다는 점을 알려진 제한으로 기록하고 Phase 3에서 해소.)
@@ -406,10 +407,10 @@ Spotlight 상태 검사: 인벤토리가 Spotlight에 의존하므로, 색인이
 | Dry-run | 실제 이동 없이 결과만 표시 (기본값으로 제공) | MVP |
 | 삭제 기록·되돌리기 | 6.2절 | MVP |
 | 유지(무시) 목록 | 고아 스캔에서 사용자가 유지한 항목 숨김 | MVP |
-| CLI | `appcleaner scan <app>`, `appcleaner remove <app>`, `appcleaner orphans [--min-confidence high\|medium\|low] [--include-dotfiles] [--json]`, `appcleaner orphans clean [--dry-run]` | MVP |
+| CLI | `appcleaner scan <app>`, `appcleaner remove <app>`, `appcleaner orphans [--min-confidence high\|medium\|low] [--include-dotfiles] [--json]`, `appcleaner orphans clean [--dry-run]`, `appcleaner packages [remove\|caches]` ([packages.md](packages.md)) | MVP |
 | 권한 헬퍼 (SMAppService + XPC) | 5.3절 | 2차 |
-| 휴지통 감시 (Sentinel) | 메뉴바 상주, FSEvents로 `~/.Trash`에 `.app` 유입 감지 → 알림 | 2차 |
-| 정기 고아 스캔 알림 | 설정한 주기(예: 월 1회)로 백그라운드 스캔 후 High 항목이 있으면 알림 | 2차 |
+| 휴지통 감시 (Sentinel) | 메뉴바 상주, FSEvents로 `~/.Trash`에 `.app` 유입 감지 → 알림 (설계·결정: `ui-ux.md` S10) | 2차 |
+| 정기 고아 스캔 알림 | 설정한 주기(매주/매달)로 백그라운드 스캔 후 High 항목이 있으면 알림 — Sentinel 내부 스케줄러 + CLI 자식 프로세스 (`ui-ux.md` S10) | 2차 |
 | Finder 확장 | 우클릭 메뉴 "완전 삭제" | 3차 |
 
 ---
@@ -450,7 +451,7 @@ graph TD
 ### 8.3 성능 목표 (측정 전 목표치)
 - 앱 1개 스캔: 2초 이내 (SSD, 일반 사용자 환경)
 - 고아 잔여물 전체 스캔: 첫 실행 30초 이내, 인벤토리 캐시 사용 시 10초 이내 (크기 계산은 결과 표시 후 백그라운드로 이어서 수행)
-- Sentinel 상주 메모리: 수십 MB 이하를 목표로 하고 Phase 3에서 Instruments로 측정 후 확정
+- Sentinel 상주 메모리: 수십 MB 이하 목표 → **측정 14 MB** (`footprint`의 phys_footprint, release arm64 번들, 메뉴 막대 대기·휴지통 감시 중, 앱 유입 처리 후·30초 뒤에도 같음. 공유 프레임워크 페이지를 포함한 RSS는 약 54 MB). 정기 스캔은 CLI 자식 프로세스(측정 중 RSS 약 100 MB)가 맡고 끝나면 반환되므로 Sentinel 상주 메모리는 그대로였다. Instruments 장시간 측정은 아직 하지 않았다 (2026-10-15, `docs/development.md` "Sentinel")
 - 크기 계산은 `URLResourceValues.totalFileAllocatedSize`를 `TaskGroup`으로 병렬 수행, UI는 점진 표시
 
 ---

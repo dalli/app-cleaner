@@ -20,6 +20,18 @@ open -n "dist/App Cleaner.app" --args --demo   # preview the UI with fake data
 
 ## Install (Apple Silicon)
 
+### Homebrew (CLI)
+
+```sh
+brew install dallisoft/tap/appcleaner
+appcleaner version
+```
+
+The formula builds from source on your Mac (requires Command Line Tools or Xcode with Swift 6), so Gatekeeper does not block it even though it is not notarized.
+Update with `brew upgrade appcleaner`. For the app (GUI), use Releases below (a cask is tracked in #16).
+
+### Releases
+
 Download from [Releases](https://github.com/dallisoft/app-cleaner/releases).
 
 - `AppCleaner-<version>-macos-arm64.zip` — the app (the CLI is at `Contents/Helpers/appcleaner`)
@@ -37,6 +49,9 @@ appcleaner remove Foo --dry-run                  # cleanup plan as JSON
 appcleaner remove Foo                            # confirm, then move to Trash / holding folder
 appcleaner orphans --min-confidence medium       # scan for orphaned leftovers
 appcleaner orphans clean --dry-run               # orphan cleanup plan (default: high confidence + not user data)
+appcleaner packages                              # CLI tools installed with npm/cargo/pipx/uv + data with the same name
+appcleaner packages remove <name> --dry-run      # plan to remove a CLI tool (--with-data: its data too)
+appcleaner packages caches clean --dry-run       # plan to clean package manager download caches
 appcleaner history                               # removal history
 appcleaner restore <session ID>                  # undo
 ```
@@ -50,6 +65,7 @@ The output language (Korean, English, Japanese) is chosen from `--lang <ko|en|ja
 - Nothing is permanently deleted: user files go to the Trash, root-owned files go to a holding folder (`/Library/Application Support/AppCleaner/Holding`), and everything can be restored from the removal history.
 - Low-confidence items, items shared with other apps, and user data are never selected by default. iCloud data, device backups, `~/.ssh`, and similar paths cannot be selected at all.
 - Privileged operations run only the bundled fixed script (`privileged-op.sh`, hash-verified), and paths are re-validated on the elevated side.
+  If you install the privileged helper (LaunchDaemon) in Settings, only code-signature-verified clients can send requests over XPC, and the helper validates and moves paths using file descriptors (usable once Developer ID signing, #19, is in place).
 
 ## Current status (v0.1.x — MVP)
 
@@ -59,3 +75,4 @@ Covers Phases 1a, 1b, and 2 of plan.md. Remaining work is tracked in [issues lab
 - Phase 4: Developer ID signing and notarization, Sparkle (#19), Homebrew tap and cask (#15, #16), rotating the rule-data signing key (#20)
 - VM and real-device QA matrix (#21), GUI gaps (#22)
 - Localization: the GUI and CLI support Korean, English, and Japanese (English for any other language). Japanese UI review and translation proofreading: #27
+- Cleaning up CLI tools installed with a package manager (npm, cargo, pipx, uv), their data and caches: CLI only — [docs/packages.md](docs/packages.md) (#39)

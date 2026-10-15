@@ -88,6 +88,15 @@
 "brewZapRecommended" = "Cleaning up with brew uninstall --zap --cask %@ is recommended";
 "homebrewRecordOnly" = "Only the Homebrew record remains — brew uninstall --zap --cask %@ is recommended";
 "serviceExecutableRemains" = "The service executable still exists — another program may be using it";
+"packageInstalled" = "%@ install record: %@";
+"packageExecutableLink" = "Executable link %2$@ (%1$@)";
+"packageDataByName" = "Data with the same name (%@ package %@)";
+"packageDataMaybeOther" = "May belong to another program with the same name";
+"packageDataShared" = "Another installation (%@) uses the same name";
+"packageNeedsAdmin" = "Owned by an administrator, so it isn't moved — remove it with %@";
+"cargoRecordRemains" = "The cargo install record (~/.cargo/.crates2.json) keeps an entry for %@ — it's updated when you reinstall";
+"packageManagerCache" = "%@ download cache";
+"packageCacheRedownloaded" = "Downloaded again the next time you install something";
 
 /* 공유 사유 */
 "sharedAppGroup" = "Other apps also use the same App Group (%@)";
@@ -177,6 +186,7 @@
 "adminBadIdentifier" = "The label or package ID format is invalid";
 "adminBadSession" = "The cleanup record ID is invalid";
 "adminHoldingUnsafe" = "Stopped because the holding folder isn't safe";
+"adminUnsafeParent" = "Not moved because the owner or permissions of a parent folder aren't safe";
 "adminScriptTampered" = "Not run because the administrator script has been modified";
 "adminAuthCancelled" = "Administrator authentication was canceled";
 "adminNotRoot" = "Couldn't get administrator privileges";
@@ -187,3 +197,4 @@
 "adminPkgutilFailed" = "pkgutil failed (%@)";
 "adminFailed" = "The administrator task failed (%@)";
 "adminPrompt" = "App Cleaner wants to make changes.";
+"helperNotBundled" = "This build doesn't include the administrator helper";

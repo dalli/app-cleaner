@@ -7,13 +7,15 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
     public let inventory: AppInventory
     public let scanner: AppScanner
     public let orphans: OrphanScanner
+    public let packages: PackageScanner
     public let keep: KeepListStore
     public let journal: JournalStore
     public let executor: CleanupExecutor
 
     private let inventoryTask = InventoryRefresher()
 
-    /// - Parameter adminLauncher: GUI·CLI 모두 기본은 관리자 인증 대화상자. 이미 root로 실행 중이면 `.direct`.
+    /// - Parameter adminLauncher: 헬퍼가 없을 때의 대체 경로. GUI·CLI 모두 기본은 관리자 인증 대화상자,
+    ///   이미 root로 실행 중이면 `.direct`(헬퍼를 쓰지 않음).
     public init(paths: SystemPaths = .live(), runner: CommandRunning = ProcessCommandRunner(),
                 adminLauncher: AppleScriptAdminExecutor.Launcher? = nil) {
         self.paths = paths
@@ -28,14 +30,14 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
             isRunning: LiveAppHooks.isRunning,
             hasFullDiskAccess: { PermissionProbe.fullDiskAccess(paths: fdaPaths) != .denied }
         )
+        packages = PackageScanner(paths: paths, rules: rules, safety: safety)
         let keep = KeepListStore(paths: paths)
         self.keep = keep
         orphans = OrphanScanner(paths: paths, runner: runner, inventory: inventory, rules: rules, safety: safety,
                                 classifier: DataNatureClassifier(), keepList: keep)
 
-        // 관리자 암호 입력을 기다려야 하므로 긴 시간 제한
-        let launcher = adminLauncher ?? (getuid() == 0 ? .direct : .osascript)
-        let admin = AppleScriptAdminExecutor(runner: ProcessCommandRunner(timeout: 900), launcher: launcher)
+        // 권한 헬퍼가 설치·허용되어 있으면 헬퍼(XPC), 아니면 관리자 암호(고정 스크립트) — plan.md 5.3
+        let admin = AdminExecutors.live(launcher: adminLauncher)
         let services = LaunchctlServiceController(paths: paths, runner: runner, admin: admin)
         let prefs = CFPreferencesFlusher(paths: paths, runner: runner)
         let journal = JournalStore(paths: paths, admin: admin, services: services, preferences: prefs)
@@ -84,6 +86,8 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
         progress: @escaping @Sendable (CleanupProgress) -> Void,
         onUnresponsive: @escaping @Sendable (UnresponsiveApp) async -> UnresponsiveDecision
     ) async -> CleanupResult {
+        // 실행 중인 Sentinel이 이 앱의 휴지통 유입을 알리지 않도록 (ui-ux.md S10)
+        SentinelSignal.postAppRemovalIfNeeded(plan)
         let result = await executor.execute(plan, progress: progress, onUnresponsive: onUnresponsive)
         // 앱 본체를 옮겼으면 인벤토리가 바뀌었으므로 다시 만든다.
         if plan.kind == .appRemoval { inventoryTask.refresh(inventory) }
@@ -99,6 +103,12 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
     public func keepList() -> [KeepEntry] { keep.entries() }
     public func addToKeepList(_ entry: KeepEntry) { keep.add(entry) }
     public func removeFromKeepList(id: String) { keep.remove(id: id) }
+
+    // MARK: 패키지
+
+    public func scanPackages(options: PackageScanOptions) async throws -> PackageScanReport {
+        await packages.scan(options: options)
+    }
 
     // MARK: S6
 
