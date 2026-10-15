@@ -1,4 +1,5 @@
 import Foundation
+import Security
 import Testing
 @testable import CleanerCore
 import CleanerTestSupport
@@ -508,7 +509,10 @@ import CleanerTestSupport
     // MARK: XPC (같은 프로세스의 익명 리스너 — launchd 없이 클라이언트 서명 검사 경로를 실행)
 
     /// 요구사항을 만족하는 클라이언트는 헬퍼로 실행된다 (XPC 왕복 + fd 기반 이동).
-    @Test func xpcClientMatchingRequirementIsServed() async throws {
+    /// 테스트 프로세스 자신이 요구사항을 통과할 때만 실행한다 — CI 러너(GitHub Actions macOS)에서는 테스트 실행 프로세스의
+    /// 동적 서명 검사가 실패해 XPC 연결이 거부되므로, 이 경우는 코드 문제가 아니라 환경 조건이다.
+    @Test(.enabled(if: SelfCodeCheck.satisfiesOwnIdentifier, "테스트 프로세스가 자기 서명 요구사항을 통과하지 못함 (CI 등)"))
+    func xpcClientMatchingRequirementIsServed() async throws {
         let fx = try Fixture()
         try fx.file(fx.root("Library/Caches/com.example.xpc/x"))
         let me = try #require(SelfCodeSignature.current()?.identifier, "테스트 프로세스에 서명 식별자가 없음")
@@ -570,6 +574,21 @@ import CleanerTestSupport
         #expect(PrivilegedScript.reason("helper-unavailable") == EngineText(.adminLaunchFailed))
         #expect(PrivilegedScript.reason("unsafe-parent") == EngineText(.adminUnsafeParent))
     }
+}
+
+/// 테스트 프로세스가 `identifier "<자기 식별자>"` 요구사항을 동적 서명 검사로 통과하는지 (XPC가 audit token으로 하는 검사와 같은 종류)
+enum SelfCodeCheck {
+    static let satisfiesOwnIdentifier: Bool = {
+        guard let me = SelfCodeSignature.current()?.identifier,
+              let text = CodeSigningRequirement.development(identifiers: [me]) else { return false }
+        var code: SecCode?
+        var requirement: SecRequirement?
+        guard SecCodeCopySelf([], &code) == errSecSuccess, let code,
+              SecRequirementCreateWithString(text as CFString, [], &requirement) == errSecSuccess, let requirement else { return false }
+        let status = SecCodeCheckValidity(code, [], requirement)
+        if status != errSecSuccess { print("SelfCodeCheck: \(me) → OSStatus \(status)") }
+        return status == errSecSuccess
+    }()
 }
 
 /// 같은 프로세스 안의 익명 XPC 리스너에 헬퍼 서비스를 띄운다 (테스트 전용).
