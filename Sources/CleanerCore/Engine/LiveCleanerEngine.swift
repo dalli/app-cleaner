@@ -84,6 +84,8 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
         progress: @escaping @Sendable (CleanupProgress) -> Void,
         onUnresponsive: @escaping @Sendable (UnresponsiveApp) async -> UnresponsiveDecision
     ) async -> CleanupResult {
+        // 실행 중인 Sentinel이 이 앱의 휴지통 유입을 알리지 않도록 (ui-ux.md S10)
+        SentinelSignal.postAppRemovalIfNeeded(plan)
         let result = await executor.execute(plan, progress: progress, onUnresponsive: onUnresponsive)
         // 앱 본체를 옮겼으면 인벤토리가 바뀌었으므로 다시 만든다.
         if plan.kind == .appRemoval { inventoryTask.refresh(inventory) }
