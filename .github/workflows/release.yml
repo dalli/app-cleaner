@@ -39,6 +39,7 @@ jobs:
               --notes "Apple Silicon(arm64) 빌드. ad-hoc 서명이며 공증되지 않았습니다."
           fi
           gh release upload "$TAG" --clobber \
+            "dist/AppCleaner-${TAG#v}-macos-arm64.dmg" \
             "dist/AppCleaner-${TAG#v}-macos-arm64.zip" \
             "dist/appcleaner-${TAG#v}-macos-arm64.tar.gz" \
             dist/SHA256SUMS.txt

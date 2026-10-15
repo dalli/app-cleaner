@@ -34,6 +34,7 @@ Update with `brew upgrade appcleaner`. For the app (GUI), use Releases below (a 
 
 Download from [Releases](https://github.com/dallisoft/app-cleaner/releases).
 
+- `AppCleaner-<version>-macos-arm64.dmg` — disk image for installing the app (drag App Cleaner to Applications)
 - `AppCleaner-<version>-macos-arm64.zip` — the app (the CLI is at `Contents/Helpers/appcleaner`)
 - `appcleaner-<version>-macos-arm64.tar.gz` — standalone CLI (keep `AppCleaner_CleanerCore.bundle` next to the executable)
 

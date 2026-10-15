@@ -34,6 +34,7 @@ Mac에서 소스를 빌드하므로(Swift 6이 든 Command Line Tools 또는 Xco
 
 [Releases](https://github.com/dallisoft/app-cleaner/releases)에서 받는다.
 
+- `AppCleaner-<버전>-macos-arm64.dmg` — 앱 설치 디스크 이미지 (App Cleaner를 Applications로 끌어 놓기)
 - `AppCleaner-<버전>-macos-arm64.zip` — 앱 (CLI는 `Contents/Helpers/appcleaner`)
 - `appcleaner-<버전>-macos-arm64.tar.gz` — CLI 단독 (실행 파일 옆의 `AppCleaner_CleanerCore.bundle`을 함께 둘 것)
 
