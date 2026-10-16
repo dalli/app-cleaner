@@ -332,10 +332,14 @@ struct OrphanCollector {
         ".python_history", ".node_repl_history", ".sqlite_history", ".wget-hsts", ".Xauthority", ".hushlogin",
     ]
 
-    /// `~/.<name>`, `~/.config/*`, `~/.local/share/*`, `~/.cache/*` — `includeDotfiles`일 때만 Low (보안 폴더는 항상 제외)
+    /// `~/.<name>`, `~/.config/*`, `~/.local/share/*`, `~/.cache/*`, `~/.local/state/*` (+ XDG 환경 변수로 바꾼 위치)
+    /// — `includeDotfiles`일 때만 Low (보안 폴더는 항상 제외)
     func collectDotfiles() -> [OrphanItem] {
         guard options.includeDotfiles else { return [] }
         let fm = FileManager.default
+        let dataDirs = paths.dotfileDataDirs
+        // XDG 폴더(또는 그 상위)가 홈 바로 아래 숨김 폴더면 그 폴더 자체는 고아가 아니다
+        let dataTops = Set(dataDirs.compactMap { $0.split(separator: "/").first.map(String.init) })
         var out: [OrphanItem] = []
         func consider(_ url: URL, stem: String) {
             if exclusions.isExcludedPath(url) { return }
@@ -347,11 +351,11 @@ struct OrphanCollector {
         }
         for child in fm.children(of: paths.home).map(\.standardizedFileURL).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
             let name = child.lastPathComponent
-            guard name.hasPrefix("."), name.count > 1, !Self.ignoredDotfiles.contains(name),
+            guard name.hasPrefix("."), name.count > 1, !Self.ignoredDotfiles.contains(name), !dataTops.contains(name),
                   !exclusions.isSecurityDotfile(name) else { continue }
             consider(child, stem: String(name.dropFirst()))
         }
-        for rel in [".config", ".local/share", ".cache"] {
+        for rel in dataDirs {
             for child in fm.children(of: paths.home(rel)).map(\.standardizedFileURL).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
                 let name = child.lastPathComponent
                 guard !name.hasPrefix("."), !exclusions.isSecurityDotfile("." + name) else { continue }

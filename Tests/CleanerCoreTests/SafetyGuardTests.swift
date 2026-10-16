@@ -37,7 +37,7 @@ import CleanerTestSupport
                          "Library/Cookies", "Library/Preferences", "Library/Preferences/ByHost", "Library/Saved Application State",
                          "Library/Logs", "Library/Logs/DiagnosticReports", "Library/LaunchAgents", "Library/Internet Plug-Ins",
                          "Library/QuickLook", "Library/Services", "Library/PreferencePanes", "Library/Spotlight",
-                         ".config", ".local/share", ".cache"]
+                         ".config", ".local/share", ".cache", ".local/state"]
         for rel in homeRoots {
             #expect(reason(guardian.verdict(for: fx.home(rel), bundleID: nil)) == .protectedPath, "~/\(rel)")
             if !rel.isEmpty {

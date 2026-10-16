@@ -18,6 +18,9 @@ public struct SystemPaths: Codable, Sendable, Hashable {
     public var uid: UInt32
     /// 본 앱의 BID (보호 목록)
     public var selfBundleID: String
+    /// XDG 환경 변수(`XDG_CONFIG_HOME` 등)로 바꾼 데이터 폴더 — 홈 기준 상대 경로 (#38).
+    /// 기본 위치와 같거나 홈 밖이면 넣지 않는다. 셸 환경을 받는 CLI에서만 채워진다 (GUI 앱은 셸 환경을 받지 않음).
+    public var xdgRelativeDirs: [String]?
 
     public static let ourAppFolderName = "AppCleaner"
     public static let defaultSelfBundleID = "com.dallisoft.AppCleaner"
@@ -38,6 +41,28 @@ public struct SystemPaths: Codable, Sendable, Hashable {
     public var systemLibrary: URL { root.appendingPathComponent("Library", isDirectory: true) }
     public var trash: URL { home.appendingPathComponent(".Trash", isDirectory: true) }
 
+    /// 이름 기반 dotfile 데이터를 찾는 홈 아래 폴더 (XDG 기본 위치 + 환경 변수로 바꾼 위치). 폴더 자체는 보호한다.
+    public static let xdgDefaultDirs = [".config", ".local/share", ".cache", ".local/state"]
+    public var dotfileDataDirs: [String] {
+        var seen = Set<String>()
+        return (Self.xdgDefaultDirs + (xdgRelativeDirs ?? [])).filter { seen.insert($0).inserted }
+    }
+
+    /// XDG 기본 디렉터리 환경 변수 → 홈 기준 상대 경로. 절대 경로이고 홈 안에 있으며 기본 위치가 아닌 값만 쓴다.
+    public static func xdgRelativeDirs(home: URL, environment: [String: String]) -> [String] {
+        let homePath = home.standardizedFileURL.path
+        var out: [String] = []
+        for key in ["XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_CACHE_HOME", "XDG_STATE_HOME"] {
+            guard let value = environment[key], value.hasPrefix("/") else { continue }
+            let path = URL(fileURLWithPath: value).standardizedFileURL.path
+            guard path.hasPrefix(homePath + "/") else { continue }
+            let rel = String(path.dropFirst(homePath.count + 1))
+            guard !rel.isEmpty, !xdgDefaultDirs.contains(rel), !out.contains(rel) else { continue }
+            out.append(rel)
+        }
+        return out
+    }
+
     /// `~/` 기준 상대 경로
     public func home(_ relative: String) -> URL { home.appendingPathComponent(relative) }
     /// `/` 기준 상대 경로 (선행 `/` 허용)
@@ -54,8 +79,11 @@ public struct SystemPaths: Codable, Sendable, Hashable {
         let temp = confstrPath(_CS_DARWIN_USER_TEMP_DIR) ?? URL(fileURLWithPath: NSTemporaryDirectory())
         let appData = home.appendingPathComponent("Library/Application Support/\(ourAppFolderName)", isDirectory: true)
         let holding = root.appendingPathComponent("Library/Application Support/\(ourAppFolderName)/Holding", isDirectory: true)
-        return SystemPaths(home: home, root: root, userCacheDir: cache, userTempDir: temp, appDataDir: appData,
-                           holdingDir: holding, uid: getuid())
+        var paths = SystemPaths(home: home, root: root, userCacheDir: cache, userTempDir: temp, appDataDir: appData,
+                                holdingDir: holding, uid: getuid())
+        let xdg = xdgRelativeDirs(home: home, environment: ProcessInfo.processInfo.environment)
+        paths.xdgRelativeDirs = xdg.isEmpty ? nil : xdg
+        return paths
     }
 
     /// 픽스처용: `base/home`, `base/root` 등 임시 트리 안에서만 동작
