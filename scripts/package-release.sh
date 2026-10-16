@@ -42,13 +42,37 @@ if ! find "$APP/Contents/Resources/AppCleaner_CleanerCore.bundle" -name NOTICE-h
   exit 1
 fi
 
+# 실행 확인은 사용자 Mac과 같은 조건에서 한다. 릴리즈 러너(Xcode 툴체인)의 SwiftPM 리소스 접근 코드는 리소스 번들을
+# 실행 파일 옆과 컴파일된 빌드 폴더의 절대 경로(.build/…/release — 러너에는 그대로 있다)에서만 찾으므로,
+# 확인하는 동안 .build를 치워 둔다. v0.3.0·v0.3.1의 번들 CLI는 이 조건에서 실행하자마자 종료됐다 (#54).
+# 로컬 Command Line Tools(Swift 6.4)의 접근 코드는 다른 위치도 찾아 같은 문제가 드러나지 않는다 — 단위 테스트가 막는다.
+if [ -d .build.smoke ] && [ ! -d .build ]; then mv .build.smoke .build; fi   # 중단된 이전 실행 복구
+mv .build .build.smoke
+trap 'mv .build.smoke .build' EXIT
+
 # 번들 CLI가 앱 안의 리소스 번들(Contents/Resources)로 실행되는지 — Sentinel 정기 스캔이 이 CLI를 쓴다.
-# 로컬에서는 SwiftPM 기본 경로(.build)가 남아 있어 통과할 수 있으므로 릴리즈 러너에서 의미가 있다.
 cli_out="$("$APP/Contents/Helpers/appcleaner" version 2>&1)" || { echo "error: 번들 CLI 실행 실패: $cli_out" >&2; exit 1; }
 case "$cli_out" in
   *unknown*) echo "error: 번들 CLI가 규칙 데이터를 찾지 못했습니다: $cli_out" >&2; exit 1 ;;
 esac
 echo "==> 번들 CLI: $cli_out"
+
+# GUI: 창 없이 리소스 번들(GUI 번역·CleanerCore)을 찾는지 (v0.1.1~v0.3.2의 배포 앱은 여기서 시작하자마자 종료됐다)
+gui_out="$("$APP/Contents/MacOS/AppCleanerGUI" --resource-check 2>&1)" || { echo "error: GUI 리소스 확인 실패:" >&2; echo "$gui_out" >&2; exit 1; }
+echo "==> GUI 리소스:"; echo "$gui_out" | sed 's/^/    /'
+
+# Sentinel: 가짜 휴지통을 감시하며 몇 초 동안 살아 있는지 (시작할 때 번역·규칙 데이터를 읽는다)
+SENTINEL_EXE="$APP/Contents/Library/LoginItems/App Cleaner Sentinel.app/Contents/MacOS/AppCleanerSentinel"
+FAKE_TRASH="$(mktemp -d)"
+"$SENTINEL_EXE" --log-only --watch-trash --trash "$FAKE_TRASH" > "$FAKE_TRASH.log" 2>&1 &
+sentinel_pid=$!
+sleep 3
+if ! kill -0 "$sentinel_pid" 2>/dev/null; then
+  echo "error: Sentinel이 시작하자마자 종료됐습니다:" >&2; cat "$FAKE_TRASH.log" >&2; exit 1
+fi
+kill "$sentinel_pid"; wait "$sentinel_pid" 2>/dev/null || true
+rm -rf "$FAKE_TRASH" "$FAKE_TRASH.log"
+echo "==> Sentinel: 시작 확인"
 
 APP_DMG="AppCleaner-$VERSION-macos-$ARCH.dmg"
 APP_ZIP="AppCleaner-$VERSION-macos-$ARCH.zip"
