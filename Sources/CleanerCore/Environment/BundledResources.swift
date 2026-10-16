@@ -4,6 +4,8 @@ import Foundation
 /// `.app`에서는 Contents/Resources, SwiftPM 실행 파일에서는 실행 파일 옆 번들을 본다.
 /// Homebrew처럼 `bin/appcleaner -> libexec/appcleaner` 심볼릭 링크로 실행되면 링크가 있는 폴더가 아니라
 /// 실제 실행 파일 폴더에 번들이 있으므로, 실행 파일 경로의 심볼릭 링크를 해석한 위치도 후보에 넣는다.
+/// 앱 번들 안의 보조 실행 파일(`X.app/Contents/Helpers/appcleaner` — 번들 CLI, Sentinel 정기 스캔이 실행)은
+/// 번들이 `X.app/Contents/Resources`에 있으므로 그 위치도 본다.
 public enum BundledResources {
     public static let bundleName = "AppCleaner_CleanerCore.bundle"
 
@@ -19,10 +21,22 @@ public enum BundledResources {
             addBundle(in: res)
             out.append(res.appendingPathComponent(relativePath))
         }
+        /// `X.app/Contents/<폴더>/실행 파일`이면 `X.app/Contents/Resources`
+        func addAppResources(of exe: URL) {
+            let contents = exe.deletingLastPathComponent().deletingLastPathComponent()
+            guard contents.lastPathComponent == "Contents", contents.deletingLastPathComponent().pathExtension == "app" else { return }
+            let resources = contents.appendingPathComponent("Resources")
+            guard resources.path != resourceURL?.path else { return }
+            addBundle(in: resources)
+        }
         if let exe = executableURL {
             addBundle(in: exe.deletingLastPathComponent())
+            addAppResources(of: exe)
             let real = resolvingSymlinks(exe)
-            if real.path != exe.path { addBundle(in: real.deletingLastPathComponent()) }
+            if real.path != exe.path {
+                addBundle(in: real.deletingLastPathComponent())
+                addAppResources(of: real)
+            }
         }
         return out
     }

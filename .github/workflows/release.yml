@@ -24,6 +24,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || github.ref }}
+          # build-app.sh의 CFBundleVersion은 `git rev-list --count HEAD` — 얕은 클론이면 항상 1이 된다
+          fetch-depth: 0
       - name: Toolchain
         run: |
           test "$(uname -m)" = arm64
