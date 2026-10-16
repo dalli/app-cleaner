@@ -21,12 +21,8 @@ public enum BundledResources {
             addBundle(in: res)
             out.append(res.appendingPathComponent(relativePath))
         }
-        /// `X.app/Contents/<폴더>/실행 파일`이면 `X.app/Contents/Resources`
         func addAppResources(of exe: URL) {
-            let contents = exe.deletingLastPathComponent().deletingLastPathComponent()
-            guard contents.lastPathComponent == "Contents", contents.deletingLastPathComponent().pathExtension == "app" else { return }
-            let resources = contents.appendingPathComponent("Resources")
-            guard resources.path != resourceURL?.path else { return }
+            guard let resources = appResourcesDirectory(of: exe), resources.path != resourceURL?.path else { return }
             addBundle(in: resources)
         }
         if let exe = executableURL {
@@ -39,6 +35,36 @@ public enum BundledResources {
             }
         }
         return out
+    }
+
+    /// `X.app/Contents/<폴더>/실행 파일`이면 `X.app/Contents/Resources` (앱 본체·번들 CLI 모두)
+    public static func appResourcesDirectory(of executable: URL) -> URL? {
+        let contents = executable.deletingLastPathComponent().deletingLastPathComponent()
+        guard contents.lastPathComponent == "Contents", contents.deletingLastPathComponent().pathExtension == "app" else { return nil }
+        return contents.appendingPathComponent("Resources")
+    }
+
+    /// 이름으로 SwiftPM 리소스 번들(`AppCleaner_AppCleanerGUI.bundle` 등) 찾기 — resourceURL, 실행 파일 폴더,
+    /// 앱의 Contents/Resources, 심볼릭 링크를 해석한 실행 파일 기준 순.
+    ///
+    /// 배포 코드는 SwiftPM의 `Bundle.module`보다 이것을 먼저 쓴다. 릴리즈 러너(Xcode 툴체인)가 만드는 `Bundle.module`은
+    /// `Bundle.main.bundleURL`(앱이면 `.app` 최상위)과 빌드 머신의 .build만 찾아서, 배포한 앱·번들 CLI가
+    /// 시작하자마자 종료됐다 (v0.1.1~v0.3.2). 로컬 Command Line Tools의 `Bundle.module`은 다른 위치도 찾아 드러나지 않았다.
+    public static func bundleURL(named name: String, resourceURL: URL? = Bundle.main.resourceURL,
+                                 executableURL: URL? = Bundle.main.executableURL,
+                                 where exists: (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) }) -> URL? {
+        var dirs: [URL] = []
+        if let res = resourceURL { dirs.append(res) }
+        if let exe = executableURL {
+            dirs.append(exe.deletingLastPathComponent())
+            if let app = appResourcesDirectory(of: exe) { dirs.append(app) }
+            let real = resolvingSymlinks(exe)
+            if real.path != exe.path {
+                dirs.append(real.deletingLastPathComponent())
+                if let app = appResourcesDirectory(of: real) { dirs.append(app) }
+            }
+        }
+        return dirs.map { $0.appendingPathComponent(name) }.first(where: exists)
     }
 
     /// 후보 중 `exists`를 만족하는 첫 경로

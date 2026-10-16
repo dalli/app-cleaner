@@ -10,7 +10,10 @@ import Foundation
 /// 형식 인자가 있는 문구는 키에 `%lld`(정수) · `%@`(문자열)를 직접 쓴다 — `LocalizationTests`가
 /// 소스의 모든 L 호출 키가 en·ja 파일에 있고 형식 지정자가 원문과 맞는지 검사한다.
 enum L10n {
-    static let bundle: Bundle = .module
+    /// GUI 리소스 번들. 배포 앱은 `Contents/Resources`에서 직접 찾는다 — 릴리즈 빌드의 `Bundle.module`은 그 위치를 보지 않아
+    /// 앱이 시작하자마자 종료됐다 (`BundledResources.bundleURL(named:)`). `swift test`·`swift run`은 `.module`로 찾는다.
+    static let bundleName = "AppCleaner_AppCleanerGUI.bundle"
+    static let bundle: Bundle = BundledResources.bundleURL(named: bundleName).flatMap(Bundle.init(url:)) ?? .module
 
     /// 실제로 선택된 UI 언어. 사용자 선호 언어(`-AppleLanguages` 포함)에서 처음 지원하는 언어,
     /// 하나도 없으면 영어 (`Bundle.preferredLocalizations`는 개발 언어 ko를 돌려주므로 쓰지 않는다).
