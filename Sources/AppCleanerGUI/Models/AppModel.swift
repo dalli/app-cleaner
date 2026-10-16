@@ -336,6 +336,12 @@ final class AppModel {
 
     var lacksFullDiskAccess: Bool { permissions.fullDiskAccess != .granted }
 
+    /// S7 "휴지통을 읽을 수 없음". 로그인 항목으로 실행된 Sentinel은 본 앱의 전체 디스크 접근을 함께 쓴다 (#18 실기기 확인) —
+    /// 본 앱에 권한이 있으면 Sentinel이 전에 기록한 "읽을 수 없음"은 Sentinel이 다시 읽기 전의 지난 값이다.
+    var sentinelNeedsFullDiskAccess: Bool {
+        settings.trashWatchEnabled && sentinelStatus.trashReadable == false && lacksFullDiskAccess
+    }
+
     // MARK: 설정
 
     func refreshKeepList() {

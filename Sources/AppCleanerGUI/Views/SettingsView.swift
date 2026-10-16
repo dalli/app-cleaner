@@ -180,13 +180,13 @@ private struct SentinelSection: View {
                         }
                     }
                 }
-                if settings.trashWatchEnabled && status.trashReadable == false {
+                if model.sentinelNeedsFullDiskAccess {
                     LabeledContent {
                         Button(L("시스템 설정 열기")) { model.system.openFullDiskAccessSettings() }
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(L("휴지통을 읽을 수 없음"))
-                            Text(L("Sentinel에도 전체 디스크 접근 권한이 필요합니다. 목록에서 “App Cleaner Sentinel”을 켜세요."))
+                            Text(L("Sentinel은 App Cleaner의 전체 디스크 접근 권한을 함께 씁니다. 목록에서 “App Cleaner”를 켜세요."))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }

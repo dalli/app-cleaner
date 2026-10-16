@@ -225,6 +225,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+# 개발 모드 헬퍼는 Team ID 없이 연결을 받으므로 S7에서 설치할 수 있게 표시한다 (SMAppServiceHelperInstaller.developmentModeKey)
+if [ "$HELPER_DEV" = "1" ]; then
+  plutil -insert AppCleanerHelperDevelopment -bool YES "$APP/Contents/Info.plist"
+fi
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 echo "==> codesign ($SIGN_IDENTITY, Hardened Runtime)"

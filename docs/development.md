@@ -140,6 +140,22 @@ footprint <pid>                                         # 상주 메모리 (phys
 
 `--log-only`는 알림 권한을 묻지 않고 본 앱 설정(`com.dallisoft.AppCleaner`)에 상태를 쓰지 않는다.
 
+**실기기 확인** (2026-10-16, macOS 27.0.1, release 번들 `dist/`, #18) — S7에서 켜서 로그인 항목으로 실행한 상태
+
+| 항목 | 결과 |
+|---|---|
+| 로그인 항목 등록 (ad-hoc 서명) | 등록 즉시 launchd가 실행, S7 "켜짐". macOS가 "앱 백그라운드 활동" 알림을 띄움. 처음에는 `.notFound`를 "사용할 수 없음"으로 보던 버그로 켤 수 없었음 → 수정 (권한 헬퍼 절 참고) |
+| 알림 허용 | 첫 실행 때 "'App Cleaner Sentinel' 알림" 허용 요청, 허용하면 S7·메뉴에 반영 |
+| 휴지통 읽기 | 본 앱에 전체 디스크 접근이 없으면 `~/.Trash`를 읽지 못함 → 메뉴·S7 안내. 본 앱("App Cleaner")에 허용하면 Sentinel도 읽음 (Sentinel을 다시 띄울 필요 없음, 메뉴를 열 때 다시 확인). 시스템 설정 목록에 Sentinel은 따로 나오지 않음 |
+| 휴지통 유입 알림 | 실제 휴지통에 앱을 버리면 약 1초 안에 배너. 휴지통에서 꺼냈다가 다시 버려도 다시 알림 |
+| "잔여물도 정리" | 본 앱이 꺼져 있어도 실행되며 S2가 열림 (앱 본체 제외, "이미 휴지통에 있음" 배너) |
+| 정기 스캔 | "매주"로 켠 뒤 약 40분 만에 첫 실행(1시간 확인 주기), 스캔 시작 4초 뒤 "정리할 수 있는 잔여물이 있습니다" 알림 (높음 1그룹). "확인하기" → S5가 열려 다시 스캔, 같은 높음 그룹만 기본 선택 |
+| 상주 메모리 (75분) | phys_footprint 21 MB → 23 MB, 40분 이후 23 MB 유지 (정기 스캔 전후 같음, 최고 23.9 MB). RSS 53~73 MB. 1분 간격 `footprint` + 5분마다 휴지통에 파일 넣기. Instruments는 Xcode가 없어 대신 `leaks`: 시스템 프레임워크(AppIntents XPC 연결) 순환 참조 약 20 KB뿐, Sentinel·CleanerCore 누수 없음 |
+
+- 테스트용 앱 BID를 `com.dallisoft.*`로 하면 App Cleaner 자신(`com.dallisoft.AppCleaner`)과 벤더가 같아 고아가 "보통"으로 강등되고
+  S2에서도 LaunchAgent가 "공유"로 표시된다 (같은 벤더 규칙, plan.md 4.5.4). 정기 스캔 알림(높음만)을 확인하려면 다른 벤더 BID를 쓴다.
+- 알림 배너는 잠깐 떠 있으므로 화면 자동화로 누르기 어렵다. 알림 센터(메뉴 막대 시계)를 열어 기록에서 동작 버튼을 누른다.
+
 ## 권한 헬퍼 (#17, plan.md 5.3)
 
 관리자 작업(보류 폴더 이동·복원·영구 삭제, 시스템 서비스 중지·재등록, `pkgutil --forget`)은 두 경로로 실행된다.
@@ -164,13 +180,21 @@ footprint <pid>                                         # 상주 메모리 (phys
 GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등록·해제한다. 등록 후 시스템 설정 › 일반 › 로그인 항목에서
 허용해야 실행된다 (앱이 그 화면을 연다). CLI에는 설치 명령이 없다 — GUI에서 설치하면 번들 CLI도 헬퍼를 쓴다.
 
+- S7은 **헬퍼가 연결을 받는 빌드에서만** 설치를 권한다: Team ID로 서명했거나, `HELPER_DEV=1`로 만든 번들
+  (`build-app.sh`가 Info.plist에 `AppCleanerHelperDevelopment`를 넣는다). 기본 ad-hoc 빌드(지금의 릴리즈 DMG)는
+  설치해도 헬퍼가 연결을 받지 않으므로 "사용할 수 없음"으로 두고 관리자 암호 방식을 쓴다. 이미 등록된 헬퍼는 제거할 수 있게 보인다.
+- `SMAppService.status`는 **한 번도 등록하지 않은 서비스에 `.notFound`를 돌려준다** (번들에 plist가 있어도, macOS 27에서 확인).
+  `.notRegistered`와 같이 "설치 안 됨"으로 본다 — 정말 등록할 수 없으면 `register()`가 오류를 낸다 (`HelperInstallState(status:canConnect:)`).
+  Sentinel 로그인 항목(`SentinelRegistration(status:)`)도 같다.
+
 **서명·Team ID** — 헬퍼와 앱은 각자 **자기 서명의 Team ID**로 상대 요구사항을 만든다 (설정 파일에서 읽지 않음).
 
 - 헬퍼 → 클라이언트: `anchor apple generic and certificate leaf[subject.OU] = "<TEAM>" and (identifier "<BID>" or identifier "<BID>.cli")`
 - 앱 → 헬퍼: `anchor apple generic and certificate leaf[subject.OU] = "<TEAM>" and identifier "<BID>.Helper"`
 - `NSXPCConnection.setCodeSigningRequirement(_:)`는 메시지마다 audit token으로 검사한다 (PID 검증 없음).
 - 빌드: `SIGN_IDENTITY="Developer ID Application: … (XXXXXXXXXX)" TEAM_ID=XXXXXXXXXX ./scripts/build-app.sh` —
-  `XXXXXXXXXX`는 자리표시자. 실제 값은 #19(Developer ID 서명)에서 정한다. `TEAM_ID`를 주면 서명 후 Team ID를 확인한다.
+  `XXXXXXXXXX`는 자리표시자. `TEAM_ID`를 주면 서명 후 Team ID를 확인한다. **공식 릴리즈는 Developer ID 서명·공증을 하지 않는다**
+  (#19 닫음) — 이 방법은 소스를 받아 자기 Developer ID로 직접 빌드하는 경우에만 쓴다.
 - 기본(ad-hoc) 빌드는 Team ID가 없어 헬퍼가 **연결을 받지 않는다** → 항상 대체 경로.
 - **개발 모드** `HELPER_DEV=1 ./scripts/build-app.sh`: 헬퍼를 `APPCLEANER_HELPER_DEV` 조건으로 컴파일해 Team ID 없이
   서명 식별자만 확인한다. 같은 식별자로 서명한 아무 프로그램이나 root 작업을 요청할 수 있으므로 **배포 금지**, 로컬 확인용.
@@ -192,7 +216,7 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 실행한다 (plan.md 9장 "권한 경로 보안 테스트"): 허용 루트 밖, 상위 폴더 링크, 검사 직후 상위 폴더·마지막 구성요소를 링크로
 바꾸는 훅, 다른 스레드가 링크로 계속 바꾸는 경쟁 조건 반복 실행, 셸 메타문자, RENAME_EXCL 충돌, 보호 목록, 소유자·권한,
 보류 폴더 링크. XPC는 같은 프로세스의 익명 리스너로 요구사항 일치·불일치(클라이언트·헬퍼 양쪽)와 대체 경로를 확인한다.
-**검증하지 못한 것**: launchd 등록·root 실행·로그인 항목 승인, 실제 Developer ID 서명에서의 요구사항 (#19 이후 수동 확인).
+**검증하지 못한 것**: launchd 등록·root 실행·로그인 항목 승인, 실제 Developer ID 서명에서의 요구사항. 공식 릴리즈는 Developer ID를 쓰지 않으므로 확인 계획이 없다 (#17).
 
 ## 브랜치
 
@@ -205,10 +229,10 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 |---|---|---|
 | 관리자 경로 TOCTOU (대체 경로만) | 권한 헬퍼는 fd 기반 이동으로 막는다. 헬퍼가 없을 때 쓰는 `privileged-op.sh`는 구성요소별 `[ -L ]` 검사·허용 루트·보호 목록을 재검증하지만 검사와 `mv` 사이 경쟁 조건이 남는다 | 대체 경로를 쓰는 한 유지 |
 | 관리자 인증 횟수 (대체 경로만) | 헬퍼가 있으면 묻지 않는다. 대체 경로에서는 시스템 데몬 중지(종료 전)와 이동·`pkgutil --forget`(종료 후)이 순서상 분리되어 최대 2회 | 대체 경로를 쓰는 한 유지 |
-| 권한 헬퍼 서명 | Developer ID가 없어 기본 빌드의 헬퍼는 연결을 받지 않는다 (항상 대체 경로). 실제 등록·승인·서명 요구사항은 수동 확인 전 | #19 |
+| 권한 헬퍼 서명 | 공식 릴리즈는 ad-hoc 서명(Developer ID·공증 안 함)이라 헬퍼가 연결을 받지 않는다 — 항상 대체 경로, S7은 "사용할 수 없음". 자기 Developer ID로 빌드하면 쓸 수 있다 | 해당 없음 (#19 닫음) |
+| Sentinel 재등록 | 같은 ID로 다른 빌드(코드 해시가 다름)를 등록했던 적이 있으면 새 빌드의 로그인 항목이 실행되지 않는다 (`launchctl print`: spawn failed, EX_CONFIG, `needs LWCR update`). S7에서 끄고 다시 켜면 정상. 업데이트 후에도 생길 수 있음 | #50 |
 | 규칙 데이터 서명 키 | `RuleDataVerifier`의 내장 공개키는 개발용. 배포 전 `swift scripts/sign-rule-data.swift keygen`으로 교체 | #20 |
 | SwiftUI `@State` | macOS 27 SDK에서 매크로가 되어 CLT에 플러그인이 없음 → 모든 상태를 뷰 모델에 둔다 | — |
 | String Catalog | CLT에 `xcstringstool`이 없어 `<언어>.lproj`의 `.strings`·`.stringsdict` 사용 ("번역 추가 절차") | — |
-| Sentinel 휴지통 읽기 | `~/.Trash`는 TCC로 보호되어 Sentinel(별도 앱)에도 전체 디스크 접근이 필요할 수 있다. 읽지 못하면 메뉴·S7에 안내만 한다. 외장 볼륨 휴지통(`.Trashes`)은 감시하지 않는다 | — |
-| Sentinel 실기기 확인 | 로그인 항목 등록(ad-hoc 서명 포함)·실제 알림 표시·알림 동작 버튼은 아직 실기기에서 확인하지 않았다 (가짜 휴지통 폴더로 감지·메모리만 확인) | #18 |
+| Sentinel 휴지통 읽기 | `~/.Trash`는 TCC로 보호된다. 로그인 항목으로 실행된 Sentinel은 본 앱의 전체 디스크 접근을 함께 쓰므로, 본 앱에 권한이 없으면 휴지통을 읽지 못하고 메뉴·S7에 안내만 한다. 외장 볼륨 휴지통(`.Trashes`)은 감시하지 않는다 | — |
 | 픽스처 경로 표기 | 픽스처는 `/var/folders`, 엔진이 해석한 실제 경로는 `/private/var/folders` — 테스트에서 경로 비교 시 realpath로 맞춘다 | — |

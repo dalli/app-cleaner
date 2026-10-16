@@ -49,7 +49,7 @@
 "Microsoft AutoUpdate — 같은 개발사의 다른 앱이 사용" = "Microsoft AutoUpdate — used by other apps from the same developer";
 "Program이 /Applications/Slack.app/Contents/Frameworks/Squirrel.framework/Resources/ShipIt을 가리킴" = "Program points to /Applications/Slack.app/Contents/Frameworks/Squirrel.framework/Resources/ShipIt";
 "Program이 /Library/PrivilegedHelperTools/com.docker.vmnetd를 가리킴" = "Program points to /Library/PrivilegedHelperTools/com.docker.vmnetd";
-"Sentinel에도 전체 디스크 접근 권한이 필요합니다. 목록에서 “App Cleaner Sentinel”을 켜세요." = "Sentinel also needs Full Disk Access. Turn on “App Cleaner Sentinel” in the list.";
+"Sentinel은 App Cleaner의 전체 디스크 접근 권한을 함께 씁니다. 목록에서 “App Cleaner”를 켜세요." = "Sentinel uses App Cleaner's Full Disk Access. Turn on “App Cleaner” in the list.";
 "Sentinel을 등록하지 못했습니다: %@" = "Couldn't register Sentinel: %@";
 "Spotlight 색인이 불완전해 일부 설치 앱을 확인하지 못했습니다." = "The Spotlight index is incomplete, so some installed apps couldn't be checked.";
 "Team ID" = "Team ID";
