@@ -9,8 +9,23 @@ public enum HelperInstallState: String, Sendable, Hashable {
     case requiresApproval
     /// 등록·허용됨 — 관리자 작업에 암호를 묻지 않는다
     case enabled
-    /// 이 실행 방식에서는 설치할 수 없음 (`.app` 번들 밖에서 실행, 번들에 헬퍼 plist 없음)
+    /// 이 실행 방식에서는 설치할 수 없음 (`.app` 번들 밖에서 실행, 번들에 헬퍼 plist 없음, 헬퍼가 연결을 받지 않는 서명)
     case unavailable
+
+    /// `SMAppService.Status` → 설치 상태.
+    ///
+    /// 한 번도 등록하지 않은 서비스는 번들에 plist가 있어도 `.notFound`가 나온다 (macOS 27에서 확인) — `.notRegistered`와
+    /// 같이 "설치 안 됨"으로 본다. 정말 등록할 수 없으면 `register()`가 오류를 낸다.
+    /// `canConnect`: 이 빌드의 헬퍼가 연결을 받는지 (Team ID 서명 또는 개발 모드). 아니면 설치해도 쓸 수 없으므로
+    /// 설치를 권하지 않는다 — 이미 등록된 헬퍼는 제거할 수 있도록 그대로 보인다.
+    public init(status: SMAppService.Status, canConnect: Bool) {
+        switch status {
+        case .enabled: self = .enabled
+        case .requiresApproval: self = .requiresApproval
+        case .notRegistered, .notFound: self = canConnect ? .notInstalled : .unavailable
+        @unknown default: self = .unavailable
+        }
+    }
 }
 
 /// 헬퍼 등록·해제 (`SMAppService.daemon(plistName:)`). GUI 설정 화면이 쓴다.
@@ -31,12 +46,25 @@ public struct UnavailableHelperInstaller: HelperInstalling {
 
 /// `SMAppService` 구현. 앱 번들의 `Contents/Library/LaunchDaemons/<plistName>`이 있어야 한다 (`scripts/build-app.sh`).
 public struct SMAppServiceHelperInstaller: HelperInstalling {
+    /// 개발 모드(`HELPER_DEV=1 scripts/build-app.sh`)로 만든 번들의 Info.plist 표시 — 헬퍼가 Team ID 없이 연결을 받는다
+    public static let developmentModeKey = "AppCleanerHelperDevelopment"
+
     public let identity: PrivilegedHelperIdentity
     public let bundleURL: URL
+    /// 이 빌드의 헬퍼가 연결을 받는지: Team ID로 서명했거나 개발 모드 번들
+    public let canConnect: Bool
 
-    public init(identity: PrivilegedHelperIdentity = .forCurrentProcess(), bundleURL: URL = Bundle.main.bundleURL) {
+    public init(identity: PrivilegedHelperIdentity = .forCurrentProcess(), bundleURL: URL = Bundle.main.bundleURL,
+                canConnect: Bool = SMAppServiceHelperInstaller.currentBuildCanConnect()) {
         self.identity = identity
         self.bundleURL = bundleURL
+        self.canConnect = canConnect
+    }
+
+    /// 헬퍼는 Team ID가 없는 서명이면 연결을 받지 않는다 (개발 모드 컴파일 조건 제외 — `AppCleanerHelper/main.swift`)
+    public static func currentBuildCanConnect(bundle: Bundle = .main,
+                                              signing: SigningInfo? = SelfCodeSignature.current()) -> Bool {
+        signing?.teamID != nil || bundle.object(forInfoDictionaryKey: developmentModeKey) as? Bool == true
     }
 
     /// 번들 안 launchd plist 위치
@@ -53,13 +81,7 @@ public struct SMAppServiceHelperInstaller: HelperInstalling {
 
     public func state() -> HelperInstallState {
         guard isBundled else { return .unavailable }
-        switch service.status {
-        case .enabled: return .enabled
-        case .requiresApproval: return .requiresApproval
-        case .notRegistered: return .notInstalled
-        case .notFound: return .unavailable
-        @unknown default: return .unavailable
-        }
+        return HelperInstallState(status: service.status, canConnect: canConnect)
     }
 
     public func install() throws {

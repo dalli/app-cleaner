@@ -12,6 +12,18 @@ enum SentinelRegistration: Equatable, Sendable {
     case disabled
     /// `.app` 번들 밖에서 실행(개발 빌드)했거나 번들에 Sentinel이 없음
     case unavailable
+
+    /// 번들에 Sentinel이 있을 때의 `SMAppService.Status` → 상태.
+    /// 한 번도 등록하지 않은 로그인 항목은 `.notFound`가 나온다 (macOS 27에서 확인) — 등록하지 않은 것으로 보고
+    /// 등록을 시도한다. 정말 등록할 수 없으면 `register()`가 오류를 내고 S7에 표시된다.
+    init(status: SMAppService.Status) {
+        switch status {
+        case .enabled: self = .enabled
+        case .requiresApproval: self = .requiresApproval
+        case .notRegistered, .notFound: self = .disabled
+        @unknown default: self = .unavailable
+        }
+    }
 }
 
 /// Sentinel 등록·해제. 실제 앱은 `SMAppService.loginItem`, 데모·테스트는 메모리 구현을 쓴다
@@ -41,13 +53,7 @@ final class LiveSentinelService: SentinelServicing {
 
     var registration: SentinelRegistration {
         guard let service else { return .unavailable }
-        switch service.status {
-        case .enabled: return .enabled
-        case .requiresApproval: return .requiresApproval
-        case .notRegistered: return .disabled
-        case .notFound: return .unavailable
-        @unknown default: return .unavailable
-        }
+        return SentinelRegistration(status: service.status)
     }
 
     func register() throws {

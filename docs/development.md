@@ -164,6 +164,13 @@ footprint <pid>                                         # 상주 메모리 (phys
 GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등록·해제한다. 등록 후 시스템 설정 › 일반 › 로그인 항목에서
 허용해야 실행된다 (앱이 그 화면을 연다). CLI에는 설치 명령이 없다 — GUI에서 설치하면 번들 CLI도 헬퍼를 쓴다.
 
+- S7은 **헬퍼가 연결을 받는 빌드에서만** 설치를 권한다: Team ID로 서명했거나, `HELPER_DEV=1`로 만든 번들
+  (`build-app.sh`가 Info.plist에 `AppCleanerHelperDevelopment`를 넣는다). 기본 ad-hoc 빌드(지금의 릴리즈 DMG)는
+  설치해도 헬퍼가 연결을 받지 않으므로 "사용할 수 없음"으로 두고 관리자 암호 방식을 쓴다. 이미 등록된 헬퍼는 제거할 수 있게 보인다.
+- `SMAppService.status`는 **한 번도 등록하지 않은 서비스에 `.notFound`를 돌려준다** (번들에 plist가 있어도, macOS 27에서 확인).
+  `.notRegistered`와 같이 "설치 안 됨"으로 본다 — 정말 등록할 수 없으면 `register()`가 오류를 낸다 (`HelperInstallState(status:canConnect:)`).
+  Sentinel 로그인 항목(`SentinelRegistration(status:)`)도 같다.
+
 **서명·Team ID** — 헬퍼와 앱은 각자 **자기 서명의 Team ID**로 상대 요구사항을 만든다 (설정 파일에서 읽지 않음).
 
 - 헬퍼 → 클라이언트: `anchor apple generic and certificate leaf[subject.OU] = "<TEAM>" and (identifier "<BID>" or identifier "<BID>.cli")`
@@ -205,7 +212,7 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 |---|---|---|
 | 관리자 경로 TOCTOU (대체 경로만) | 권한 헬퍼는 fd 기반 이동으로 막는다. 헬퍼가 없을 때 쓰는 `privileged-op.sh`는 구성요소별 `[ -L ]` 검사·허용 루트·보호 목록을 재검증하지만 검사와 `mv` 사이 경쟁 조건이 남는다 | 대체 경로를 쓰는 한 유지 |
 | 관리자 인증 횟수 (대체 경로만) | 헬퍼가 있으면 묻지 않는다. 대체 경로에서는 시스템 데몬 중지(종료 전)와 이동·`pkgutil --forget`(종료 후)이 순서상 분리되어 최대 2회 | 대체 경로를 쓰는 한 유지 |
-| 권한 헬퍼 서명 | Developer ID가 없어 기본 빌드의 헬퍼는 연결을 받지 않는다 (항상 대체 경로). 실제 등록·승인·서명 요구사항은 수동 확인 전 | #19 |
+| 권한 헬퍼 서명 | Developer ID가 없어 기본 빌드의 헬퍼는 연결을 받지 않는다 (항상 대체 경로, S7은 "사용할 수 없음"). 실제 등록·승인·서명 요구사항은 수동 확인 전 | #19 |
 | 규칙 데이터 서명 키 | `RuleDataVerifier`의 내장 공개키는 개발용. 배포 전 `swift scripts/sign-rule-data.swift keygen`으로 교체 | #20 |
 | SwiftUI `@State` | macOS 27 SDK에서 매크로가 되어 CLT에 플러그인이 없음 → 모든 상태를 뷰 모델에 둔다 | — |
 | String Catalog | CLT에 `xcstringstool`이 없어 `<언어>.lproj`의 `.strings`·`.stringsdict` 사용 ("번역 추가 절차") | — |
