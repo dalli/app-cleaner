@@ -193,7 +193,8 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 - 앱 → 헬퍼: `anchor apple generic and certificate leaf[subject.OU] = "<TEAM>" and identifier "<BID>.Helper"`
 - `NSXPCConnection.setCodeSigningRequirement(_:)`는 메시지마다 audit token으로 검사한다 (PID 검증 없음).
 - 빌드: `SIGN_IDENTITY="Developer ID Application: … (XXXXXXXXXX)" TEAM_ID=XXXXXXXXXX ./scripts/build-app.sh` —
-  `XXXXXXXXXX`는 자리표시자. 실제 값은 #19(Developer ID 서명)에서 정한다. `TEAM_ID`를 주면 서명 후 Team ID를 확인한다.
+  `XXXXXXXXXX`는 자리표시자. `TEAM_ID`를 주면 서명 후 Team ID를 확인한다. **공식 릴리즈는 Developer ID 서명·공증을 하지 않는다**
+  (#19 닫음) — 이 방법은 소스를 받아 자기 Developer ID로 직접 빌드하는 경우에만 쓴다.
 - 기본(ad-hoc) 빌드는 Team ID가 없어 헬퍼가 **연결을 받지 않는다** → 항상 대체 경로.
 - **개발 모드** `HELPER_DEV=1 ./scripts/build-app.sh`: 헬퍼를 `APPCLEANER_HELPER_DEV` 조건으로 컴파일해 Team ID 없이
   서명 식별자만 확인한다. 같은 식별자로 서명한 아무 프로그램이나 root 작업을 요청할 수 있으므로 **배포 금지**, 로컬 확인용.
@@ -215,7 +216,7 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 실행한다 (plan.md 9장 "권한 경로 보안 테스트"): 허용 루트 밖, 상위 폴더 링크, 검사 직후 상위 폴더·마지막 구성요소를 링크로
 바꾸는 훅, 다른 스레드가 링크로 계속 바꾸는 경쟁 조건 반복 실행, 셸 메타문자, RENAME_EXCL 충돌, 보호 목록, 소유자·권한,
 보류 폴더 링크. XPC는 같은 프로세스의 익명 리스너로 요구사항 일치·불일치(클라이언트·헬퍼 양쪽)와 대체 경로를 확인한다.
-**검증하지 못한 것**: launchd 등록·root 실행·로그인 항목 승인, 실제 Developer ID 서명에서의 요구사항 (#19 이후 수동 확인).
+**검증하지 못한 것**: launchd 등록·root 실행·로그인 항목 승인, 실제 Developer ID 서명에서의 요구사항. 공식 릴리즈는 Developer ID를 쓰지 않으므로 확인 계획이 없다 (#17).
 
 ## 브랜치
 
@@ -228,7 +229,8 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 |---|---|---|
 | 관리자 경로 TOCTOU (대체 경로만) | 권한 헬퍼는 fd 기반 이동으로 막는다. 헬퍼가 없을 때 쓰는 `privileged-op.sh`는 구성요소별 `[ -L ]` 검사·허용 루트·보호 목록을 재검증하지만 검사와 `mv` 사이 경쟁 조건이 남는다 | 대체 경로를 쓰는 한 유지 |
 | 관리자 인증 횟수 (대체 경로만) | 헬퍼가 있으면 묻지 않는다. 대체 경로에서는 시스템 데몬 중지(종료 전)와 이동·`pkgutil --forget`(종료 후)이 순서상 분리되어 최대 2회 | 대체 경로를 쓰는 한 유지 |
-| 권한 헬퍼 서명 | Developer ID가 없어 기본 빌드의 헬퍼는 연결을 받지 않는다 (항상 대체 경로, S7은 "사용할 수 없음"). 실제 등록·승인·서명 요구사항은 수동 확인 전 | #19 |
+| 권한 헬퍼 서명 | 공식 릴리즈는 ad-hoc 서명(Developer ID·공증 안 함)이라 헬퍼가 연결을 받지 않는다 — 항상 대체 경로, S7은 "사용할 수 없음". 자기 Developer ID로 빌드하면 쓸 수 있다 | 해당 없음 (#19 닫음) |
+| Sentinel 재등록 | 같은 ID로 다른 빌드(코드 해시가 다름)를 등록했던 적이 있으면 새 빌드의 로그인 항목이 실행되지 않는다 (`launchctl print`: spawn failed, EX_CONFIG, `needs LWCR update`). S7에서 끄고 다시 켜면 정상. 업데이트 후에도 생길 수 있음 | #50 |
 | 규칙 데이터 서명 키 | `RuleDataVerifier`의 내장 공개키는 개발용. 배포 전 `swift scripts/sign-rule-data.swift keygen`으로 교체 | #20 |
 | SwiftUI `@State` | macOS 27 SDK에서 매크로가 되어 CLT에 플러그인이 없음 → 모든 상태를 뷰 모델에 둔다 | — |
 | String Catalog | CLT에 `xcstringstool`이 없어 `<언어>.lproj`의 `.strings`·`.stringsdict` 사용 ("번역 추가 절차") | — |
