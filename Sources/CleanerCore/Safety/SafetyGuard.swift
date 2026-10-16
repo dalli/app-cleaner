@@ -98,7 +98,7 @@ public struct SafetyGuard: SafetyChecking {
             for (rel, reason) in Self.homeSubtrees {
                 rules.append(Rule(path: Self.join(home, rel), scope: .subtree, reason: reason))
             }
-            for rel in Self.homeExactRoots {
+            for rel in Self.homeExactRoots + (paths.xdgRelativeDirs ?? []) {
                 rules.append(Rule(path: Self.join(home, rel), scope: .exact, reason: .protectedPath))
             }
         }

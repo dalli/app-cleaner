@@ -187,11 +187,12 @@ import CleanerTestSupport
         let gnupg = try h.fx.dir(h.fx.home(".gnupg"))
         let aws = try h.fx.dir(h.fx.home(".aws"))
         let configTool = try h.fx.dir(h.fx.home(".config/sometool"))
+        let stateTool = try h.fx.dir(h.fx.home(".local/state/sometool"))
         let byDefault = try await h.scan()
         #expect(byDefault.groups.isEmpty)
 
         let withDotfiles = try await h.scan(options: OrphanScanOptions(includeDotfiles: true))
-        for url in [npm, cargo, configTool] {
+        for url in [npm, cargo, configTool, stateTool] {
             let item = try #require(withDotfiles.item(url))
             #expect(item.confidence == .low)
             #expect(item.category == .dotfile)
