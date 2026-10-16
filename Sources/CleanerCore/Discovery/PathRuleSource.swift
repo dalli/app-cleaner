@@ -206,19 +206,23 @@ public struct PathRuleSource: CandidateSource {
         }
     }
 
-    /// `~/.<name>`, `~/.config/<name>`, `~/.local/share/<name>`, `~/.cache/<name>` — 이름 기반이므로 항상 Low
+    /// `~/.<name>`, `~/.config/<name>`, `~/.local/share/<name>`, `~/.cache/<name>`, `~/.local/state/<name>`
+    /// (+ XDG 환경 변수로 바꾼 위치) — 이름 기반이므로 항상 Low
     func dotfiles(_ ctx: Context) -> [Candidate] {
         let fm = FileManager.default
         let security = Set(ctx.rules.exclusions.securityDotfiles.map { $0.lowercased() })
+        let dataDirs = paths.dotfileDataDirs
+        // XDG 폴더(또는 그 상위)가 홈 바로 아래 숨김 폴더면 그 폴더 자체는 앱 데이터가 아니다
+        let dataTops = Set(dataDirs.compactMap { $0.split(separator: "/").first.map(String.init) })
         var out: [Candidate] = []
         for child in fm.children(of: paths.home) {
             let entry = child.lastPathComponent
-            guard entry.hasPrefix("."), !security.contains(entry.lowercased()),
+            guard entry.hasPrefix("."), !security.contains(entry.lowercased()), !dataTops.contains(entry),
                   let name = ctx.names.match(String(entry.dropFirst())) else { continue }
             out.append(Candidate(url: child, category: .dotfile, confidence: .low,
                                  evidence: [Evidence(.name, EngineText(.hiddenSettingsByName, name, entry))]))
         }
-        for rel in [".config", ".local/share", ".cache"] {
+        for rel in dataDirs {
             for child in fm.children(of: paths.home(rel)) {
                 guard let name = ctx.names.match(child.lastPathComponent) else { continue }
                 out.append(Candidate(url: child, category: .dotfile, confidence: .low,

@@ -159,6 +159,49 @@ import CleanerTestSupport
         #expect(found.item(fx.paths.userTempDir.appendingPathComponent("com.todesktop.230313mzl4w4u92.ShipIt"))?.confidence == .high)
     }
 
+    /// `~/.local/state/<name>`과 XDG 환경 변수로 바꾼 위치도 찾는다 (#38)
+    @Test func localStateAndXDGDirsAreSearched() throws {
+        let fx = try Fixture()
+        let id = try identity(fx, name: "Dots", bid: "com.example.dots")
+        try fx.dir(fx.home(".local/state/dots"))
+        try fx.dir(fx.home(".dots/config/dots"))
+        try fx.dir(fx.home("xdg/data/Dots"))
+        var paths = fx.paths
+        paths.xdgRelativeDirs = [".dots/config", "xdg/data"]
+        let found = try PathRuleSource(paths: paths, rules: ScanKit.provider()).candidates(for: id)
+        for rel in [".local/state/dots", ".dots/config/dots", "xdg/data/Dots"] {
+            let c = try #require(found.item(fx.home(rel)), "\(rel)")
+            #expect(c.confidence == .low && c.category == .dotfile)
+        }
+        // XDG 폴더를 담은 홈 바로 아래 숨김 폴더는 이름이 같아도 앱 데이터가 아니다
+        #expect(found.item(fx.home(".dots")) == nil)
+        // 환경 변수가 없으면 기본 위치만
+        let plain = try source(fx).candidates(for: id)
+        #expect(plain.item(fx.home(".local/state/dots")) != nil)
+        #expect(plain.item(fx.home("xdg/data/Dots")) == nil)
+
+        // XDG 폴더 자체는 보호, 그 안의 항목은 허용
+        let guardian = SafetyGuard(paths: paths)
+        for rel in [".local/state", ".dots/config", "xdg/data"] {
+            #expect(!guardian.verdict(for: fx.home(rel), bundleID: nil).isAllowed, "~/\(rel)")
+            #expect(guardian.verdict(for: fx.home(rel).appendingPathComponent("dots"), bundleID: nil).isAllowed, "~/\(rel)/dots")
+        }
+    }
+
+    @Test func xdgEnvironmentKeepsOnlyNonDefaultDirsInsideHome() {
+        let home = URL(fileURLWithPath: "/Users/u", isDirectory: true)
+        let env = [
+            "XDG_CONFIG_HOME": "/Users/u/dotfiles/config/",   // 홈 안 → 상대 경로
+            "XDG_DATA_HOME": "/Users/u/.local/share",         // 기본 위치 → 제외
+            "XDG_CACHE_HOME": "/tmp/cache",                   // 홈 밖 → 제외
+            "XDG_STATE_HOME": "state",                        // 상대 경로(규격 위반) → 제외
+        ]
+        #expect(SystemPaths.xdgRelativeDirs(home: home, environment: env) == ["dotfiles/config"])
+        #expect(SystemPaths.xdgRelativeDirs(home: home, environment: ["XDG_CONFIG_HOME": "/Users/u"]).isEmpty)
+        #expect(SystemPaths.xdgRelativeDirs(home: home, environment: ["XDG_CONFIG_HOME": "/Users/u2/config"]).isEmpty)
+        #expect(SystemPaths.xdgRelativeDirs(home: home, environment: [:]).isEmpty)
+    }
+
     @Test func securityDotfilesNeverMatch() throws {
         let fx = try Fixture()
         let id = try identity(fx, name: "ssh", bid: "com.example.ssh")

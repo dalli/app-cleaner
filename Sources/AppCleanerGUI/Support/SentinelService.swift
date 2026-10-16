@@ -1,5 +1,6 @@
 import AppKit
 import CleanerCore
+import CryptoKit
 import Foundation
 import ServiceManagement
 
@@ -31,6 +32,8 @@ enum SentinelRegistration: Equatable, Sendable {
 @MainActor
 protocol SentinelServicing: AnyObject {
     var registration: SentinelRegistration { get }
+    /// 번들에 든 Sentinel 빌드의 지문. 등록 당시와 다르면 다시 등록한다 (#50). 알 수 없으면 nil
+    var buildID: String? { get }
     func register() throws
     func unregister() async throws
     /// 설정을 바꿨다고 실행 중인 Sentinel에 알린다 (다시 읽거나, 모두 꺼졌으면 종료)
@@ -54,6 +57,16 @@ final class LiveSentinelService: SentinelServicing {
     var registration: SentinelRegistration {
         guard let service else { return .unavailable }
         return SentinelRegistration(status: service.status)
+    }
+
+    /// Sentinel 실행 파일의 SHA-256. ad-hoc 서명은 빌드마다 코드 해시가 바뀌고, 같은 ID로 다른 빌드를 등록했던
+    /// 로그인 항목은 해제 → 다시 등록하기 전까지 실행되지 않는다 (`needs LWCR update`, #50).
+    /// 빌드 번호(커밋 수)는 같은 커밋을 다시 빌드하면 같으므로 실행 파일 내용을 쓴다.
+    var buildID: String? {
+        guard service != nil else { return nil }
+        let executable = helperURL.appendingPathComponent("Contents/MacOS").appendingPathComponent(SentinelIdentity.executableName)
+        guard let data = try? Data(contentsOf: executable, options: .mappedIfSafe) else { return nil }
+        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
     func register() throws {
@@ -81,21 +94,27 @@ final class LiveSentinelService: SentinelServicing {
 @MainActor
 final class InMemorySentinelService: SentinelServicing {
     var registration: SentinelRegistration
+    var buildID: String?
     /// 다음 `register()`가 던질 오류
     var registerError: (any Error)?
     private(set) var settingsChangedCount = 0
     private(set) var launchCount = 0
+    private(set) var registerCount = 0
+    private(set) var unregisterCount = 0
 
-    init(registration: SentinelRegistration = .disabled) {
+    init(registration: SentinelRegistration = .disabled, buildID: String? = nil) {
         self.registration = registration
+        self.buildID = buildID
     }
 
     func register() throws {
         if let e = registerError { registerError = nil; throw e }
+        registerCount += 1
         registration = .enabled
     }
 
     func unregister() async throws {
+        unregisterCount += 1
         registration = .disabled
     }
 

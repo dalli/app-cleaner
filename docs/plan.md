@@ -89,7 +89,7 @@ macOS에서 `.app`을 휴지통으로 옮기는 것만으로는 앱이 생성한
 | LaunchAgents | `~/Library/LaunchAgents/<BID>*.plist` | 파일명뿐 아니라 **plist 내부 `Program`/`ProgramArguments`가 앱 경로를 가리키는지**로도 판정. 벤더 공용 업데이터(Google Keystone, Microsoft AutoUpdate 등)는 4.3.2절 공유 판정 |
 | 플러그인류 | `~/Library/Internet Plug-Ins`, `~/Library/QuickLook`, `~/Library/Services`, `~/Library/PreferencePanes`, `~/Library/Spotlight` | 번들 내부 Info.plist의 BID로 판정 |
 | 사용자 임시 폴더 | `$(getconf DARWIN_USER_CACHE_DIR)<BID>*`, `$(getconf DARWIN_USER_TEMP_DIR)<BID>*` | `/var/folders/xx/…/C/`, `…/T/`의 정확한 경로를 API로 구함 |
-| Dotfiles | `~/.<name>`, `~/.config/<name>`, `~/.local/share/<name>`, `~/.cache/<name>` | 이름 기반 → 기본 Low. CLI·Electron 앱에서 중요 (v1 누락) |
+| Dotfiles | `~/.<name>`, `~/.config/<name>`, `~/.local/share/<name>`, `~/.cache/<name>`, `~/.local/state/<name>` (+ `XDG_*_HOME`으로 바꾼 홈 안 위치) | 이름 기반 → 기본 Low. CLI·Electron 앱에서 중요 (v1 누락) |
 
 ### 3.2 시스템 도메인 (`/`, 관리자 권한 필요)
 

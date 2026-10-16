@@ -230,7 +230,7 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 | 관리자 경로 TOCTOU (대체 경로만) | 권한 헬퍼는 fd 기반 이동으로 막는다. 헬퍼가 없을 때 쓰는 `privileged-op.sh`는 구성요소별 `[ -L ]` 검사·허용 루트·보호 목록을 재검증하지만 검사와 `mv` 사이 경쟁 조건이 남는다 | 대체 경로를 쓰는 한 유지 |
 | 관리자 인증 횟수 (대체 경로만) | 헬퍼가 있으면 묻지 않는다. 대체 경로에서는 시스템 데몬 중지(종료 전)와 이동·`pkgutil --forget`(종료 후)이 순서상 분리되어 최대 2회 | 대체 경로를 쓰는 한 유지 |
 | 권한 헬퍼 서명 | 공식 릴리즈는 ad-hoc 서명(Developer ID·공증 안 함)이라 헬퍼가 연결을 받지 않는다 — 항상 대체 경로, S7은 "사용할 수 없음". 자기 Developer ID로 빌드하면 쓸 수 있다 | 해당 없음 (#19 닫음) |
-| Sentinel 재등록 | 같은 ID로 다른 빌드(코드 해시가 다름)를 등록했던 적이 있으면 새 빌드의 로그인 항목이 실행되지 않는다 (`launchctl print`: spawn failed, EX_CONFIG, `needs LWCR update`). S7에서 끄고 다시 켜면 정상. 업데이트 후에도 생길 수 있음 | #50 |
+| Sentinel 재등록 | 같은 ID로 다른 빌드(코드 해시가 다름)를 등록했던 적이 있으면 새 빌드의 로그인 항목이 실행되지 않는다 (`launchctl print`: spawn failed, EX_CONFIG, `needs LWCR update`). S7에서 끄고 다시 켜면 정상. 본 앱이 시작할 때 등록 당시 빌드(Sentinel 실행 파일 SHA-256, 설정 키 `sentinelRegisteredBuild`)와 다르면 자동으로 해제 → 다시 등록한다 | #50 |
 | 규칙 데이터 서명 키 | `RuleDataVerifier`의 내장 공개키는 개발용. 배포 전 `swift scripts/sign-rule-data.swift keygen`으로 교체 | #20 |
 | SwiftUI `@State` | macOS 27 SDK에서 매크로가 되어 CLT에 플러그인이 없음 → 모든 상태를 뷰 모델에 둔다 | — |
 | String Catalog | CLT에 `xcstringstool`이 없어 `<언어>.lproj`의 `.strings`·`.stringsdict` 사용 ("번역 추가 절차") | — |
