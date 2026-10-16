@@ -70,6 +70,7 @@ final class AppModel {
         self.showOnboarding = !settings.onboardingCompleted
         self.keepList = engine.keepList()
         refreshSentinel()
+        reregisterSentinelIfBuildChanged()
     }
 
     // MARK: 사이드바
@@ -372,7 +373,10 @@ final class AppModel {
         let current = sentinel.registration
         if wanted {
             if current == .disabled {
-                do { try sentinel.register() } catch { sentinelError = L10n.describe(error) }
+                do {
+                    try sentinel.register()
+                    settings.sentinelRegisteredBuild = sentinel.buildID
+                } catch { sentinelError = L10n.describe(error) }
             } else {
                 sentinel.launchIfNeeded()
             }
@@ -389,6 +393,23 @@ final class AppModel {
                 do { try await sentinel.unregister() } catch { sentinelError = L10n.describe(error) }
                 refreshSentinel()
             }
+        }
+    }
+
+    /// 등록돼 있는 Sentinel이 다른 빌드(업데이트·재빌드)로 등록됐으면 해제 → 다시 등록한다.
+    /// 그대로 두면 launchd가 실행에 실패(`spawn failed`, EX_CONFIG)해도 S7은 "켜짐"으로 보인다 (#50).
+    /// 등록 빌드를 기록하기 전 버전(기록 없음)에서 올라온 경우도 한 번 다시 등록한다.
+    func reregisterSentinelIfBuildChanged() {
+        let wanted = settings.trashWatchEnabled || settings.periodicScan != .off
+        guard wanted, sentinel.registration == .enabled, let build = sentinel.buildID,
+              build != settings.sentinelRegisteredBuild else { return }
+        Task {
+            do {
+                try await sentinel.unregister()
+                try sentinel.register()
+                settings.sentinelRegisteredBuild = build
+            } catch { sentinelError = L10n.describe(error) }
+            refreshSentinel()
         }
     }
 

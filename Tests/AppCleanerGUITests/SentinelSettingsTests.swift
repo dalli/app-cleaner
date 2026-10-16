@@ -72,6 +72,45 @@ struct SentinelSettingsTests {
         #expect(model.sentinelError == nil && model.sentinelRegistration == .enabled)
     }
 
+    /// 다른 빌드로 등록된 로그인 항목은 실행되지 않는다 (#50) — 앱 시작 때 해제 → 다시 등록하고 빌드를 기록한다
+    @Test func startupReregistersSentinelRegisteredByAnotherBuild() async {
+        let store = InMemorySettingsStore()
+        store.set(true, forKey: SentinelIdentity.Keys.trashWatch)
+        store.set("old", forKey: "sentinelRegisteredBuild")
+        let sentinel = InMemorySentinelService(registration: .enabled, buildID: "new")
+        let model = AppModel(engine: fastEngine(), settings: AppSettings(defaults: store), sentinel: sentinel)
+        #expect(await waitUntil { model.settings.sentinelRegisteredBuild == "new" })
+        #expect(sentinel.unregisterCount == 1 && sentinel.registerCount == 1)
+        #expect(model.sentinelRegistration == .enabled && model.sentinelError == nil)
+        #expect(store.object(forKey: "sentinelRegisteredBuild") as? String == "new")
+
+        // 같은 빌드로 다시 시작하면 그대로 둔다
+        _ = AppModel(engine: fastEngine(), settings: AppSettings(defaults: store), sentinel: sentinel)
+        #expect(sentinel.unregisterCount == 1 && sentinel.registerCount == 1)
+    }
+
+    @Test func startupLeavesSentinelAloneWhenNotWantedOrBuildUnknown() {
+        // 기능이 모두 꺼져 있음
+        let off = InMemorySentinelService(registration: .enabled, buildID: "new")
+        _ = AppModel(engine: fastEngine(), settings: .inMemory(), sentinel: off)
+        // 빌드를 알 수 없음 (개발 실행)
+        let store = InMemorySettingsStore()
+        store.set(true, forKey: SentinelIdentity.Keys.trashWatch)
+        let unknown = InMemorySentinelService(registration: .enabled, buildID: nil)
+        _ = AppModel(engine: fastEngine(), settings: AppSettings(defaults: store), sentinel: unknown)
+        // 사용자 승인 대기
+        let pending = InMemorySentinelService(registration: .requiresApproval, buildID: "new")
+        _ = AppModel(engine: fastEngine(), settings: AppSettings(defaults: store), sentinel: pending)
+        for s in [off, unknown, pending] { #expect(s.unregisterCount == 0 && s.registerCount == 0) }
+    }
+
+    @Test func registeringRecordsBuild() {
+        let sentinel = InMemorySentinelService(buildID: "b1")
+        let model = AppModel(engine: fastEngine(), settings: .inMemory(), sentinel: sentinel)
+        model.setTrashWatch(true)
+        #expect(model.settings.sentinelRegisteredBuild == "b1")
+    }
+
     /// 한 번도 등록하지 않은 로그인 항목은 번들에 Sentinel이 있어도 `.notFound` (macOS 27) —
     /// "사용할 수 없음"으로 보면 등록을 시도하지 않아 켤 수 없다
     @Test func notFoundStatusMeansNotRegistered() {
