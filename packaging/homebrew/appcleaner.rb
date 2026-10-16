@@ -6,6 +6,7 @@ class Appcleaner < Formula
   homepage "https://github.com/dallisoft/app-cleaner"
   url "https://github.com/dallisoft/app-cleaner/archive/refs/tags/v0.2.0.tar.gz"
   sha256 "0f00af9ed6fdc329e9babe00edc4427618b09e5595245c4c587aef8a7905fd95"
+  license "MIT"
   head "https://github.com/dallisoft/app-cleaner.git", branch: "main"
 
   # Package.swift: swift-tools-version 6.0, platforms .macOS(.v14).

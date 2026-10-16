@@ -164,3 +164,10 @@ plan.md の Phase 1a・1b・2・3 の範囲です。残りの作業は [`backlog
 
 - バグ報告や機能の提案は [Issues](https://github.com/dallisoft/app-cleaner/issues) にお寄せください。macOS のバージョンと App Cleaner のバージョン（`appcleaner version`）を書いていただけると助かります。
 - このリポジトリは**外部からのプルリクエストを受け付けていません**（PR はメンテナのみ作成できます）。修正の提案は Issue でお知らせください。
+  MIT ライセンスの条件（著作権表示とライセンス文の保持）の範囲で、フォークして自由に改変できます。
+
+## ライセンス
+
+[MIT](LICENSE) © 2026 Cha Sangkug (dallisoft)。アプリ・CLI の配布物にも `LICENSE` が含まれています（アプリでは `Contents/Resources/LICENSE`）。
+
+サードパーティ: アプリ・CLI に含まれる Homebrew Cask の整理ルールデータ（`homebrew-casks.json`）は Homebrew Cask のメタデータから抽出したもので、BSD 2-Clause ライセンスに従います — [告知文](Sources/CleanerCore/Resources/RuleData/NOTICE-homebrew-cask.txt)。

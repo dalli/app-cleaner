@@ -168,3 +168,10 @@ plan.md의 Phase 1a·1b·2·3 범위. 남은 작업은 [`backlog` 라벨 이슈]
 
 - 버그 제보·기능 제안은 [Issues](https://github.com/dallisoft/app-cleaner/issues)로 보내 주세요. 사용 중인 macOS 버전과 App Cleaner 버전(`appcleaner version`)을 함께 적어 주시면 좋습니다.
 - 이 저장소는 **외부 Pull Request를 받지 않습니다** (PR은 관리자만 만들 수 있게 설정되어 있습니다). 고칠 점은 이슈로 알려 주세요.
+  MIT 라이선스 조건(저작권·라이선스 표시 유지) 안에서 포크해 고쳐 쓰는 것은 자유입니다.
+
+## 라이선스
+
+[MIT](LICENSE) © 2026 Cha Sangkug (dallisoft). 앱·CLI 배포물에도 `LICENSE`가 들어 있다 (앱은 `Contents/Resources/LICENSE`).
+
+서드파티: 앱·CLI에 포함된 Homebrew Cask 정리 규칙 데이터(`homebrew-casks.json`)는 Homebrew Cask 메타데이터에서 추출했으며 BSD 2-Clause 라이선스를 따른다 — [고지문](Sources/CleanerCore/Resources/RuleData/NOTICE-homebrew-cask.txt).

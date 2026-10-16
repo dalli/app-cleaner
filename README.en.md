@@ -165,3 +165,10 @@ Covers Phases 1a, 1b, 2, and 3 of plan.md. Remaining work is tracked in [issues 
 
 - Please report bugs and suggest features in [Issues](https://github.com/dallisoft/app-cleaner/issues). Including your macOS version and App Cleaner version (`appcleaner version`) helps.
 - This repository **does not accept outside pull requests** (only maintainers can open them). Please describe fixes in an issue instead.
+  You are free to fork and modify it under the MIT License (keep the copyright and license notice).
+
+## License
+
+[MIT](LICENSE) © 2026 Cha Sangkug (dallisoft). The app and CLI downloads include `LICENSE` as well (in the app: `Contents/Resources/LICENSE`).
+
+Third-party: the Homebrew Cask cleanup rule data bundled with the app and CLI (`homebrew-casks.json`) is derived from Homebrew Cask metadata and is under the BSD 2-Clause License — see the [notice](Sources/CleanerCore/Resources/RuleData/NOTICE-homebrew-cask.txt).
