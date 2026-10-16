@@ -69,6 +69,33 @@ import CleanerTestSupport
         #expect(viaLink.prefix(2).allSatisfy { $0.path.hasPrefix(bin.path + "/") })
     }
 
+    /// 앱 번들 안의 CLI(`X.app/Contents/Helpers/appcleaner`) — Bundle.main은 Helpers 폴더 기준이고 번들은 Contents/Resources에 있다.
+    /// v0.3.0·v0.3.1 릴리즈에서는 이 위치를 보지 않아 SwiftPM 기본 경로(빌드 머신의 .build)로 넘어가 실행하자마자 종료됐다.
+    @Test func appHelperExecutableFindsBundleInContentsResources() throws {
+        let fx = try Fixture()
+        let app = fx.base.appendingPathComponent("App Cleaner.app")
+        let helpers = try fx.dir(app.appendingPathComponent("Contents/Helpers"))
+        let exe = try fx.file(helpers.appendingPathComponent("appcleaner"))
+        let bundle = app.appendingPathComponent("Contents/Resources").appendingPathComponent(BundledResources.bundleName)
+        try fx.file(bundle.appendingPathComponent("RuleData/manifest.json"), text: #"{"version":"2001.2.3"}"#)
+        try fx.file(bundle.appendingPathComponent("Scripts/\(PrivilegedScript.fileName)"), text: "#!/bin/sh\n")
+        try fx.file(bundle.appendingPathComponent("Localization/en.lproj/CLI.strings"), text: "")
+
+        let dir = try #require(BundledRuleData.resourceDirectory(resourceURL: helpers, executableURL: exe))
+        #expect(BundledResources.resolvingSymlinks(dir).path
+            == BundledResources.resolvingSymlinks(bundle.appendingPathComponent("RuleData")).path)
+        #expect(BundledRuleData.load(from: dir).version == "2001.2.3")
+        #expect(PrivilegedScript.bundledURL(resourceURL: helpers, executableURL: exe) != nil)
+
+        // .app 밖의 Contents 폴더나 앱 본체(Contents/MacOS — resourceURL이 이미 Contents/Resources)는 후보를 늘리지 않는다
+        let plain = try fx.file(fx.base.appendingPathComponent("tools/Contents/bin/appcleaner"))
+        #expect(BundledResources.candidates("RuleData", resourceURL: nil, executableURL: BundledResources.resolvingSymlinks(plain)).count == 2)
+        let mainExe = app.appendingPathComponent("Contents/MacOS/AppCleanerGUI")
+        let mainCandidates = BundledResources.candidates("RuleData", resourceURL: app.appendingPathComponent("Contents/Resources"),
+                                                         executableURL: mainExe)
+        #expect(mainCandidates.count == 5)
+    }
+
     @Test func resolvingSymlinksFollowsChainsAndKeepsMissingPaths() throws {
         let fx = try Fixture()
         let real = try fx.file(fx.base.appendingPathComponent("real/tool"))
