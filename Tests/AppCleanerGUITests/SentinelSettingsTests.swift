@@ -1,5 +1,6 @@
 import CleanerCore
 import Foundation
+import ServiceManagement
 import Testing
 @testable import AppCleanerGUI
 
@@ -69,6 +70,36 @@ struct SentinelSettingsTests {
         model.setTrashWatch(false)
         model.setTrashWatch(true)
         #expect(model.sentinelError == nil && model.sentinelRegistration == .enabled)
+    }
+
+    /// 한 번도 등록하지 않은 로그인 항목은 번들에 Sentinel이 있어도 `.notFound` (macOS 27) —
+    /// "사용할 수 없음"으로 보면 등록을 시도하지 않아 켤 수 없다
+    @Test func notFoundStatusMeansNotRegistered() {
+        #expect(SentinelRegistration(status: .notFound) == .disabled)
+        #expect(SentinelRegistration(status: .notRegistered) == .disabled)
+        #expect(SentinelRegistration(status: .enabled) == .enabled)
+        #expect(SentinelRegistration(status: .requiresApproval) == .requiresApproval)
+    }
+
+    /// Sentinel(로그인 항목)은 본 앱의 전체 디스크 접근을 함께 쓴다 — 본 앱에 권한이 있으면 지난 "읽을 수 없음"으로 안내하지 않는다
+    @Test func trashUnreadableNoticeFollowsMainAppFullDiskAccess() {
+        func model(fullDiskAccess: PermissionStatus.State) -> AppModel {
+            var o = DemoCleanerEngine.Options()
+            o.delayScale = 0
+            o.fullDiskAccess = fullDiskAccess
+            let store = InMemorySettingsStore()
+            store.set(true, forKey: SentinelIdentity.Keys.trashWatch)
+            store.set(false, forKey: SentinelIdentity.Keys.statusTrashReadable)
+            return AppModel(engine: DemoCleanerEngine(options: o), settings: AppSettings(defaults: store),
+                            sentinel: InMemorySentinelService(registration: .enabled))
+        }
+        #expect(model(fullDiskAccess: .denied).sentinelNeedsFullDiskAccess)
+        #expect(!model(fullDiskAccess: .granted).sentinelNeedsFullDiskAccess)
+
+        // 휴지통 감시를 끄면 안내하지 않는다
+        let off = model(fullDiskAccess: .denied)
+        off.setTrashWatch(false)
+        #expect(!off.sentinelNeedsFullDiskAccess)
     }
 
     // MARK: 링크 (com.dallisoft.appcleaner://)

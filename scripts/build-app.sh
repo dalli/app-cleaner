@@ -38,6 +38,8 @@ if [ -n "$TEAM_ID" ] && [ "$SIGN_IDENTITY" = "-" ]; then
   exit 1
 fi
 VERSION="${VERSION:-0.1.0}"
+# 정보 창·Finder 정보 가져오기에 보이는 저작권 문구 (LICENSE와 같게)
+COPYRIGHT="Copyright © 2026 Cha Sangkug (dallisoft). MIT License."
 BUILD_NUMBER="${BUILD_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}"
 
 echo "==> swift build -c $CONFIG --arch $ARCH (AppCleanerGUI, appcleaner, AppCleanerSentinel)"
@@ -98,6 +100,8 @@ if [ "$found_bundle" -eq 0 ]; then
   echo "error: no SwiftPM resource bundles found in $BIN_DIR" >&2
   exit 1
 fi
+# 라이선스 (MIT). 서드파티 고지(Homebrew Cask 데이터, BSD-2-Clause)는 CleanerCore 리소스 번들의 RuleData/NOTICE-homebrew-cask.txt
+cp LICENSE "$APP/Contents/Resources/LICENSE"
 
 # 지원 언어 (CleanerCore `AppLanguage`와 같게). 시스템 메뉴(종료, 숨기기 …)도 이 언어로 나오도록 lproj를 두고,
 # 앱 이름은 InfoPlist.strings로 언어마다 지정한다. 지원하지 않는 언어 사용자는 개발 지역(en)으로 본다.
@@ -123,6 +127,7 @@ SENTINEL="$APP/Contents/Library/LoginItems/$APP_NAME Sentinel.app"
 mkdir -p "$SENTINEL/Contents/MacOS" "$SENTINEL/Contents/Resources"
 cp "$BIN_DIR/AppCleanerSentinel" "$SENTINEL/Contents/MacOS/AppCleanerSentinel"
 cp -R "$APP/Contents/Resources/AppCleaner_CleanerCore.bundle" "$SENTINEL/Contents/Resources/"
+cp LICENSE "$SENTINEL/Contents/Resources/LICENSE"
 cat > "$SENTINEL/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -150,6 +155,8 @@ cat > "$SENTINEL/Contents/Info.plist" <<PLIST
   <string>14.0</string>
   <key>LSUIElement</key>
   <true/>
+  <key>NSHumanReadableCopyright</key>
+  <string>$COPYRIGHT</string>
   <key>NSPrincipalClass</key>
   <string>NSApplication</string>
 </dict>
@@ -196,6 +203,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <true/>
   <key>NSSupportsAutomaticTermination</key>
   <false/>
+  <key>NSHumanReadableCopyright</key>
+  <string>$COPYRIGHT</string>
   <key>CFBundleURLTypes</key>
   <array>
     <dict>
@@ -225,6 +234,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </dict>
 </plist>
 PLIST
+# 개발 모드 헬퍼는 Team ID 없이 연결을 받으므로 S7에서 설치할 수 있게 표시한다 (SMAppServiceHelperInstaller.developmentModeKey)
+if [ "$HELPER_DEV" = "1" ]; then
+  plutil -insert AppCleanerHelperDevelopment -bool YES "$APP/Contents/Info.plist"
+fi
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 echo "==> codesign ($SIGN_IDENTITY, Hardened Runtime)"

@@ -369,8 +369,9 @@ Spotlight 상태 검사: 인벤토리가 Spotlight에 의존하므로, 색인이
 
 ### 6.3 배포 제약
 - 다른 앱의 컨테이너·`/Library`에 접근해야 하므로 **App Sandbox를 적용할 수 없고, 따라서 Mac App Store에 배포할 수 없다.**
-- 배포: Developer ID 서명 + Hardened Runtime + 공증(Notarization) → GitHub Releases, Homebrew Cask.
-- 앱 자동 업데이트: Sparkle 2(EdDSA 서명 appcast). Homebrew Cask 설치본은 `auto_updates true`로 표시해 이중 업데이트를 방지.
+- 배포: **공증(Notarization)·Developer ID 서명은 하지 않는다** (2026-10-16 결정). 소스를 공개하고 GitHub Actions가 빌드한 ad-hoc 서명(Hardened Runtime 포함) 바이너리를 GitHub Releases로 제공하며,
+  첫 실행은 README의 Gatekeeper 허용 안내를 따른다. CLI는 Homebrew 소스 빌드 formula(#15). 공증 없는 앱 cask는 이점이 없어 하지 않는다 (#16, #19 닫음).
+- 앱 자동 업데이트: Sparkle 2(EdDSA 서명 appcast)를 공증 없이 쓸 수 있는지 검토 (#48).
 
 ---
 
@@ -451,7 +452,7 @@ graph TD
 ### 8.3 성능 목표 (측정 전 목표치)
 - 앱 1개 스캔: 2초 이내 (SSD, 일반 사용자 환경)
 - 고아 잔여물 전체 스캔: 첫 실행 30초 이내, 인벤토리 캐시 사용 시 10초 이내 (크기 계산은 결과 표시 후 백그라운드로 이어서 수행)
-- Sentinel 상주 메모리: 수십 MB 이하 목표 → **측정 14 MB** (`footprint`의 phys_footprint, release arm64 번들, 메뉴 막대 대기·휴지통 감시 중, 앱 유입 처리 후·30초 뒤에도 같음. 공유 프레임워크 페이지를 포함한 RSS는 약 54 MB). 정기 스캔은 CLI 자식 프로세스(측정 중 RSS 약 100 MB)가 맡고 끝나면 반환되므로 Sentinel 상주 메모리는 그대로였다. Instruments 장시간 측정은 아직 하지 않았다 (2026-10-15, `docs/development.md` "Sentinel")
+- Sentinel 상주 메모리: 수십 MB 이하 목표 → **측정 23 MB** (`footprint`의 phys_footprint, release arm64 번들을 로그인 항목으로 실행, 알림 허용·휴지통 감시·정기 스캔 매주). 75분 동안 1분 간격으로 측정해 21 MB → 23 MB, 40분 이후 23 MB로 유지(최고 23.9 MB), RSS 53~73 MB. 정기 스캔은 CLI 자식 프로세스가 맡고 끝나면 반환되므로 스캔 전후 상주 메모리가 같았다. Instruments 대신 `leaks`로 확인 — 시스템 프레임워크 순환 참조 약 20 KB뿐, Sentinel 코드 누수 없음 (2026-10-16, `docs/development.md` "Sentinel"). 참고: `--log-only`(알림·로그인 항목 없이 직접 실행)에서는 14 MB였다 (2026-10-15)
 - 크기 계산은 `URLResourceValues.totalFileAllocatedSize`를 `TaskGroup`으로 병렬 수행, UI는 점진 표시
 
 ---
@@ -484,7 +485,7 @@ v3 일정(13주)은 Phase 1에 엔진·인벤토리·고아 스캐너·CLI·오�
 | **Phase 1b — 인벤토리 + 고아 스캐너** | 4~6주차 | AppInventory(Spotlight 상태 검사 포함), 공유 판정, OrphanScanner, RuleData(서명 검증), CLI `orphans`, AppleScript 관리자 경로(고정 스크립트) | 공유 리소스·고아 오탐·권한 경로 보안 테스트 통과 |
 | **Phase 2 — GUI MVP** | 7~10주차 | 사이드바 메뉴 구조, 앱 제거 화면, **고아 잔여물 화면**, 삭제 기록·되돌리기, 유지 목록, 권한 온보딩 | VM QA: 앱 제거 시 잔여물 0건(Low·공유·사용자 데이터 제외), 고아 정탐 테스트 통과, 두 기능 모두 오삭제 0건 |
 | **Phase 3 — 확장** | 11~13주차 | SMAppService 헬퍼(XPC, fd 기반 이동) 교체, Sentinel, 정기 고아 스캔 알림 | 헬퍼가 보호 목록 독립 검증, 권한 경로 보안 테스트를 헬퍼로 재실행해 통과, Sentinel 메모리 측정치 문서화 |
-| **Phase 4 — 배포** | 14~15주차 | 서명·공증 파이프라인, Sparkle 업데이트, GitHub Releases, Homebrew Cask, 규칙 데이터 서명·갱신 자동화 | 깨끗한 macOS 14/15/26 및 출시 시점 최신 macOS에서 설치·실행·업데이트 확인 |
+| **Phase 4 — 배포** | 14~15주차 | GitHub Releases(ad-hoc 서명, 공증 안 함 — 2026-10-16 결정), Sparkle 업데이트 검토(#48), Homebrew CLI formula, 규칙 데이터 서명·갱신 자동화 | 깨끗한 macOS 14/15/26 및 출시 시점 최신 macOS에서 README 첫 실행 절차대로 설치·실행·업데이트 확인 |
 | 버퍼 | 16주차 | — | — |
 
 **MVP 정의**: Phase 2 종료 시점. **앱 제거**와 **고아 잔여물 정리** 두 메뉴가 각각 독립적으로 동작하며, dry-run과 되돌리기가 GUI/CLI 모두에서 동작. 고아 스캔의 기본 선택은 High(사용자 데이터 제외)로 한정한다.
