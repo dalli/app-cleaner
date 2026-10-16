@@ -36,7 +36,7 @@ jobs:
         run: |
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --verify-tag --prerelease --title "$TAG" \
-              --notes "Apple Silicon(arm64) 빌드. ad-hoc 서명이며 공증되지 않았습니다."
+              --notes "Apple Silicon(arm64) 빌드. ad-hoc 서명이며 공증하지 않습니다 — 처음 실행 방법은 README의 [처음 실행](https://github.com/dallisoft/app-cleaner#처음-실행--gatekeeper-허용) 참고 (Not notarized — see [First launch](https://github.com/dallisoft/app-cleaner/blob/main/README.en.md#first-launch--allow-it-in-gatekeeper))."
           fi
           gh release upload "$TAG" --clobber \
             "dist/AppCleaner-${TAG#v}-macos-arm64.dmg" \
