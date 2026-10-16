@@ -451,7 +451,7 @@ graph TD
 ### 8.3 성능 목표 (측정 전 목표치)
 - 앱 1개 스캔: 2초 이내 (SSD, 일반 사용자 환경)
 - 고아 잔여물 전체 스캔: 첫 실행 30초 이내, 인벤토리 캐시 사용 시 10초 이내 (크기 계산은 결과 표시 후 백그라운드로 이어서 수행)
-- Sentinel 상주 메모리: 수십 MB 이하 목표 → **측정 14 MB** (`footprint`의 phys_footprint, release arm64 번들, 메뉴 막대 대기·휴지통 감시 중, 앱 유입 처리 후·30초 뒤에도 같음. 공유 프레임워크 페이지를 포함한 RSS는 약 54 MB). 정기 스캔은 CLI 자식 프로세스(측정 중 RSS 약 100 MB)가 맡고 끝나면 반환되므로 Sentinel 상주 메모리는 그대로였다. Instruments 장시간 측정은 아직 하지 않았다 (2026-10-15, `docs/development.md` "Sentinel")
+- Sentinel 상주 메모리: 수십 MB 이하 목표 → **측정 23 MB** (`footprint`의 phys_footprint, release arm64 번들을 로그인 항목으로 실행, 알림 허용·휴지통 감시·정기 스캔 매주). 75분 동안 1분 간격으로 측정해 21 MB → 23 MB, 40분 이후 23 MB로 유지(최고 23.9 MB), RSS 53~73 MB. 정기 스캔은 CLI 자식 프로세스가 맡고 끝나면 반환되므로 스캔 전후 상주 메모리가 같았다. Instruments 대신 `leaks`로 확인 — 시스템 프레임워크 순환 참조 약 20 KB뿐, Sentinel 코드 누수 없음 (2026-10-16, `docs/development.md` "Sentinel"). 참고: `--log-only`(알림·로그인 항목 없이 직접 실행)에서는 14 MB였다 (2026-10-15)
 - 크기 계산은 `URLResourceValues.totalFileAllocatedSize`를 `TaskGroup`으로 병렬 수행, UI는 점진 표시
 
 ---

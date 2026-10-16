@@ -140,6 +140,22 @@ footprint <pid>                                         # 상주 메모리 (phys
 
 `--log-only`는 알림 권한을 묻지 않고 본 앱 설정(`com.dallisoft.AppCleaner`)에 상태를 쓰지 않는다.
 
+**실기기 확인** (2026-10-16, macOS 27.0.1, release 번들 `dist/`, #18) — S7에서 켜서 로그인 항목으로 실행한 상태
+
+| 항목 | 결과 |
+|---|---|
+| 로그인 항목 등록 (ad-hoc 서명) | 등록 즉시 launchd가 실행, S7 "켜짐". macOS가 "앱 백그라운드 활동" 알림을 띄움. 처음에는 `.notFound`를 "사용할 수 없음"으로 보던 버그로 켤 수 없었음 → 수정 (권한 헬퍼 절 참고) |
+| 알림 허용 | 첫 실행 때 "'App Cleaner Sentinel' 알림" 허용 요청, 허용하면 S7·메뉴에 반영 |
+| 휴지통 읽기 | 본 앱에 전체 디스크 접근이 없으면 `~/.Trash`를 읽지 못함 → 메뉴·S7 안내. 본 앱("App Cleaner")에 허용하면 Sentinel도 읽음 (Sentinel을 다시 띄울 필요 없음, 메뉴를 열 때 다시 확인). 시스템 설정 목록에 Sentinel은 따로 나오지 않음 |
+| 휴지통 유입 알림 | 실제 휴지통에 앱을 버리면 약 1초 안에 배너. 휴지통에서 꺼냈다가 다시 버려도 다시 알림 |
+| "잔여물도 정리" | 본 앱이 꺼져 있어도 실행되며 S2가 열림 (앱 본체 제외, "이미 휴지통에 있음" 배너) |
+| 정기 스캔 | "매주"로 켠 뒤 약 40분 만에 첫 실행(1시간 확인 주기), 스캔 시작 4초 뒤 "정리할 수 있는 잔여물이 있습니다" 알림 (높음 1그룹). "확인하기" → S5가 열려 다시 스캔, 같은 높음 그룹만 기본 선택 |
+| 상주 메모리 (75분) | phys_footprint 21 MB → 23 MB, 40분 이후 23 MB 유지 (정기 스캔 전후 같음, 최고 23.9 MB). RSS 53~73 MB. 1분 간격 `footprint` + 5분마다 휴지통에 파일 넣기. Instruments는 Xcode가 없어 대신 `leaks`: 시스템 프레임워크(AppIntents XPC 연결) 순환 참조 약 20 KB뿐, Sentinel·CleanerCore 누수 없음 |
+
+- 테스트용 앱 BID를 `com.dallisoft.*`로 하면 App Cleaner 자신(`com.dallisoft.AppCleaner`)과 벤더가 같아 고아가 "보통"으로 강등되고
+  S2에서도 LaunchAgent가 "공유"로 표시된다 (같은 벤더 규칙, plan.md 4.5.4). 정기 스캔 알림(높음만)을 확인하려면 다른 벤더 BID를 쓴다.
+- 알림 배너는 잠깐 떠 있으므로 화면 자동화로 누르기 어렵다. 알림 센터(메뉴 막대 시계)를 열어 기록에서 동작 버튼을 누른다.
+
 ## 권한 헬퍼 (#17, plan.md 5.3)
 
 관리자 작업(보류 폴더 이동·복원·영구 삭제, 시스템 서비스 중지·재등록, `pkgutil --forget`)은 두 경로로 실행된다.
@@ -216,6 +232,5 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 | 규칙 데이터 서명 키 | `RuleDataVerifier`의 내장 공개키는 개발용. 배포 전 `swift scripts/sign-rule-data.swift keygen`으로 교체 | #20 |
 | SwiftUI `@State` | macOS 27 SDK에서 매크로가 되어 CLT에 플러그인이 없음 → 모든 상태를 뷰 모델에 둔다 | — |
 | String Catalog | CLT에 `xcstringstool`이 없어 `<언어>.lproj`의 `.strings`·`.stringsdict` 사용 ("번역 추가 절차") | — |
-| Sentinel 휴지통 읽기 | `~/.Trash`는 TCC로 보호되어 Sentinel(별도 앱)에도 전체 디스크 접근이 필요할 수 있다. 읽지 못하면 메뉴·S7에 안내만 한다. 외장 볼륨 휴지통(`.Trashes`)은 감시하지 않는다 | — |
-| Sentinel 실기기 확인 | 로그인 항목 등록(ad-hoc 서명 포함)·실제 알림 표시·알림 동작 버튼은 아직 실기기에서 확인하지 않았다 (가짜 휴지통 폴더로 감지·메모리만 확인) | #18 |
+| Sentinel 휴지통 읽기 | `~/.Trash`는 TCC로 보호된다. 로그인 항목으로 실행된 Sentinel은 본 앱의 전체 디스크 접근을 함께 쓰므로, 본 앱에 권한이 없으면 휴지통을 읽지 못하고 메뉴·S7에 안내만 한다. 외장 볼륨 휴지통(`.Trashes`)은 감시하지 않는다 | — |
 | 픽스처 경로 표기 | 픽스처는 `/var/folders`, 엔진이 해석한 실제 경로는 `/private/var/folders` — 테스트에서 경로 비교 시 realpath로 맞춘다 | — |
