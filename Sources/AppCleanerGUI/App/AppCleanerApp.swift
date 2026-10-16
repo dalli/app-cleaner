@@ -11,6 +11,8 @@ struct AppCleanerApp: App {
 
     init() {
         let args = CommandLine.arguments
+        // 릴리즈 빌드 확인 (scripts/package-release.sh) — 창을 띄우지 않고 리소스 번들만 확인하고 끝낸다
+        if args.contains(ResourceCheck.flag) { exit(ResourceCheck.run()) }
         let demo = isDemoMode(arguments: args)
         let engine = makeEngine(arguments: args)
         // 데모 모드는 실제 설정과 섞이지 않게 메모리 설정을 쓴다

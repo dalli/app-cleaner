@@ -96,6 +96,34 @@ import CleanerTestSupport
         #expect(mainCandidates.count == 5)
     }
 
+    /// 이름으로 리소스 번들 찾기 — 앱 본체(Contents/MacOS), 번들 CLI(Contents/Helpers), 단독 CLI(실행 파일 옆).
+    /// 릴리즈 빌드의 `Bundle.module`은 `.app` 최상위만 봐서 v0.1.1~v0.3.2의 배포 앱이 시작하자마자 종료됐다.
+    @Test func bundleURLFindsNamedBundleForAppHelperAndStandaloneLayouts() throws {
+        let fx = try Fixture()
+        let name = "AppCleaner_AppCleanerGUI.bundle"
+        let app = fx.base.appendingPathComponent("App Cleaner.app")
+        let resources = app.appendingPathComponent("Contents/Resources")
+        let bundle = try fx.dir(resources.appendingPathComponent(name))
+        let gui = try fx.file(app.appendingPathComponent("Contents/MacOS/AppCleanerGUI"))
+        let helper = try fx.file(app.appendingPathComponent("Contents/Helpers/appcleaner"))
+        func same(_ a: URL?, _ b: URL) -> Bool {
+            a.map { BundledResources.resolvingSymlinks($0).path } == BundledResources.resolvingSymlinks(b).path
+        }
+
+        // 앱 본체: resourceURL이 Contents/Resources
+        #expect(same(BundledResources.bundleURL(named: name, resourceURL: resources, executableURL: gui), bundle))
+        // 번들 CLI: Bundle.main은 Helpers 폴더 기준 — Contents/Resources를 찾아야 한다
+        #expect(same(BundledResources.bundleURL(named: name, resourceURL: helper.deletingLastPathComponent(), executableURL: helper), bundle))
+        // .app 최상위(릴리즈 빌드의 Bundle.module이 보는 곳)에는 없어도 된다
+        #expect(!FileManager.default.fileExists(atPath: app.appendingPathComponent(name).path))
+
+        // 단독 CLI: 실행 파일 옆
+        let tool = try fx.file(fx.base.appendingPathComponent("cli/appcleaner"))
+        let side = try fx.dir(fx.base.appendingPathComponent("cli").appendingPathComponent(name))
+        #expect(same(BundledResources.bundleURL(named: name, resourceURL: nil, executableURL: tool), side))
+        #expect(BundledResources.bundleURL(named: "Missing.bundle", resourceURL: resources, executableURL: gui) == nil)
+    }
+
     @Test func resolvingSymlinksFollowsChainsAndKeepsMissingPaths() throws {
         let fx = try Fixture()
         let real = try fx.file(fx.base.appendingPathComponent("real/tool"))
