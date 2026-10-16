@@ -42,8 +42,15 @@ if ! find "$APP/Contents/Resources/AppCleaner_CleanerCore.bundle" -name NOTICE-h
   exit 1
 fi
 
+# 실행 확인은 사용자 Mac과 같은 조건에서 한다. 릴리즈 러너(Xcode 툴체인)의 SwiftPM 리소스 접근 코드는 리소스 번들을
+# 실행 파일 옆과 컴파일된 빌드 폴더의 절대 경로(.build/…/release — 러너에는 그대로 있다)에서만 찾으므로,
+# 확인하는 동안 .build를 치워 둔다. v0.3.0·v0.3.1의 번들 CLI는 이 조건에서 실행하자마자 종료됐다 (#54).
+# 로컬 Command Line Tools(Swift 6.4)의 접근 코드는 다른 위치도 찾아 같은 문제가 드러나지 않는다 — 단위 테스트가 막는다.
+if [ -d .build.smoke ] && [ ! -d .build ]; then mv .build.smoke .build; fi   # 중단된 이전 실행 복구
+mv .build .build.smoke
+trap 'mv .build.smoke .build' EXIT
+
 # 번들 CLI가 앱 안의 리소스 번들(Contents/Resources)로 실행되는지 — Sentinel 정기 스캔이 이 CLI를 쓴다.
-# 로컬에서는 SwiftPM 기본 경로(.build)가 남아 있어 통과할 수 있으므로 릴리즈 러너에서 의미가 있다.
 cli_out="$("$APP/Contents/Helpers/appcleaner" version 2>&1)" || { echo "error: 번들 CLI 실행 실패: $cli_out" >&2; exit 1; }
 case "$cli_out" in
   *unknown*) echo "error: 번들 CLI가 규칙 데이터를 찾지 못했습니다: $cli_out" >&2; exit 1 ;;
