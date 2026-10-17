@@ -3,6 +3,7 @@
   Count phrases that need singular/plural forms are in CLI.stringsdict, not here.
 */
 
+"App Cleaner 설치 파일" = "App Cleaner installers";
 "usage" = "Usage: appcleaner <command> [options]
 
 Commands:
@@ -46,6 +47,7 @@ Common options:
 "--min-confidence 값이 필요합니다" = "--min-confidence needs a value";
 "--min-confidence는 high, medium, low 중 하나입니다" = "--min-confidence must be one of high, medium, low";
 "검사할 앱을 지정하세요" = "Specify the app to inspect";
+"설치 파일 정리" = "Installer cleanup";
 "제거할 앱을 지정하세요" = "Specify the app to remove";
 "되돌릴 세션 ID(UUID)를 지정하세요 — `appcleaner history`로 확인" = "Specify the session ID (UUID) to restore — see `appcleaner history`";
 "알 수 없는 명령: %@" = "Unknown command: %@";

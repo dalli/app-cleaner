@@ -224,6 +224,17 @@ extension EngineText {
         case packageManagerCache
         case packageCacheRedownloaded
 
+        // MARK: 설치 파일 정리
+
+        /// `args`: 파일 이름
+        case installerFile
+        /// `args`: 사본 버전, 실행 중인 버전
+        case installerAppCopy
+        case installerCopyRunning
+        case installerCopyOutsideDownloads
+        /// `args`: 오류 설명
+        case diskImageEjectFailed
+
         // MARK: 공유 사유
 
         case sharedAppGroup
@@ -437,6 +448,12 @@ extension EngineText {
             case .cargoRecordRemains: return "cargo 설치 기록(~/.cargo/.crates2.json)에 %@ 항목이 남음 — 다시 설치하면 갱신됨"
             case .packageManagerCache: return "%@ 다운로드 캐시"
             case .packageCacheRedownloaded: return "지우면 다음 설치 때 다시 내려받음"
+
+            case .installerFile: return "App Cleaner 설치 파일 (%@)"
+            case .installerAppCopy: return "App Cleaner %@ 사본 (실행 중인 버전 %@)"
+            case .installerCopyRunning: return "실행 중인 사본이라 기본 선택하지 않았습니다"
+            case .installerCopyOutsideDownloads: return "다운로드 폴더 밖의 사본(개발 빌드 등)이라 기본 선택하지 않았습니다"
+            case .diskImageEjectFailed: return "디스크 이미지를 꺼내지 못했습니다: %@"
 
             case .sharedAppGroup: return "같은 App Group(%@)을 다른 앱도 사용"
             case .sharedExternalLaunchService: return "실행 파일(%@)이 앱 밖에 있는 같은 개발사 공용 백그라운드 서비스"

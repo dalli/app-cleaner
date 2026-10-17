@@ -40,6 +40,8 @@ struct AppCommands: Commands {
             Button(L("고아 잔여물 스캔")) { model.startOrphanScan() }
                 .keyboardShortcut("o", modifiers: [.command, .shift])
                 .disabled(model.orphans.isScanning)
+            Button(L("설치 파일 정리…")) { model.checkInstallerLeftovers(manual: true) }
+                .disabled(model.installerCleanup != nil || model.cleanupFlow != nil)
             Divider()
             Button(L("정리 미리보기…")) { model.openPreview() }
                 .keyboardShortcut(.delete, modifiers: .command)

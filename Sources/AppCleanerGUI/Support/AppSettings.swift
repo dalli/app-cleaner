@@ -48,6 +48,10 @@ final class AppSettings {
     }
     /// Sentinel을 로그인 항목으로 등록할 때의 빌드 지문 (`SentinelServicing.buildID`, #50)
     var sentinelRegisteredBuild: String? { didSet { defaults.set(sentinelRegisteredBuild, forKey: Keys.sentinelBuild) } }
+    /// 설치 파일 정리를 자동으로 확인한 앱 버전 (버전마다 한 번)
+    var installerCleanupCheckedVersion: String? {
+        didSet { defaults.set(installerCleanupCheckedVersion, forKey: Keys.installerCleanup) }
+    }
 
     init(defaults: SettingsStore) {
         self.defaults = defaults
@@ -62,6 +66,7 @@ final class AppSettings {
         trashWatchEnabled = sentinel.trashWatch
         periodicScan = sentinel.periodicScan
         sentinelRegisteredBuild = defaults.object(forKey: Keys.sentinelBuild) as? String
+        installerCleanupCheckedVersion = defaults.object(forKey: Keys.installerCleanup) as? String
     }
 
     /// Sentinel 설정과 Sentinel이 기록한 상태(마지막 정기 스캔, 휴지통 읽기, 알림 허용)를 저장소에서 다시 읽는다
@@ -84,5 +89,6 @@ final class AppSettings {
         static let onboarding = "onboardingCompleted"
         static let lastRoute = "lastSidebarRoute"
         static let sentinelBuild = "sentinelRegisteredBuild"
+        static let installerCleanup = "installerCleanupCheckedVersion"
     }
 }

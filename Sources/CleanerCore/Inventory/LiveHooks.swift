@@ -43,6 +43,14 @@ public enum LiveAppHooks {
         !NSRunningApplication.runningApplications(withBundleIdentifier: bid).isEmpty
     }
 
+    /// 그 경로의 앱 번들이 실행 중인지 (같은 번들 ID의 사본이 여럿일 때 구분)
+    public static let isRunningAt: @Sendable (URL) -> Bool = { url in
+        let target = url.standardizedFileURL.resolvingSymlinksInPath().path
+        return NSWorkspace.shared.runningApplications.contains {
+            $0.bundleURL?.standardizedFileURL.resolvingSymlinksInPath().path == target
+        }
+    }
+
     /// Spotlight 메타데이터 `kMDItemLastUsedDate` (프로세스 실행 없이 MDItem API로 읽는다 — 앱당 1ms 미만)
     public static let lastUsed: @Sendable (URL) -> Date? = { url in
         guard let item = MDItemCreateWithURL(kCFAllocatorDefault, url as CFURL) else { return nil }

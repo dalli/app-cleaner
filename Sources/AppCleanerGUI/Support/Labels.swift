@@ -71,6 +71,7 @@ extension SessionKind {
         case .appRemoval: return L("앱 제거")
         case .orphanCleanup: return L("고아 정리")
         case .packageRemoval: return L("패키지 정리")
+        case .installerCleanup: return L("설치 파일 정리")
         }
     }
 }
@@ -132,6 +133,7 @@ extension CleanupPlan {
     static func title(kind: SessionKind, targetName: String) -> String {
         if kind == .orphanCleanup && targetName == CleanupPlanner.orphanTargetName { return L("고아 잔여물") }
         if kind == .packageRemoval && targetName == CleanupPlanner.packageCacheTargetName { return L("패키지 매니저 캐시") }
+        if kind == .installerCleanup && targetName == CleanupPlanner.installerTargetName { return L("App Cleaner 설치 파일") }
         return targetName
     }
 }
