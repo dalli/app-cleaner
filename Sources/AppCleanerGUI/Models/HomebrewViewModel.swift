@@ -26,6 +26,9 @@ final class HomebrewViewModel {
     private(set) var items: [HomebrewItem] = []
     private(set) var sizes: [String: Int64] = [:]
     private(set) var pendingSizes: Set<String> = []
+    /// 상세 패널의 관련 경로 크기 (경로 → 크기). 항목을 고를 때 계산한다
+    private(set) var relatedSizes: [String: Int64] = [:]
+    private(set) var pendingRelated: Set<String> = []
     private(set) var isLoading = false
     private(set) var hasLoaded = false
 
@@ -113,4 +116,34 @@ final class HomebrewViewModel {
     var sizeIsApproximate: Bool { !pendingSizes.isEmpty }
 
     var focusedItem: HomebrewItem? { items.first { $0.id == focusedID } }
+
+    // MARK: 관련 경로 (상세 패널)
+
+    /// 설치 위치를 뺀 관련 경로 수 (목록 행 표시)
+    func extraRelatedCount(_ item: HomebrewItem) -> Int { item.related.filter { $0.kind != .install }.count }
+
+    func relatedGroups(_ item: HomebrewItem) -> [(kind: HomebrewRelatedPath.Kind, paths: [HomebrewRelatedPath])] {
+        HomebrewRelatedPath.Kind.allCases.compactMap { kind in
+            let paths = item.related.filter { $0.kind == kind }
+            return paths.isEmpty ? nil : (kind, paths)
+        }
+    }
+
+    func relatedSize(_ path: HomebrewRelatedPath) -> Int64? { relatedSizes[path.url.path] }
+    func isCalculatingRelated(_ path: HomebrewRelatedPath) -> Bool { pendingRelated.contains(path.url.path) }
+
+    /// 아직 모르는 관련 경로 크기를 계산한다 (링크는 따라가지 않음)
+    func loadRelatedSizes(for item: HomebrewItem) async {
+        let missing = item.related.map(\.url.path).filter { relatedSizes[$0] == nil && !pendingRelated.contains($0) }
+        guard !missing.isEmpty else { return }
+        pendingRelated.formUnion(missing)
+        let engine = self.engine
+        await withTaskGroup(of: (String, Int64?).self) { group in
+            for path in missing { group.addTask { (path, await engine.size(of: URL(filePath: path))) } }
+            for await (path, size) in group {
+                pendingRelated.remove(path)
+                if let size { relatedSizes[path] = size }
+            }
+        }
+    }
 }

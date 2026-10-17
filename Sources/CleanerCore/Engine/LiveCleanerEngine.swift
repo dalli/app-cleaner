@@ -116,7 +116,8 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
 
     public func homebrewItems() async -> [HomebrewItem] {
         let paths = self.paths
-        return await Task.detached(priority: .userInitiated) { HomebrewInventory(paths: paths).items() }.value
+        let rules = self.rules.current()
+        return await Task.detached(priority: .userInitiated) { HomebrewInventory(paths: paths).items(rules: rules) }.value
     }
 
     // MARK: 설치 파일 정리
