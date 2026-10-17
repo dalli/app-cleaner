@@ -95,5 +95,6 @@ appcleaner packages caches clean [--manager …] [--dry-run] [--yes] [--json]
 - GUI 화면 (사이드바 "CLI 도구"): 목록·검사기·정리 시트 — 엔진 API는 준비됨
 - bun·pnpm 전역 패키지: 전역 `package.json`에 의존성 기록이 있어 폴더만 옮기면 다음 전역 설치 때 되살아난다 → 기록 갱신 방식(매니저 명령 위임 등) 결정 필요
 - Homebrew formula: 의존성·`opt` 링크·`brew` 자체 기록 때문에 파일 이동으로는 안전하게 지울 수 없다 → `brew uninstall` 안내만 검토 (#38과 함께: 설치된 formula의 데이터를 고아로 오판하지 않기)
+  - GUI 사이드바 "Homebrew"(⌘4)는 formula·cask 목록·크기·사용자 설치/의존성을 **읽기 전용**으로 보여 주고, 우클릭으로 `brew uninstall [--cask] <이름>` 명령을 복사한다 (`CleanerCore/Inventory/HomebrewInventory.swift` — Cellar·Caskroom의 `INSTALL_RECEIPT.json`만 읽고 `brew`는 실행하지 않음). S1 앱 목록의 "Homebrew" 칩은 cask가 설치한 `.app`만 센다
 - go: 설치 기록이 없어 바이너리의 build info(`go version -m`)를 읽어야 한다
 - 실행 중인 CLI 도구 프로세스 종료는 하지 않는다 (macOS는 실행 중인 파일도 옮길 수 있다)

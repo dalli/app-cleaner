@@ -110,6 +110,13 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
         await packages.scan(options: options)
     }
 
+    // MARK: Homebrew
+
+    public func homebrewItems() async -> [HomebrewItem] {
+        let paths = self.paths
+        return await Task.detached(priority: .userInitiated) { HomebrewInventory(paths: paths).items() }.value
+    }
+
     // MARK: S6
 
     public func sessions() async -> [JournalSession] { await journal.sessions() }

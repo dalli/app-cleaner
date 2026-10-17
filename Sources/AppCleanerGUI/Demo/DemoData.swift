@@ -225,6 +225,37 @@ enum DemoData {
 
     // MARK: S5 고아 잔여물
 
+    // MARK: Homebrew
+
+    static let brewPrefix = "/opt/homebrew"
+
+    static func homebrewItems() -> [HomebrewItem] {
+        func formula(_ name: String, _ version: String, dependency: Bool = false) -> HomebrewItem {
+            HomebrewItem(kind: .formula, name: name, version: version, location: URL(filePath: "\(brewPrefix)/Cellar/\(name)"),
+                         installedOnRequest: !dependency)
+        }
+        func cask(_ name: String, _ version: String, app: String? = nil) -> HomebrewItem {
+            let room = URL(filePath: "\(brewPrefix)/Caskroom/\(name)")
+            return HomebrewItem(kind: .cask, name: name, version: version, location: room,
+                                contentPaths: [room] + (app.map { [URL(filePath: "/Applications/\($0)")] } ?? []),
+                                apps: app.map { [$0] } ?? [])
+        }
+        return [
+            formula("ffmpeg", "8.0_1"), formula("gh", "2.80.0"), formula("git", "2.51.0"), formula("node", "24.9.0"),
+            formula("openssl@3", "3.5.4", dependency: true), formula("libpng", "1.6.50", dependency: true),
+            formula("icu4c@77", "77.1_1", dependency: true),
+            cask("docker", "4.34.2", app: "Docker.app"), cask("raycast", "1.84.3", app: "Raycast.app"),
+            cask("font-jetbrains-mono", "2.304"),
+        ]
+    }
+
+    static let homebrewSizes: [String: Int64] = [
+        "\(brewPrefix)/Cellar/ffmpeg": 52 * MB, "\(brewPrefix)/Cellar/gh": 48 * MB, "\(brewPrefix)/Cellar/git": 61 * MB,
+        "\(brewPrefix)/Cellar/node": 91 * MB, "\(brewPrefix)/Cellar/openssl@3": 34 * MB, "\(brewPrefix)/Cellar/libpng": 1_400 * KB,
+        "\(brewPrefix)/Cellar/icu4c@77": 82 * MB, "\(brewPrefix)/Caskroom/docker": 12 * KB, "\(brewPrefix)/Caskroom/raycast": 8 * KB,
+        "\(brewPrefix)/Caskroom/font-jetbrains-mono": 5_600 * KB,
+    ]
+
     static func orphanGroups() -> [OrphanGroup] {
         let slackBID = "com.tinyspeck.slackmacgap"
         func o(_ path: String, _ cat: ItemCategory, _ conf: Confidence, nature: DataNature? = nil, share: ShareStatus = .exclusive,

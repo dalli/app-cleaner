@@ -71,10 +71,15 @@ public protocol CleanerEngine: Sendable {
     // 패키지 매니저로 설치한 CLI 도구 (docs/packages.md)
     func scanPackages(options: PackageScanOptions) async throws -> PackageScanReport
     func makePlan(for report: PackageScanReport, selectedPaths: Set<String>) -> CleanupPlan
+
+    /// Homebrew로 설치한 formula·cask (표시용 — 정리는 `brew uninstall` 안내)
+    func homebrewItems() async -> [HomebrewItem]
 }
 
 /// 패키지 정리 기본 구현 — 지원하지 않는 엔진(GUI 데모 등)은 빈 결과
 extension CleanerEngine {
+    public func homebrewItems() async -> [HomebrewItem] { [] }
+
     public func scanPackages(options: PackageScanOptions) async throws -> PackageScanReport {
         PackageScanReport(packages: [], ruleDataVersion: ruleDataInfo().version)
     }
