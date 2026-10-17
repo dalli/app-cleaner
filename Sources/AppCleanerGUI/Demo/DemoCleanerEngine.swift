@@ -56,7 +56,12 @@ final class DemoCleanerEngine: CleanerEngine, @unchecked Sendable {
     func size(of url: URL) async -> Int64? {
         let app = withState { s in s.apps.first { $0.app.url.path == url.path } }
         try? await pause(Double.random(in: 0.6...2.4))
-        return app?.lazySize
+        return app?.lazySize ?? DemoData.homebrewSizes[url.path]
+    }
+
+    func homebrewItems() async -> [HomebrewItem] {
+        try? await pause(0.3)
+        return DemoData.homebrewItems()
     }
 
     // MARK: S2

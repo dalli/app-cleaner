@@ -31,6 +31,8 @@ struct AppCommands: Commands {
                 .keyboardShortcut("2", modifiers: .command)
             Button(L("삭제 기록")) { model.select(.history) }
                 .keyboardShortcut("3", modifiers: .command)
+            Button(HomebrewViewModel.title) { model.select(.homebrew) }
+                .keyboardShortcut("4", modifiers: .command)
             Divider()
         }
 

@@ -97,6 +97,8 @@ struct SidebarView: View {
                 .badge(model.orphans.badgeCount ?? 0)
                 .tag(SidebarRoute.orphans)
                 .accessibilityValue(model.orphans.badgeCount.map { L("그룹 %lld개", $0) } ?? "")
+            Label(HomebrewViewModel.title, systemImage: "mug")
+                .tag(SidebarRoute.homebrew)
             Label(L("삭제 기록"), systemImage: "clock.arrow.circlepath")
                 .tag(SidebarRoute.history)
         }
@@ -193,6 +195,8 @@ struct DetailView: View {
             } else {
                 OrphansView()
             }
+        case .homebrew:
+            HomebrewView()
         case .history:
             HistoryView()
         case .settings:

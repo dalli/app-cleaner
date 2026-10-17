@@ -6,6 +6,7 @@ import Observation
 enum SidebarRoute: String, CaseIterable, Hashable, Sendable {
     case apps
     case orphans
+    case homebrew
     case history
     case settings
 }

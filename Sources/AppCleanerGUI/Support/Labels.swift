@@ -44,6 +44,16 @@ extension InstallSource {
     }
 }
 
+extension HomebrewKind {
+    /// Homebrew 용어라 번역하지 않는다
+    var title: String {
+        switch self {
+        case .formula: return "Formula"
+        case .cask: return "Cask"
+        }
+    }
+}
+
 extension SessionStatus {
     var title: String {
         switch self {
