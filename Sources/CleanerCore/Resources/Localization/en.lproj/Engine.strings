@@ -198,3 +198,10 @@
 "adminFailed" = "The administrator task failed (%@)";
 "adminPrompt" = "App Cleaner wants to make changes.";
 "helperNotBundled" = "This build doesn't include the administrator helper";
+
+/* 설치 파일 정리 */
+"installerFile" = "App Cleaner installer (%@)";
+"installerAppCopy" = "Copy of App Cleaner %@ (running version %@)";
+"installerCopyRunning" = "Not selected by default because this copy is running";
+"installerCopyOutsideDownloads" = "Not selected by default because this copy is outside the Downloads folder (a development build, for example)";
+"diskImageEjectFailed" = "Could not eject the disk image: %@";

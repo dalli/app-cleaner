@@ -74,11 +74,27 @@ public protocol CleanerEngine: Sendable {
 
     /// Homebrew로 설치한 formula·cask (표시용 — 정리는 `brew uninstall` 안내)
     func homebrewItems() async -> [HomebrewItem]
+
+    // 설치 파일 정리 (새 버전 설치 뒤 남은 디스크 이미지·설치 파일·이전 사본)
+    func installerLeftovers() async -> InstallerLeftoverReport
+    func makePlan(for report: InstallerLeftoverReport, selectedPaths: Set<String>) -> CleanupPlan
+    /// 디스크 이미지 꺼내기. 실패한 마운트 위치와 사유
+    func ejectDiskImages(at mountPoints: [URL]) async -> [CleanupFailure]
 }
 
 /// 패키지 정리 기본 구현 — 지원하지 않는 엔진(GUI 데모 등)은 빈 결과
 extension CleanerEngine {
     public func homebrewItems() async -> [HomebrewItem] { [] }
+
+    public func installerLeftovers() async -> InstallerLeftoverReport {
+        InstallerLeftoverReport(ruleDataVersion: ruleDataInfo().version)
+    }
+
+    public func makePlan(for report: InstallerLeftoverReport, selectedPaths: Set<String>) -> CleanupPlan {
+        CleanupPlanner.plan(for: report, selectedPaths: selectedPaths)
+    }
+
+    public func ejectDiskImages(at mountPoints: [URL]) async -> [CleanupFailure] { [] }
 
     public func scanPackages(options: PackageScanOptions) async throws -> PackageScanReport {
         PackageScanReport(packages: [], ruleDataVersion: ruleDataInfo().version)

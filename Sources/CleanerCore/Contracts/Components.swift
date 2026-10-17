@@ -41,6 +41,15 @@ public enum SafetyVerdict: Sendable, Hashable {
 /// SafetyGuard: 보호 목록, symlink 해석 (plan.md 5.1). 스캔 시와 이동 직전에 두 번 호출된다.
 public protocol SafetyChecking: Sendable {
     func verdict(for url: URL, bundleID: String?) -> SafetyVerdict
+    /// 설치 파일 정리 전용: 실행 중인 번들(`runningBundle`)이 아닌 App Cleaner 사본(`.app`)은 본 앱 보호에서 뺀다.
+    /// 본 앱 데이터·보류 폴더 등 경로 보호는 그대로다.
+    func verdict(for url: URL, allowingSelfAppCopy runningBundle: URL?) -> SafetyVerdict
+}
+
+extension SafetyChecking {
+    public func verdict(for url: URL, allowingSelfAppCopy runningBundle: URL?) -> SafetyVerdict {
+        verdict(for: url, bundleID: nil)
+    }
 }
 
 // MARK: 정리 실행·기록

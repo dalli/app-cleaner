@@ -149,6 +149,23 @@ public struct SafetyGuard: SafetyChecking {
         return .allowed(resolved: URL(fileURLWithPath: real))
     }
 
+    public func verdict(for url: URL, allowingSelfAppCopy runningBundle: URL?) -> SafetyVerdict {
+        let base = verdict(for: url, bundleID: nil)
+        guard case .blocked(.selfApp, _) = base else { return base }
+        let lexical = Self.normalize(url.path)
+        let name = (lexical as NSString).lastPathComponent
+        guard name.lowercased().hasSuffix(".app") else { return base }
+        let real = Self.join(Self.realpathOfExistingPrefix((lexical as NSString).deletingLastPathComponent), name)
+        // 경로 규칙(본 앱 데이터·보류 폴더 등)에 걸린 것이면 그대로 막는다 — 번들 ID 판정만 푼다
+        if check(lexical) != nil || check(real) != nil { return base }
+        if let runningBundle {
+            let running = Self.key(Self.realpathOfExistingPrefix(runningBundle.path))
+            let k = Self.key(real)
+            if k == running || running.hasPrefix(k + "/") { return base }
+        }
+        return .allowed(resolved: URL(fileURLWithPath: real))
+    }
+
     // MARK: 판정
 
     private func bundleReason(_ bid: String) -> ProtectionReason? {

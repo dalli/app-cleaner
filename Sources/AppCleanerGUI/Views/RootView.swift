@@ -17,6 +17,10 @@ struct RootView: View {
                 } detail: {
                     DetailView()
                 }
+                .sheet(item: $model.installerCleanup) { cleanup in
+                    InstallerCleanupSheet(model: cleanup)
+                        .interactiveDismissDisabled(cleanup.phase == .running)
+                }
             }
         }
         // .app을 창 어디에 놓아도 S2 (드래그 중에는 창 전체를 강조)

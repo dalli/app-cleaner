@@ -11,6 +11,7 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
     public let keep: KeepListStore
     public let journal: JournalStore
     public let executor: CleanupExecutor
+    let runner: CommandRunning
 
     private let inventoryTask = InventoryRefresher()
 
@@ -19,6 +20,7 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
     public init(paths: SystemPaths = .live(), runner: CommandRunning = ProcessCommandRunner(),
                 adminLauncher: AppleScriptAdminExecutor.Launcher? = nil) {
         self.paths = paths
+        self.runner = runner
         let rules = RuleDataStore(paths: paths)
         self.rules = rules
         let safety = SafetyGuard(paths: paths)
@@ -115,6 +117,30 @@ public final class LiveCleanerEngine: CleanerEngine, @unchecked Sendable {
     public func homebrewItems() async -> [HomebrewItem] {
         let paths = self.paths
         return await Task.detached(priority: .userInitiated) { HomebrewInventory(paths: paths).items() }.value
+    }
+
+    // MARK: 설치 파일 정리
+
+    public func installerLeftovers() async -> InstallerLeftoverReport {
+        let scanner = InstallerLeftoverScanner(paths: paths, runner: runner, runningBundle: InstallerLeftoverScanner.currentAppBundle,
+                                               isRunningAt: LiveAppHooks.isRunningAt)
+        return await scanner.scan(ruleDataVersion: rules.info().version)
+    }
+
+    public func ejectDiskImages(at mountPoints: [URL]) async -> [CleanupFailure] {
+        let runner = self.runner
+        return await Task.detached(priority: .userInitiated) {
+            mountPoints.compactMap { mount -> CleanupFailure? in
+                do {
+                    let out = try runner.run(InstallerLeftoverScanner.hdiutil, ["detach", mount.path])
+                    if out.succeeded { return nil }
+                    let why = out.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return CleanupFailure(path: mount.path, reason: EngineText(.diskImageEjectFailed, why.isEmpty ? "\(out.status)" : why))
+                } catch {
+                    return CleanupFailure(path: mount.path, reason: EngineText(.diskImageEjectFailed, parts: [.describing(error)]))
+                }
+            }
+        }.value
     }
 
     // MARK: S6

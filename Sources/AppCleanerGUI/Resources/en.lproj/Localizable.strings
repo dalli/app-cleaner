@@ -28,9 +28,11 @@
 "6개월 이상 사용하지 않음" = "Not used for over 6 months";
 "<번들 ID>. 접두사" = "<bundle ID>. prefix";
 "<번들 ID>.savedState" = "<bundle ID>.savedState";
+"App Cleaner 설치 파일" = "App Cleaner installers";
 "App Cleaner 시작하기" = "Welcome to App Cleaner";
 "App Cleaner 자신의 파일입니다." = "This is App Cleaner's own file.";
 "App Cleaner.app으로 설치해 실행했을 때만 사용할 수 있습니다." = "Available only when running the installed App Cleaner.app.";
+"App Cleaner가 응용 프로그램 폴더 밖에서 실행 중입니다" = "App Cleaner is running outside the Applications folder";
 "App Group (entitlements)" = "App Group (entitlements)";
 "Apple 기본 구성 요소라 선택할 수 없습니다." = "Built-in Apple component; can't be selected.";
 "Apple 기본 앱(com.apple.*)은 목록에 표시하지 않습니다." = "Built-in Apple apps (com.apple.*) are not listed.";
@@ -121,9 +123,11 @@
 "기록을 불러오는 중…" = "Loading history…";
 "기본값은 설정에서 바꿀 수 있습니다." = "You can change the default in Settings.";
 "기본으로는 남겨 두는 항목입니다. 옮기면 아래 내용이 사라질 수 있습니다." = "These are kept by default. Moving them may lose the following.";
+"꺼낸 디스크 이미지: %lld · 휴지통으로 옮긴 항목: %lld (%@). 삭제 기록에서 되돌릴 수 있습니다." = "Disk images ejected: %1$lld · Moved to Trash: %2$lld (%3$@). You can restore them from History.";
 "꺼짐" = "Off";
 "끔" = "Off";
 "나머지 항목은 정리했습니다. 실패한 항목은 그대로 남아 있습니다." = "The rest were cleaned up. Failed items were left in place.";
+"나중에" = "Later";
 "나중에 하기" = "Later";
 "남겨두는 항목" = "Kept items";
 "남겨둘 항목" = "Items kept";
@@ -151,6 +155,8 @@
 "되돌리기" = "Undo";
 "되돌리는 중…" = "Restoring…";
 "되돌림" = "Restored";
+"디스크 이미지 꺼내기" = "Eject Disk Images";
+"디스크 이미지나 다운로드 폴더에서 바로 실행하면 macOS가 임시 위치에서 실행합니다. 응용 프로그램 폴더로 옮긴 뒤 다시 실행하세요." = "When you open it straight from the disk image or the Downloads folder, macOS runs it from a temporary location. Move it to the Applications folder and open it again.";
 "로그인 항목" = "Login items";
 "로그인 항목 · 키체인 항목은 직접 지우지 않고, 정리 후 확인 방법을 안내합니다." = "Login items and keychain entries aren't removed directly; you'll get instructions after cleanup.";
 "로그인 항목 열기" = "Open Login Items";
@@ -211,6 +217,7 @@
 "사용자가 만든 데이터가 들어 있습니다" = "Contains data you created";
 "사용할 수 없음" = "Unavailable";
 "삭제 기록" = "History";
+"새 버전을 설치한 뒤 남은 설치 파일과 이전 사본입니다. 휴지통으로 옮기므로 삭제 기록에서 되돌릴 수 있습니다." = "These installers and older copies were left over after installing a new version. They are moved to the Trash, so you can restore them from History.";
 "샌드박스 컨테이너" = "Sandbox Container";
 "서명 확인 실패 — 번들 기본값 사용" = "Signature check failed — using bundled defaults";
 "서명 확인됨" = "Signature verified";
@@ -236,6 +243,8 @@
 "설치 앱 확인" = "Checking installed apps";
 "설치 영수증 (pkgutil)" = "Install receipt (pkgutil)";
 "설치 출처 필터" = "Install source filter";
+"설치 파일 정리" = "Installer Cleanup";
+"설치 파일 정리…" = "Clean Up Installers…";
 "설치 패키지" = "Installer package";
 "설치된 앱 목록과 비교해 주인이 없는 설정·캐시·백그라운드 서비스를 앱별로 묶어 보여 줍니다. 결과는 신뢰도와 함께 표시되며, 기본으로는 확실한 항목만 선택합니다." = "Compares with your installed apps and groups ownerless settings, caches and background services by app. Results show a confidence level, and only certain items are selected by default.";
 "설치된 앱을 확인하는 중…" = "Checking installed apps…";
@@ -340,6 +349,7 @@
 "일부 선택" = "Partly selected";
 "일부 선택됨" = "Partially selected";
 "일부 항목을 찾지 못했을 수 있음" = "Some items may not have been found";
+"일부 항목을 처리하지 못했습니다" = "Some items could not be processed";
 "자동으로 지우지 않습니다. 필요 없으면 영구 삭제하세요." = "They aren't deleted automatically. Delete them permanently if you no longer need them.";
 "잔여물 검사" = "Inspect leftovers";
 "재생성 가능" = "Regenerable";
@@ -362,8 +372,10 @@
 "정리 전에 항상 미리보기" = "Always preview before cleaning up";
 "정리를 시작하면 백그라운드 서비스를 먼저 멈춘 뒤 앱 종료를 요청합니다." = "When cleanup starts, background services are stopped first, then the app is asked to quit.";
 "정리를 취소했습니다" = "Cleanup cancelled";
+"정리하는 중…" = "Cleaning up…";
 "정리하는 중입니다. 실패한 항목이 있어도 나머지는 계속 진행합니다." = "Cleaning up. If an item fails, the rest continue.";
 "정리할 때 관리자 암호를 한 번 묻습니다" = "Your administrator password is asked once during cleanup";
+"정리할 설치 파일이 없습니다" = "There are no installers to clean up";
 "정리할 잔여물이 없습니다" = "No leftovers to clean up";
 "정보원" = "Sources";
 "제거 명령 복사" = "Copy Uninstall Command";
@@ -432,6 +444,7 @@
 "휴지통 열기" = "Open Trash";
 "휴지통에서 비워짐 — 복원 불가" = "Emptied from Trash — not restorable";
 "휴지통으로 보낼 수 없는 시스템 파일을 보관합니다. 기간이 지나면 영구 삭제 전에 물어봅니다." = "Holds system files that can't go to the Trash. After the period, you're asked before they're deleted permanently.";
+"휴지통으로 옮기기" = "Move to Trash";
 "휴지통으로 이동" = "Move to Trash";
 "휴지통을 읽을 수 없음" = "Can't read the Trash";
 

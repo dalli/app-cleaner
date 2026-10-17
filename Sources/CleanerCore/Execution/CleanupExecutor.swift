@@ -129,7 +129,9 @@ public struct CleanupExecutor: CleanupExecuting {
             if Task.isCancelled { run.cancelled = true; break }
 
             // 이동 직전 SafetyGuard 재검사
-            let verdict = safety.verdict(for: item.url, bundleID: plan.kind == .appRemoval ? plan.targetBundleID : nil)
+            let verdict = plan.kind == .installerCleanup
+                ? safety.verdict(for: item.url, allowingSelfAppCopy: InstallerLeftoverScanner.currentAppBundle)
+                : safety.verdict(for: item.url, bundleID: plan.kind == .appRemoval ? plan.targetBundleID : nil)
             if case .blocked(_, let why) = verdict {
                 run.fail(item.path, EngineText(.protectedNotMoved, parts: [why]))
                 continue

@@ -373,6 +373,7 @@ struct CLI {
             case .appRemoval: kind = t("앱 제거")
             case .orphanCleanup: kind = t("고아 정리")
             case .packageRemoval: kind = t("패키지 정리")
+            case .installerCleanup: kind = t("설치 파일 정리")
             }
             out("\(s.id.uuidString)  \(df.string(from: s.startedAt))  \(kind)  \(sessionTitle(s))  "
                 + t("%lld개 · %@", s.items.count, format.size(s.totalSize)) + "  [\(format.status(s.status))]")
@@ -388,6 +389,7 @@ struct CLI {
     private func title(kind: SessionKind, targetName: String) -> String {
         if kind == .orphanCleanup && targetName == CleanupPlanner.orphanTargetName { return t("고아 잔여물") }
         if kind == .packageRemoval && targetName == CleanupPlanner.packageCacheTargetName { return t("패키지 매니저 캐시") }
+        if kind == .installerCleanup && targetName == CleanupPlanner.installerTargetName { return t("App Cleaner 설치 파일") }
         return targetName
     }
 

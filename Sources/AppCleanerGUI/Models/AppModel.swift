@@ -30,6 +30,8 @@ final class AppModel {
     var cleanupFlow: CleanupFlowModel?
     /// S4 (정리를 시작한 화면에 표시)
     var completion: CompletionModel?
+    /// 설치 파일 정리 시트
+    var installerCleanup: InstallerCleanupModel?
 
     private(set) var permissions: PermissionStatus
     private(set) var helperState: HelperInstallState
@@ -73,6 +75,35 @@ final class AppModel {
         self.keepList = engine.keepList()
         refreshSentinel()
         reregisterSentinelIfBuildChanged()
+        if InstallerLeftoverScanner.currentAppBundle != nil { checkInstallerLeftovers() }
+    }
+
+    // MARK: 설치 파일 정리
+
+    static var appVersion: String { Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev" }
+
+    /// 새 버전을 처음 실행했을 때 한 번(`manual`이면 메뉴에서 언제든) 남은 설치 파일·이전 사본을 찾아 시트를 연다.
+    /// 자동 확인은 정리할 것이 없으면 조용히 끝낸다. 응용 프로그램 폴더 밖에서 실행 중이면 확인한 것으로 기록하지 않는다 (옮긴 뒤 다시 확인).
+    func checkInstallerLeftovers(manual: Bool = false) {
+        guard installerCleanup == nil, cleanupFlow == nil else { return }
+        let version = Self.appVersion
+        if !manual {
+            guard !isDemo, !showOnboarding, settings.installerCleanupCheckedVersion != version else { return }
+        }
+        Task {
+            let report = await engine.installerLeftovers()
+            if !manual && !report.runningOutsideApplications { settings.installerCleanupCheckedVersion = version }
+            guard manual || !report.isEmpty || report.runningOutsideApplications, installerCleanup == nil else { return }
+            let model = InstallerCleanupModel(report: report, engine: engine)
+            let appList = self.appList
+            model.onFinished = { appList.reload() }
+            installerCleanup = model
+        }
+    }
+
+    func dismissInstallerCleanup() {
+        guard installerCleanup?.phase != .running else { return }
+        installerCleanup = nil
     }
 
     // MARK: 사이드바
@@ -337,6 +368,7 @@ final class AppModel {
         settings.onboardingCompleted = true
         showOnboarding = false
         refreshPermissions()
+        if InstallerLeftoverScanner.currentAppBundle != nil { checkInstallerLeftovers() }
     }
 
     var lacksFullDiskAccess: Bool { permissions.fullDiskAccess != .granted }

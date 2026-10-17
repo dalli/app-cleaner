@@ -86,6 +86,18 @@ public enum CleanupPlanner {
         )
     }
 
+    // MARK: 설치 파일 정리
+
+    public static let installerTargetName = "App Cleaner 설치 파일"
+
+    /// 설치 파일·이전 사본. 이동만 한다 (디스크 이미지 꺼내기는 `CleanerEngine.ejectDiskImages`)
+    public static func plan(for report: InstallerLeftoverReport, selectedPaths: Set<String>) -> CleanupPlan {
+        var (moved, kept) = resolve(dedupByPath(report.candidates), selected: normalized(selectedPaths))
+        moved = dedupNested(moved)
+        return CleanupPlan(kind: .installerCleanup, targetName: installerTargetName, items: moved, keptItems: kept,
+                           ruleDataVersion: report.ruleDataVersion)
+    }
+
     /// 같은 경로가 여러 패키지의 후보로 나오면 한 번만 (첫 후보 기준)
     static func dedupByPath(_ items: [Candidate]) -> [Candidate] {
         var seen = Set<String>()
