@@ -102,6 +102,8 @@ if [ "$found_bundle" -eq 0 ]; then
 fi
 # 라이선스 (MIT). 서드파티 고지(Homebrew Cask 데이터, BSD-2-Clause)는 CleanerCore 리소스 번들의 RuleData/NOTICE-homebrew-cask.txt
 cp LICENSE "$APP/Contents/Resources/LICENSE"
+# 앱 아이콘 (원본 packaging/icon/AppIcon.svg → swift scripts/make-icon.swift로 만든 icns)
+cp packaging/icon/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
 # 지원 언어 (CleanerCore `AppLanguage`와 같게). 시스템 메뉴(종료, 숨기기 …)도 이 언어로 나오도록 lproj를 두고,
 # 앱 이름은 InfoPlist.strings로 언어마다 지정한다. 지원하지 않는 언어 사용자는 개발 지역(en)으로 본다.
@@ -128,6 +130,8 @@ mkdir -p "$SENTINEL/Contents/MacOS" "$SENTINEL/Contents/Resources"
 cp "$BIN_DIR/AppCleanerSentinel" "$SENTINEL/Contents/MacOS/AppCleanerSentinel"
 cp -R "$APP/Contents/Resources/AppCleaner_CleanerCore.bundle" "$SENTINEL/Contents/Resources/"
 cp LICENSE "$SENTINEL/Contents/Resources/LICENSE"
+# 알림에 보이는 아이콘
+cp packaging/icon/AppIcon.icns "$SENTINEL/Contents/Resources/AppIcon.icns"
 cat > "$SENTINEL/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -137,6 +141,8 @@ cat > "$SENTINEL/Contents/Info.plist" <<PLIST
   <string>en</string>
   <key>CFBundleExecutable</key>
   <string>AppCleanerSentinel</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>$SENTINEL_ID</string>
   <key>CFBundleName</key>
@@ -179,6 +185,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   </array>
   <key>CFBundleExecutable</key>
   <string>AppCleanerGUI</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>$BUNDLE_ID</string>
   <key>CFBundleName</key>
