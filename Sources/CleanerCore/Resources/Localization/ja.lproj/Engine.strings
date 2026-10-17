@@ -197,3 +197,10 @@
 "adminFailed" = "管理者の作業に失敗しました (%@)";
 "adminPrompt" = "App Cleaner が変更を加えようとしています。";
 "helperNotBundled" = "この実行方法には管理者ヘルパーが含まれていません";
+
+/* 설치 파일 정리 */
+"installerFile" = "App Cleaner のインストーラ (%@)";
+"installerAppCopy" = "App Cleaner %@ のコピー (実行中のバージョン %@)";
+"installerCopyRunning" = "実行中のコピーのため、既定では選択していません";
+"installerCopyOutsideDownloads" = "ダウンロードフォルダの外にあるコピー (開発ビルドなど) のため、既定では選択していません";
+"diskImageEjectFailed" = "ディスクイメージを取り出せませんでした: %@";

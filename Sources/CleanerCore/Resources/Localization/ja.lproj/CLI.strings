@@ -3,6 +3,7 @@
   日本語には単数・複数の区別がないため、個数の文言もこのファイルに置く (CLI.stringsdict は不要)。
 */
 
+"App Cleaner 설치 파일" = "App Cleaner のインストーラ";
 "usage" = "使い方: appcleaner <コマンド> [オプション]
 
 コマンド:
@@ -46,6 +47,7 @@
 "--min-confidence 값이 필요합니다" = "--min-confidence には値が必要です";
 "--min-confidence는 high, medium, low 중 하나입니다" = "--min-confidence には high、medium、low のいずれかを指定してください";
 "검사할 앱을 지정하세요" = "検査する App を指定してください";
+"설치 파일 정리" = "インストーラの整理";
 "제거할 앱을 지정하세요" = "削除する App を指定してください";
 "되돌릴 세션 ID(UUID)를 지정하세요 — `appcleaner history`로 확인" = "復元するセッション ID (UUID) を指定してください — `appcleaner history` で確認できます";
 "알 수 없는 명령: %@" = "不明なコマンド: %@";

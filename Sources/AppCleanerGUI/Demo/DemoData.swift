@@ -225,6 +225,28 @@ enum DemoData {
 
     // MARK: S5 고아 잔여물
 
+    // MARK: 설치 파일 정리
+
+    static func installerLeftovers() -> InstallerLeftoverReport {
+        func file(_ name: String, _ size: Int64) -> Candidate {
+            Candidate(url: url("~/Downloads/\(name)"), category: .other, confidence: .high, nature: .regenerable,
+                      evidence: [Evidence(.pathRule, EngineText(.installerFile, name))], isSelected: true, size: size)
+        }
+        let oldCopy = Candidate(url: url("~/Downloads/App Cleaner.app"), category: .appBundle, confidence: .high, nature: .regenerable,
+                                evidence: [Evidence(.bundleIdentifier, EngineText(.installerAppCopy, "0.3.0", "0.3.5"))],
+                                isSelected: true, size: 24 * MB)
+        let devBuild = Candidate(url: url("~/works/app-cleaner/dist/App Cleaner.app"), category: .appBundle, confidence: .high,
+                                 nature: .regenerable,
+                                 evidence: [Evidence(.bundleIdentifier, EngineText(.installerAppCopy, "0.1.0", "0.3.5"))],
+                                 isSelected: false, size: 22 * MB, notes: [EngineText(.installerCopyOutsideDownloads)])
+        return InstallerLeftoverReport(
+            mounted: [MountedInstaller(mountPoint: URL(filePath: "/Volumes/App Cleaner"),
+                                       imagePath: url("~/Downloads/AppCleaner-0.3.5-macos-arm64.dmg"), appVersion: "0.3.5")],
+            candidates: [file("AppCleaner-0.3.3-macos-arm64.dmg", 8_600 * KB), file("AppCleaner-0.3.5-macos-arm64.dmg", 8_900 * KB),
+                         file("AppCleaner-0.3.0-macos-arm64.zip", 6_700 * KB), oldCopy, devBuild],
+            ruleDataVersion: ruleVersion)
+    }
+
     // MARK: Homebrew
 
     static let brewPrefix = "/opt/homebrew"

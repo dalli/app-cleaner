@@ -59,6 +59,16 @@ final class DemoCleanerEngine: CleanerEngine, @unchecked Sendable {
         return app?.lazySize ?? DemoData.homebrewSizes[url.path]
     }
 
+    func installerLeftovers() async -> InstallerLeftoverReport {
+        try? await pause(0.3)
+        return DemoData.installerLeftovers()
+    }
+
+    func ejectDiskImages(at mountPoints: [URL]) async -> [CleanupFailure] {
+        try? await pause(0.3)
+        return []
+    }
+
     func homebrewItems() async -> [HomebrewItem] {
         try? await pause(0.3)
         return DemoData.homebrewItems()
