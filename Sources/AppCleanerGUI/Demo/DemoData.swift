@@ -252,9 +252,11 @@ enum DemoData {
     static let brewPrefix = "/opt/homebrew"
 
     static func homebrewItems() -> [HomebrewItem] {
-        func formula(_ name: String, _ version: String, dependency: Bool = false) -> HomebrewItem {
-            HomebrewItem(kind: .formula, name: name, version: version, location: URL(filePath: "\(brewPrefix)/Cellar/\(name)"),
-                         installedOnRequest: !dependency)
+        func formula(_ name: String, _ version: String, dependency: Bool = false, related: [HomebrewRelatedPath] = []) -> HomebrewItem {
+            let cellar = URL(filePath: "\(brewPrefix)/Cellar/\(name)")
+            return HomebrewItem(kind: .formula, name: name, version: version, location: cellar, installedOnRequest: !dependency,
+                                related: [HomebrewRelatedPath(.install, cellar), HomebrewRelatedPath(.link, URL(filePath: "\(brewPrefix)/opt/\(name)"))]
+                                    + related)
         }
         func cask(_ name: String, _ version: String, app: String? = nil) -> HomebrewItem {
             let room = URL(filePath: "\(brewPrefix)/Caskroom/\(name)")
@@ -263,8 +265,14 @@ enum DemoData {
                                 apps: app.map { [$0] } ?? [])
         }
         return [
-            formula("ffmpeg", "8.0_1"), formula("gh", "2.80.0"), formula("git", "2.51.0"), formula("node", "24.9.0"),
-            formula("openssl@3", "3.5.4", dependency: true), formula("libpng", "1.6.50", dependency: true),
+            formula("ffmpeg", "8.0_1"),
+            formula("gh", "2.80.0", related: [
+                HomebrewRelatedPath(.link, URL(filePath: "\(brewPrefix)/bin/gh")),
+                HomebrewRelatedPath(.data, url("~/.config/gh")), HomebrewRelatedPath(.data, url("~/.local/state/gh")),
+                HomebrewRelatedPath(.downloadCache, url("~/Library/Caches/Homebrew/downloads/0f3c--gh--2.80.0.arm64_tahoe.bottle.tar.gz")),
+            ]), formula("git", "2.51.0"), formula("node", "24.9.0"),
+            formula("openssl@3", "3.5.4", dependency: true,
+                    related: [HomebrewRelatedPath(.prefixData, URL(filePath: "\(brewPrefix)/etc/openssl@3"))]), formula("libpng", "1.6.50", dependency: true),
             formula("icu4c@77", "77.1_1", dependency: true),
             cask("docker", "4.34.2", app: "Docker.app"), cask("raycast", "1.84.3", app: "Raycast.app"),
             cask("font-jetbrains-mono", "2.304"),

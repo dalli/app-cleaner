@@ -33,6 +33,17 @@ struct HomebrewViewModelTests {
         #expect(names == names.sorted { $0.localizedStandardCompare($1) == .orderedAscending })
     }
 
+    @Test func relatedPathsGroupedAndSizesLoaded() async {
+        let vm = HomebrewViewModel(engine: fastEngine())
+        await vm.load()
+        let gh = vm.items.first { $0.name == "gh" }!
+        #expect(vm.extraRelatedCount(gh) == gh.related.count - 1)
+        #expect(vm.relatedGroups(gh).map(\.kind) == [.install, .link, .data, .downloadCache])
+        await vm.loadRelatedSizes(for: gh)
+        #expect(vm.pendingRelated.isEmpty)
+        #expect(vm.relatedSize(gh.related[0]) != nil)
+    }
+
     @Test func routeAndRevealPath() async {
         let model = AppModel(engine: fastEngine(), settings: .inMemory())
         model.select(.homebrew)

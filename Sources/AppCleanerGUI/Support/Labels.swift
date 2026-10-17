@@ -221,3 +221,27 @@ extension Candidate {
 
     var isRisky: Bool { nature == .userData || share.isShared }
 }
+
+extension HomebrewRelatedPath.Kind {
+    var title: String {
+        switch self {
+        case .install: return L("설치 위치")
+        case .link: return L("링크")
+        case .prefixData: return L("Homebrew 폴더의 설정·데이터")
+        case .zap: return L("zap 규칙 파일")
+        case .data: return L("이름이 같은 폴더")
+        case .downloadCache: return L("다운로드 캐시")
+        }
+    }
+
+    /// 정리 방법·주의 (brew uninstall이 무엇을 남기는지)
+    func note(_ item: HomebrewItem) -> String? {
+        switch self {
+        case .install, .link: return L("brew uninstall이 함께 지웁니다.")
+        case .prefixData: return L("brew uninstall이 지우지 않습니다. 더 쓰지 않으면 직접 지우세요.")
+        case .zap: return L("brew uninstall --zap으로 함께 지울 수 있습니다.")
+        case .data: return L("이름만 같은 다른 프로그램의 폴더일 수 있습니다. brew uninstall이 지우지 않습니다.")
+        case .downloadCache: return L("brew cleanup으로 지울 수 있습니다.")
+        }
+    }
+}

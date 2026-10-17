@@ -61,6 +61,8 @@ struct InstallerCleanupSheet: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            // 목록이 길면 맨 아래에서 시작해 첫 제목이 가려지던 문제 — 항상 맨 위에서 시작
+            .defaultScrollAnchor(.top)
             .frame(maxHeight: 340)
         }
     }

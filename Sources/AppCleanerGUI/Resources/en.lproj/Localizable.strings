@@ -46,6 +46,7 @@
 "Homebrew zap 규칙에 포함" = "Included in the Homebrew zap rule";
 "Homebrew 기록" = "Homebrew record";
 "Homebrew 설치 항목을 확인하는 중…" = "Checking Homebrew installs…";
+"Homebrew 폴더의 설정·데이터" = "Settings and data in the Homebrew folder";
 "Homebrew 항목 종류 필터" = "Homebrew item type filter";
 "Homebrew 항목은 App Cleaner가 직접 지우지 않습니다" = "App Cleaner does not remove Homebrew items itself";
 "Homebrew로 설치한 앱입니다. 터미널에서 %@ 명령으로 Homebrew 기록도 정리할 수 있습니다." = "This app was installed with Homebrew. Run %@ in Terminal to clean up the Homebrew record too.";
@@ -60,8 +61,14 @@
 "Sentinel을 등록하지 못했습니다: %@" = "Couldn't register Sentinel: %@";
 "Spotlight 색인이 불완전해 일부 설치 앱을 확인하지 못했습니다." = "The Spotlight index is incomplete, so some installed apps couldn't be checked.";
 "Team ID" = "Team ID";
+"brew cleanup으로 지울 수 있습니다." = "Can be removed with brew cleanup.";
+"brew uninstall --zap으로 함께 지울 수 있습니다." = "Can be removed together with brew uninstall --zap.";
+"brew uninstall이 지우지 않습니다. 더 쓰지 않으면 직접 지우세요." = "Not removed by brew uninstall. Delete it yourself if you no longer need it.";
+"brew uninstall이 함께 지웁니다." = "Removed by brew uninstall.";
 "iCloud 컨테이너 이름이 번들 ID와 일치" = "iCloud container name matches the bundle ID";
 "iCloud에 동기화되는 데이터라 여기서 정리할 수 없습니다." = "This data syncs with iCloud and can't be cleaned up here.";
+"zap 규칙 파일" = "Files in zap rules";
+"zap 규칙 파일까지 제거" = "Uninstall including zap files";
 "~/.config 같은 폴더도 “낮음”으로 표시합니다. ~/.ssh, ~/.gnupg는 항상 제외합니다." = "Folders like ~/.config are shown as “Low”. ~/.ssh and ~/.gnupg are always excluded.";
 "가상 디스크(Docker.raw) 포함 · 컨테이너와 이미지가 들어 있습니다" = "Contains the virtual disk (Docker.raw) · holds your containers and images";
 "강제 종료" = "Force Quit";
@@ -100,6 +107,7 @@
 "공유 %lld" = "Shared %lld";
 "공유: %@ 사용 중" = "Shared: used by %@";
 "공유: 다른 앱이 사용 중" = "Shared: used by another app";
+"관련 항목 %lld" = "Related: %lld";
 "관리자 암호" = "Administrator password";
 "관리자 암호가 한 번 필요합니다." = "Your administrator password is needed once.";
 "관리자 헬퍼" = "Privileged helper";
@@ -148,6 +156,7 @@
 "다른 위치를 가리키는 링크라 선택할 수 없습니다." = "A link pointing elsewhere; can't be selected.";
 "다시 검사" = "Inspect Again";
 "다시 스캔" = "Scan Again";
+"다운로드 캐시" = "Download cache";
 "닫기" = "Close";
 "대기 중" = "Waiting";
 "덮어쓰기 안 함 (이름 바꿔 복원)" = "Don't overwrite (restore with a new name)";
@@ -160,6 +169,7 @@
 "로그인 항목" = "Login items";
 "로그인 항목 · 키체인 항목은 직접 지우지 않고, 정리 후 확인 방법을 안내합니다." = "Login items and keychain entries aren't removed directly; you'll get instructions after cleanup.";
 "로그인 항목 열기" = "Open Login Items";
+"링크" = "Links";
 "마무리" = "Finishing up";
 "마지막 사용" = "Last Used";
 "마지막 사용 %@" = "last used %@";
@@ -207,6 +217,7 @@
 "보호됨" = "Protected";
 "보호됨 %lld" = "Protected %lld";
 "보호됨, 선택할 수 없음" = "Protected, can't be selected";
+"복사" = "Copy";
 "복원 가능" = "Restorable";
 "복원 불가" = "Not restorable";
 "복원 불가 %lld" = "Not restorable %lld";
@@ -242,6 +253,7 @@
 "설치 앱 인벤토리" = "Installed app inventory";
 "설치 앱 확인" = "Checking installed apps";
 "설치 영수증 (pkgutil)" = "Install receipt (pkgutil)";
+"설치 위치" = "Install location";
 "설치 출처 필터" = "Install source filter";
 "설치 파일 정리" = "Installer Cleanup";
 "설치 파일 정리…" = "Clean Up Installers…";
@@ -328,7 +340,7 @@
 "유지 목록 — 고아 스캔에서 숨긴 항목" = "Keep List — hidden from orphan scans";
 "유지 목록이 비어 있습니다. 고아 잔여물 화면에서 “유지”를 누르면 여기에 추가됩니다." = "The keep list is empty. Click “Keep” in Orphaned Leftovers to add items here.";
 "의존성" = "Dependency";
-"의존성·링크·Homebrew 기록이 함께 정리되도록 터미널에서 brew uninstall로 제거하세요. 항목을 우클릭하면 제거 명령을 복사할 수 있습니다." = "Remove them with brew uninstall in Terminal so that dependencies, links, and Homebrew's records are cleaned up too. Right-click an item to copy its uninstall command.";
+"의존성·링크·Homebrew 기록이 함께 정리되도록 터미널에서 brew uninstall로 제거하세요. 항목을 고르면 제거 뒤에도 남는 설정·데이터·캐시 위치와 제거 명령을 볼 수 있습니다." = "Remove them with brew uninstall in Terminal so that dependencies, links, and Homebrew's records are cleaned up too. Select an item to see the settings, data, and caches that remain after uninstalling, along with its uninstall command.";
 "의존성으로 설치됨 %lld개" = "Installed as dependencies: %lld";
 "이 그룹을 유지 목록에 넣고 다음 스캔부터 숨깁니다" = "Adds this group to the keep list and hides it from future scans";
 "이 신뢰도에 해당하는 그룹이 없습니다" = "No groups with this confidence";
@@ -339,7 +351,9 @@
 "이름 검색" = "Search by name";
 "이름 기반 dotfile" = "Name-based dotfile";
 "이름 일치" = "Name match";
+"이름만 같은 다른 프로그램의 폴더일 수 있습니다. brew uninstall이 지우지 않습니다." = "It may belong to another program with the same name. Not removed by brew uninstall.";
 "이름으로만 찾은 항목" = "Found by name only";
+"이름이 같은 폴더" = "Folders with the same name";
 "이름이 일치해서 찾았습니다 — 확인 후 정리하세요" = "Found because the name matches — check before cleaning up";
 "이름이나 번들 ID로만 찾은 항목은 “낮음”으로 낮췄습니다. 정리 전에 해당 앱이 정말 없는지 확인하세요." = "Items found only by name or bundle ID were lowered to “Low”. Make sure the app is really gone before cleaning up.";
 "이미 삭제된 앱이 남긴 파일" = "Files left behind by deleted apps";
@@ -378,6 +392,7 @@
 "정리할 설치 파일이 없습니다" = "There are no installers to clean up";
 "정리할 잔여물이 없습니다" = "No leftovers to clean up";
 "정보원" = "Sources";
+"제거 명령" = "Uninstall command";
 "제거 명령 복사" = "Copy Uninstall Command";
 "제거 명령: %@" = "Uninstall command: %@";
 "제거할 앱을 여기에 끌어다 놓으세요" = "Drag an app here to remove it";
