@@ -13,6 +13,7 @@ final class AppModel {
     let isDemo: Bool
     let appList: AppListViewModel
     let orphans: OrphanViewModel
+    let homebrew: HomebrewViewModel
     let history: HistoryViewModel
     @ObservationIgnored let system: SystemActions
     @ObservationIgnored let sentinel: any SentinelServicing
@@ -63,6 +64,7 @@ final class AppModel {
         self.helperState = helper.state()
         self.appList = AppListViewModel(engine: engine)
         self.orphans = OrphanViewModel(engine: engine)
+        self.homebrew = HomebrewViewModel(engine: engine)
         self.history = HistoryViewModel(engine: engine)
         self.route = settings.lastRoute
         self.permissions = engine.permissions()
@@ -250,6 +252,8 @@ final class AppModel {
             return appList.focusedApp?.url.path
         case .orphans:
             return orphans.focusedPath
+        case .homebrew:
+            return homebrew.focusedItem?.location.path
         case .history:
             return history.selectedSession?.items.first.map(\.movedTo)
         case .settings:
