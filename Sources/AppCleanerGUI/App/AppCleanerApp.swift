@@ -46,6 +46,10 @@ struct AppCleanerApp: App {
 struct LaunchOptions {
     var route: SidebarRoute?
     var openAppName: String?
+    /// Homebrew 화면에서 고를 항목 이름 (`--demo-homebrew gh`)
+    var homebrewItem: String?
+    /// 설치 파일 정리 시트 열기 (`--demo-installer`)
+    var installerCleanup = false
     var showOnboarding = false
     var startOrphanScan = false
     var openPreview = false
@@ -58,6 +62,8 @@ struct LaunchOptions {
         }
         route = value(after: "--demo-route").flatMap(SidebarRoute.init(rawValue:))
         openAppName = value(after: "--demo-open")
+        homebrewItem = value(after: "--demo-homebrew")
+        installerCleanup = arguments.contains("--demo-installer")
         showOnboarding = arguments.contains("--demo-onboarding")
         startOrphanScan = arguments.contains("--demo-scan")
         openPreview = arguments.contains("--demo-preview")
@@ -110,6 +116,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--demo-dark") { NSApp.appearance = NSAppearance(named: .darkAqua) }
         Task { @MainActor in
             if opts.startOrphanScan { model.startOrphanScan() }
+            if opts.installerCleanup { model.checkInstallerLeftovers(manual: true) }
+            if let name = opts.homebrewItem {
+                model.select(.homebrew)
+                await model.homebrew.load()
+                model.homebrew.focusedID = model.homebrew.items.first { $0.name == name }?.id
+            }
             guard let name = opts.openAppName else { return }
             await model.appList.load()
             guard let app = model.appList.apps.first(where: { $0.name == name }) else { return }

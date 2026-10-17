@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- App Cleaner 앱 아이콘 원본 (시안 E 빗자루, 파란색). PNG·icns는 scripts/make-icon.swift가 만든다 (그림자 포함) -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5B9BFF"/>
+      <stop offset="1" stop-color="#2450E0"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#shine)"/>
+  <path d="M700 240 L520 520" stroke="#FFFFFF" stroke-width="56" stroke-linecap="round"/>
+  <path d="M470 486 l118 76 c-20 70 -80 150 -170 196 l-170 -110 c70 -60 150 -120 222 -162z" fill="#FFFFFF"/>
+  <path d="M372 728 l40 -62 M334 704 l40 -62 M296 680 l40 -62" stroke="#2C5BE5" stroke-width="16" stroke-linecap="round"/>
+  <rect x="600" y="650" width="74" height="74" rx="18" fill="#FFFFFF" fill-opacity="0.8" transform="rotate(14 637 687)"/>
+  <rect x="700" y="590" width="50" height="50" rx="13" fill="#FFFFFF" fill-opacity="0.5" transform="rotate(-12 725 615)"/>
+  <path d="M760 720 l12 32 32 12 -32 12 -12 32 -12 -32 -32 -12 32 -12z" fill="#FFFFFF"/>
+</svg>

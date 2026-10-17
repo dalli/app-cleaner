@@ -77,6 +77,82 @@ import CleanerTestSupport
                 == [room.appendingPathComponent("docker").path, app.standardizedFileURL.path])
     }
 
+    func related(_ item: HomebrewItem?, _ kind: HomebrewRelatedPath.Kind) -> Set<String> {
+        Set((item?.related ?? []).filter { $0.kind == kind }.map { real($0.url) })
+    }
+
+    /// 상위 폴더만 실제 경로로 (마지막 구성요소가 링크면 링크 자체)
+    func real(_ url: URL) -> String {
+        SafetyGuard.realpathOfExistingPrefix(url.deletingLastPathComponent().path) + "/" + url.lastPathComponent
+    }
+
+    @Test func collectsRelatedPathsForFormulae() throws {
+        let fx = try Fixture()
+        let brew = fx.root("opt/homebrew")
+        let gh = brew.appendingPathComponent("Cellar/gh")
+        try receipt(fx, gh.appendingPathComponent("2.80.0/INSTALL_RECEIPT.json"), ["installed_on_request": true])
+        try fx.file(gh.appendingPathComponent("2.80.0/bin/gh"))
+        let opt = try fx.symlink(brew.appendingPathComponent("opt/gh"), to: URL(fileURLWithPath: "../Cellar/gh/2.80.0"))
+        let bin = try fx.symlink(brew.appendingPathComponent("bin/gh"), to: URL(fileURLWithPath: "../Cellar/gh/2.80.0/bin/gh"))
+        let config = try fx.dir(fx.home(".config/gh"))
+        let state = try fx.dir(fx.home(".local/state/gh"))
+        let downloads = fx.home("Library/Caches/Homebrew/downloads")
+        let bottle = try fx.file(downloads.appendingPathComponent("0f3c--gh--2.80.0.arm64_tahoe.bottle.tar.gz"))
+        let manifest = try fx.file(downloads.appendingPathComponent("9a1b--gh-2.80.0.bottle_manifest.json"))
+        // 이름이 gh로 시작하는 다른 formula의 캐시는 아니다
+        try fx.file(downloads.appendingPathComponent("7c2d--ghostscript--10.05.bottle.tar.gz"))
+        try fx.file(downloads.appendingPathComponent("5e6f--gh-cli-1.0.bottle_manifest.json"))
+
+        let pg = brew.appendingPathComponent("Cellar/postgresql@17")
+        try fx.dir(pg.appendingPathComponent("17.6"))
+        let pgData = try fx.dir(brew.appendingPathComponent("var/postgresql@17"))
+        let pgLog = try fx.file(brew.appendingPathComponent("var/log/postgresql@17.log"))
+        let pgConfig = try fx.dir(fx.home("Library/Application Support/postgresql"))
+
+        // 흔한 이름은 이름 기반 폴더를 찾지 않는다
+        try fx.dir(brew.appendingPathComponent("Cellar/data/1.0"))
+        try fx.dir(fx.home(".config/data"))
+
+        let rules = RuleData(version: "t", commonNames: ["data"], exclusions: OrphanExclusions(), casks: [])
+        let items = HomebrewInventory(paths: fx.paths).items(rules: rules)
+        let ghItem = items.first { $0.name == "gh" }
+        #expect(related(ghItem, .install) == [real(gh)])
+        #expect(related(ghItem, .link) == [real(opt.deletingLastPathComponent()) + "/gh", real(bin.deletingLastPathComponent()) + "/gh"])
+        #expect(related(ghItem, .data) == [real(config), real(state)])
+        #expect(related(ghItem, .downloadCache) == [real(bottle), real(manifest)])
+        #expect(related(ghItem, .prefixData).isEmpty)
+
+        let pgItem = items.first { $0.name == "postgresql@17" }
+        #expect(related(pgItem, .prefixData) == [real(pgData), real(pgLog)])
+        #expect(related(pgItem, .data) == [real(pgConfig)])
+        #expect(related(items.first { $0.name == "data" }, .data).isEmpty)
+    }
+
+    @Test func collectsZapFilesExecutableNamedDataAndCaskCache() throws {
+        let fx = try Fixture()
+        let brew = fx.root("opt/homebrew")
+        let room = brew.appendingPathComponent("Caskroom/gcloud-cli")
+        try receipt(fx, room.appendingPathComponent(".metadata/INSTALL_RECEIPT.json"), [
+            "source": ["version": "545.0.0"],
+            "uninstall_artifacts": [["binary": ["gcloud"]], ["zap": [["trash": ["~/.config/gcloud-zap", "~/Library/Caches/gcloud-*"]]]]],
+        ])
+        let exe = try fx.file(room.appendingPathComponent("545.0.0/google-cloud-sdk/bin/gcloud"))
+        let link = try fx.symlink(brew.appendingPathComponent("bin/gcloud"), to: exe)
+        let zapFile = try fx.dir(fx.home(".config/gcloud-zap"))
+        let zapWild = try fx.dir(fx.home("Library/Caches/gcloud-logs"))
+        // 실행 파일 이름(gcloud)으로 찾는 데이터 — cask 이름(gcloud-cli)과 다르다
+        let data = try fx.dir(fx.home(".config/gcloud"))
+        let cached = try fx.file(fx.home("Library/Caches/Homebrew/downloads/ab12--google-cloud-cli-darwin-arm.tar.gz"))
+        try fx.symlink(fx.home("Library/Caches/Homebrew/Cask/gcloud-cli--545.0.0.tar.gz"), to: cached)
+
+        let item = HomebrewInventory(paths: fx.paths).items().first { $0.name == "gcloud-cli" }
+        #expect(related(item, .link) == [real(link.deletingLastPathComponent()) + "/gcloud"])
+        #expect(related(item, .zap) == [real(zapFile), real(zapWild)])
+        #expect(related(item, .data) == [real(data)])
+        #expect(related(item, .downloadCache) == [real(cached)])
+        #expect(item?.zapCommand == "brew uninstall --zap --cask gcloud-cli")
+    }
+
     @Test func readsIntelPrefixAndEmptyWithoutHomebrew() throws {
         let fx = try Fixture()
         #expect(HomebrewInventory(paths: fx.paths).items().isEmpty)
