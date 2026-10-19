@@ -1,6 +1,6 @@
 # 패키지 매니저로 설치한 CLI 도구 정리 (#39)
 
-`.app`이 아닌 CLI 도구(npm·cargo·pipx·uv로 설치)와 그 데이터, 패키지 매니저 캐시를 찾아 **되돌릴 수 있게** 정리한다.
+`.app`이 아닌 CLI 도구(npm·cargo·pipx·uv·설치 스크립트로 설치)로 설치한 것과 그 데이터, 패키지 매니저 캐시를 찾아 **되돌릴 수 있게** 정리한다.
 앱 제거·고아 스캔과 같은 실행 경로(휴지통 이동 + 삭제 기록 + 복원)를 그대로 쓴다.
 
 ## 1. 조사 결과
@@ -15,6 +15,7 @@
 | cargo (`install`) | `~/.cargo/.crates2.json` (예전 `.crates.toml`) | `~/.cargo/bin/<bin>` | ✅ |
 | pipx | `<PIPX_HOME>/venvs/<name>/pipx_metadata.json` | venv + `~/.local/bin`·`~/.local/share/man`의 링크 | ✅ |
 | uv (`tool install`) | `~/.local/share/uv/tools/<name>/uv-receipt.toml` | 도구 폴더 + receipt `install-path` 중 도구 폴더를 가리키는 링크 | ✅ |
+| standalone (설치 스크립트) | **없음** — 규칙 데이터 `standalone-tools.json`이 실행 파일·데이터 경로를 알려 준다 | 그 실행 파일 경로들 | ✅ |
 | Homebrew formula | `Cellar/<name>/<ver>/INSTALL_RECEIPT.json` | `Cellar` + `opt`·`bin` 링크 + 의존성 | ❌ 아래 |
 | bun·pnpm 전역 | `~/.bun/install/global/package.json`, `~/Library/pnpm/global/*/package.json` | `node_modules/<name>` + bin 링크 | ❌ 아래 |
 | go (`install`) | 없음 (바이너리 안의 build info뿐) | `~/go/bin/<bin>` | ❌ 아래 |
@@ -22,6 +23,28 @@
 
 npm prefix 후보: `/opt/homebrew`, `/usr/local`, `~/.nvm/versions/node/*`, fnm 버전별 폴더, `~/.npmrc`의 `prefix`, `~/.npm-global`, `~/.local`.
 node에 딸려 오는 `npm`·`corepack`은 목록에서 뺀다 (지우면 npm 자체가 망가진다).
+
+### 1.1.1 설치 스크립트(standalone) — 기록이 없는 도구
+
+`curl … | sh`로 설치하는 도구(opencode·omo·claude·codex·bun·deno 등)는 **설치 기록을 남기지 않는다.**
+실행 파일 하나와 데이터 폴더만 있는 경우가 많아 다른 매니저 탐지로는 아예 잡히지 않는다. 두 경로로 찾는다.
+
+| 방법 | 대상 | 신뢰도 | 기본 선택 |
+|---|---|---|---|
+| 규칙 데이터 | `standalone-tools.json`의 `executables` 경로 중 **존재하는 것** | 높음 | ✅ |
+| 자동 탐지 | `~/.local/bin`·`~/bin`의 실행 파일 중 다른 매니저·규칙 데이터가 설명하지 않는 것 | 낮음 | ❌ |
+
+- 규칙 데이터 항목: `name`, `executables`(실행 파일 경로, 앞에 있는 것부터 확인), `versionFiles`(버전 파일),
+  `dataPaths`(데이터 폴더 — **이름 추측을 하지 않고 이 목록만 따른다**), `reinstall`(재설치 안내).
+  `dataPaths`는 `~/` 를 쓰고 외부 데이터와 같이 `paths.mapExternalPath`로 푼다.
+- 자동 탐지는 **사용자 소유 bin 폴더만** 본다. `/usr/local/bin`처럼 관리자 소유인 곳은 옮길 수 없고 공식 설치 프로그램과 구분도
+  안 되므로, 규칙 데이터(예: `ollama`)로만 잡는다.
+- 자동 탐지에서 **심볼릭 링크는 제외한다.** 링크라면 다른 매니저 설치 항목이거나(링크 대상만 옮기면 다른 프로그램을 망가뜨린다),
+  규칙 데이터가 정한 도구다.
+- 데이터 폴더에 실행 파일이 있어도(`~/.bun` 안에 `~/.bun/bin/bun`) 규칙 데이터가 정한 데이터로 보여 준다.
+  이름 추칭 데이터는 반대로 설치 위치를 품으면 건너뛴다(옮기면 실행 파일까지 사라짐). 계획 단계에서 중복은 정리된다.
+- 지운 뒤에는 설치 기록이 없어 **설치 스크립트를 다시 실행해야 한다.** 재설치 명령을 규칙 데이터에 담아 안내한다.
+  짐작한 항목은 설치 방법 자체를 알 수 없으므로 제거 시 경고를 함께 낸다.
 
 ### 1.2 제거 방식 — 매니저 명령 대신 파일 이동
 
@@ -37,6 +60,7 @@ node에 딸려 오는 `npm`·`corepack`은 목록에서 뺀다 (지우면 npm �
 | npm | `lib/node_modules/.package-lock.json`(숨은 lockfile) | npm이 `node_modules`가 더 최근에 바뀌었으면 무시하고 다시 만든다. 영향 없음 |
 | cargo | `.crates2.json`의 항목 | `cargo install --list`에 남는다. 다시 설치하면 실행 파일이 없으므로 그대로 설치되고 기록이 갱신된다. 안내 문구로 알린다 |
 | pipx·uv | 없음 (venv·도구 폴더 자체가 기록) | — |
+| standalone | 없음 (설치 기록을 남기지 않는다) | 지운 뒤 설치 스크립트를 다시 실행해야 한다. 재설치 명령을 안내한다 |
 
 실행 파일 링크는 **설치 폴더를 가리키는 심볼릭 링크만** 설치 항목으로 본다. receipt가 다른 파일을 가리켜도(손상·조작) 옮기지 않는다.
 휴지통으로 옮길 때 링크는 링크 자체만 옮겨지고(대상은 그대로), 되돌리면 링크로 복원된다 (테스트 `removeAndRestoreKeepsLinks`).
@@ -44,15 +68,17 @@ node에 딸려 오는 `npm`·`corepack`은 목록에서 뺀다 (지우면 npm �
 ### 1.3 관리자 소유 위치
 
 root 소유 `/usr/local/lib/node_modules`(공식 node 설치 프로그램) 등 사용자가 쓸 수 없는 위치는 옮기지 않고 매니저 명령(`sudo npm uninstall -g …`)을 안내한다 (`detectOnly`).
+설치 스크립트 도구에도 적용하되, 제거 명령이 없으므로 "직접 정리하세요"와 경로를 안내한다 (`EngineText.standaloneNeedsAdmin`).
 관리자 작업 스크립트(`privileged-op.sh`)의 허용 위치는 `/Library`·`/Applications` 아래로 고정되어 있고, 이 범위를 넓히는 것은 Phase 3 권한 헬퍼(#17)에서 다룬다.
 
-### 1.4 데이터 — 이름 기반이라 낮음
+### 1.4 데이터 — 설치 기록이 있는 도구는 이름 기반이라 낮음
 
 패키지 이름(scope 제외)·실행 파일 이름과 같은 폴더를 찾는다: `~/.<name>`, `~/.config/<name>`, `~/.local/share/<name>`, `~/.local/state/<name>`, `~/.cache/<name>`, `~/Library/Application Support/<name>`, `~/Library/Caches/<name>`.
 
 - 신뢰도 **낮음**, 기본 **미선택** (이름만 같은 다른 프로그램의 데이터일 수 있음).
 - 짧거나 흔한 이름(4자 미만, `common-names.json`), 보안 폴더(`securityDotfiles`), 패키지 매니저 자신의 폴더(`~/.npm`, `~/.cargo`, `~/.local` …)와 설치 위치를 품는 폴더는 찾지 않는다.
 - 여러 설치(예: nvm의 두 node 버전에 같은 패키지)가 같은 폴더를 찾으면 **공유**로 표시한다. CLI `--with-data`는 그 설치를 모두 함께 지울 때만 옮긴다.
+- **규칙 데이터에 있는 설치 스크립트 도구는 예외**다. `dataPaths`에 적힌 폴더만 보고(이름 추측 없음), 그 안에 실행 파일이 있어도 보여 준다.
 
 ### 1.5 패키지 매니저 캐시
 
@@ -70,13 +96,15 @@ root 소유 `/usr/local/lib/node_modules`(공식 node 설치 프로그램) 등 �
 
 | 위치 | 내용 |
 |---|---|
-| `CleanerCore/Models/Packages.swift` | `PackageManager`, `InstalledPackage`, `PackageReport`, `PackageScanReport`, `PackageScanOptions` |
-| `CleanerCore/Packages/PackageInventory.swift` | 매니저별 설치 기록 읽기 |
+| `CleanerCore/Models/Packages.swift` | `PackageManager`, `Detection`, `InstalledPackage`, `PackageReport`, `PackageScanReport`, `PackageScanOptions` |
+| `CleanerCore/Contracts/RuleData.swift` | `StandaloneTool`(규칙 데이터 항목), `RuleData.standaloneTools` |
+| `CleanerCore/Resources/RuleData/standalone-tools.json` | 설치 스크립트 도구의 실행 파일·버전 파일·데이터 폴더·재설치 명령 |
+| `CleanerCore/Packages/PackageInventory.swift` | 매니저별 설치 기록 읽기 + `standalonePackages()`·`guessedStandalonePackages()` |
 | `CleanerCore/Packages/PackageScanner.swift` | 후보 만들기 (설치 항목·데이터·캐시), SafetyGuard·쓰기 권한 판정, 크기 계산 |
 | `CleanupPlanner.plan(for: PackageScanReport, …)` | `SessionKind.packageRemoval` 계획 (이동 단계만) |
 | `CleanerEngine.scanPackages(options:)` | 엔진 진입점 (기본 구현은 빈 결과 — GUI 데모 엔진) |
-| `ItemCategory.package`, `EvidenceSource.packageManager` | 설치 항목 카테고리·정보원 |
-| `SafetyGuard.homeExactRoots` | `~/.local/bin`, `~/.cargo/bin`, `~/.local/pipx/venvs`, `~/.local/share/uv/tools` 등 설치 위치의 상위 폴더 자체를 보호 |
+| `ItemCategory.package`, `EvidenceSource.packageManager`·`.standaloneScript` | 설치 항목 카테고리·정보원 |
+| `SafetyGuard.homeExactRoots` | `~/.local/bin`, `~/.cargo/bin`, `~/.local/pipx/venvs`, `~/.local/share/uv/tools`, `~/bin` 등 설치 위치의 상위 폴더 자체를 보호 |
 
 ### CLI
 
@@ -87,10 +115,14 @@ appcleaner packages caches [--manager …] [--json]
 appcleaner packages caches clean [--manager …] [--dry-run] [--yes] [--json]
 ```
 
-- 이름은 `@scope/name`, scope를 뺀 이름, `매니저:이름`(예: `npm:typescript`)으로 지정한다. 같은 이름의 설치가 여럿이면 경로(패키지 폴더 또는 실행 파일 링크)로 지정하게 한다.
+- 이름은 `@scope/name`, scope를 뺀 이름, `매니저:이름`(예: `npm:typescript`, `standalone:omo`)으로 지정한다. 같은 이름의 설치가 여럿이면 경로(패키지 폴더 또는 실행 파일 링크)로 지정하게 한다.
+- 짐작한 항목(`[신뢰도 낮음 · 설치 방식 미확인]`)은 기본 미선택이지만, 이름을 직접 적어 제거하면 경고와 함께 옮긴다 — 확인 질문·`--dry-run`·되돌리기는 그대로 지킨다.
 - 되돌리기는 기존과 같다: `appcleaner history` → `appcleaner restore <세션 ID>`.
 
 ## 3. 남은 작업
+
+- GUI 화면 (사이드바 "CLI 도구"): 목록·검사기·정리 시트 — 엔진 API는 준비됨
+- `standalone-tools.json` 확장: 설치 스크립트 도구를 계속 늘린다. 버전 파일이 있는 도구(`versionFiles`)를 늘리면 버전이 보인다
 
 - GUI 화면 (사이드바 "CLI 도구"): 목록·검사기·정리 시트 — 엔진 API는 준비됨
 - bun·pnpm 전역 패키지: 전역 `package.json`에 의존성 기록이 있어 폴더만 옮기면 다음 전역 설치 때 되살아난다 → 기록 갱신 방식(매니저 명령 위임 등) 결정 필요

@@ -8,17 +8,30 @@ import Foundation
 /// | cargo | `~/.cargo/.crates2.json` (`.crates.toml`) | `~/.cargo/bin/<bin>` |
 /// | pipx | `<PIPX_HOME>/venvs/<name>/pipx_metadata.json` | venv + `~/.local/bin`·`~/.local/share/man`에서 venv를 가리키는 링크 |
 /// | uv | `~/.local/share/uv/tools/<name>/uv-receipt.toml` | 도구 폴더 + receipt의 `install-path` 중 도구 폴더를 가리키는 링크 |
+/// | standalone | 규칙 데이터(`standalone-tools.json`)의 실행 파일 경로 | 그 경로들 (설치 스크립트는 설치 기록을 남기지 않는다) |
+/// | standalone | 규칙 데이터(`standalone-tools.json`)의 실행 파일 경로 | 그 경로 (설치 스크립트는 설치 기록을 남기지 않는다) |
 ///
 /// 실행 파일 링크는 **설치 폴더를 가리키는 심볼릭 링크만** 설치 항목으로 본다 (기록이 다른 파일을 가리켜도 옮기지 않는다).
 public struct PackageInventory: Sendable {
     public let paths: SystemPaths
+    /// 설치 스크립트 도구 목록 (규칙 데이터). 갱신된 규칙 데이터도 따라가도록 지연 조회한다
+    let standaloneToolsProvider: @Sendable () -> [StandaloneTool]
 
     /// node에 딸려 오는 패키지 — 지우면 npm 자체가 망가진다
     static let bundledNpmPackages: Set<String> = ["npm", "corepack"]
 
-    public init(paths: SystemPaths) {
+    public init(paths: SystemPaths, standaloneTools: [StandaloneTool] = []) {
         self.paths = paths
+        standaloneToolsProvider = { standaloneTools }
     }
+
+    /// 규칙 데이터가 나중에 갱신돼도 다음 검사부터 따라간다 (`RuleDataStore`)
+    public init(paths: SystemPaths, rules: any RuleDataProviding) {
+        self.paths = paths
+        standaloneToolsProvider = { rules.current().standaloneTools }
+    }
+
+    var standaloneTools: [StandaloneTool] { standaloneToolsProvider() }
 
     public func packages(_ options: PackageScanOptions = PackageScanOptions()) -> [InstalledPackage] {
         var out: [InstalledPackage] = []
@@ -26,6 +39,11 @@ public struct PackageInventory: Sendable {
         if options.includes(.cargo) { out += cargoPackages() }
         if options.includes(.pipx) { out += pipxPackages() }
         if options.includes(.uv) { out += uvPackages() }
+        if options.includes(.standalone) {
+            let known = standalonePackages()
+            out += known
+            out += guessedStandalonePackages(known: out)
+        }
         return out
     }
 
@@ -239,6 +257,80 @@ public struct PackageInventory: Sendable {
             }
         }
         return nil
+    }
+
+    // MARK: - standalone (설치 스크립트)
+
+    /// 규칙 데이터(`standalone-tools.json`)에 있는 도구. 실행 파일이 실제로 있는 것만 설치 항목으로 본다.
+    ///
+    /// 실행 파일 경로는 규칙 데이터가 정한 순서대로 확인하고, **처음 발견한 경로들만** 쓴다
+    /// (같은 이름의 다른 사본까지 옮기면 안 되므로). 심볼릭 링크라면 링크 자체만 옮긴다.
+    func standalonePackages() -> [InstalledPackage] {
+        let fm = FileManager.default
+        return standaloneTools.compactMap { tool in
+            let found = tool.executables.compactMap { paths.mapExternalPath($0) }.filter { fm.itemExists($0) }
+            guard !found.isEmpty else { return nil }
+            return InstalledPackage(manager: .standalone, name: tool.name, version: standaloneVersion(tool),
+                                    root: found[0].deletingLastPathComponent(),
+                                    installPaths: found,
+                                    executables: found.map(\.lastPathComponent),
+                                    detection: .recorded, reinstallHint: tool.reinstall)
+        }
+    }
+
+    /// 버전 파일 내용에서 버전 문자열을 뽑는다 (첫 줄 전체). 파일이 없으면 nil.
+    func standaloneVersion(_ tool: StandaloneTool) -> String? {
+        for rel in tool.versionFiles {
+            guard let url = paths.mapExternalPath(rel),
+                  let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            let line = text.split(whereSeparator: \.isNewline).first.map(String.init)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !line.isEmpty { return line }
+        }
+        return nil
+    }
+
+    /// 자동 탐지 대상 bin 폴더. 설치 스크립트가 실행 파일을 두는 곳이다.
+    ///
+    /// 사용자 소유 폴더만 본다. `/usr/local/bin`처럼 관리자 소유인 곳은 옮길 수 없어(root 소유) 안내만 되고,
+    /// Homebrew·공식 설치 프로그램의 실행 파일과 구분도 안 되므로 규칙 데이터로만 찾는다.
+    var standaloneBinDirs: [URL] {
+        let fm = FileManager.default
+        return [paths.home(".local/bin"), paths.home("bin")]
+            .filter { fm.isDirectory($0) && access($0.path, W_OK) == 0 }
+    }
+
+    /// 규칙 데이터에 없는 설치 스크립트 도구를 `~/.local/bin` 등에서 찾는다.
+    ///
+    /// - 다른 매니저가 이미 설명하는 링크(npm·pipx·uv·cargo)와 규칙 데이터에 있는 도구는 제외한다.
+    /// - 이름만으로 판정하므로 **낮음 · 기본 미선택**이다 (`detection: .guessed`).
+    func guessedStandalonePackages(known: [InstalledPackage]) -> [InstalledPackage] {
+        let fm = FileManager.default
+        var claimed = Set<String>()
+        for p in known {
+            claimed.insert(SafetyGuard.key(SafetyGuard.normalize(p.location.path)))
+            for path in p.installPaths { claimed.insert(SafetyGuard.key(SafetyGuard.normalize(path.path))) }
+        }
+        let knownNames = Set(known.map { $0.name.lowercased() })
+        var out: [InstalledPackage] = []
+        for dir in standaloneBinDirs {
+            for url in fm.children(of: dir).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                let name = url.lastPathComponent
+                var isDir: ObjCBool = false
+                guard Self.isPlainName(name), !name.hasPrefix("."),
+                      fm.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue,
+                      fm.isExecutableFile(atPath: url.path) else { continue }
+                guard !knownNames.contains(name.lowercased()) else { continue }
+                // 다른 매니저의 설치 항목(또는 링크)이면 이미 목록에 있다
+                guard !claimed.contains(SafetyGuard.key(SafetyGuard.normalize(url.path))) else { continue }
+                // 링크는 매니저 설치 항목일 수 있다. 규칙 데이터에 없는 링크는 짐작하지 않는다 (대상만 옮기면 깨진다)
+                guard !fm.isSymlink(url) else { continue }
+                claimed.insert(SafetyGuard.key(SafetyGuard.normalize(url.path)))
+                out.append(InstalledPackage(manager: .standalone, name: name, root: dir,
+                                            installPaths: [url], executables: [name], detection: .guessed))
+            }
+        }
+        return out
     }
 
     // MARK: - 공용

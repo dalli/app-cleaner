@@ -132,7 +132,7 @@ appcleaner remove Foo --dry-run                  # cleanup plan as JSON
 appcleaner remove Foo                            # confirm, then move to Trash / holding folder
 appcleaner orphans --min-confidence medium       # scan for orphaned leftovers
 appcleaner orphans clean --dry-run               # orphan cleanup plan (default: high confidence + not user data)
-appcleaner packages                              # CLI tools installed with npm/cargo/pipx/uv + data with the same name
+appcleaner packages                              # CLI tools installed with npm/cargo/pipx/uv or an install script + their data
 appcleaner packages remove <name> --dry-run      # plan to remove a CLI tool (--with-data: its data too)
 appcleaner packages caches clean --dry-run       # plan to clean package manager download caches
 appcleaner history                               # removal history
@@ -159,7 +159,8 @@ Covers Phases 1a, 1b, 2, and 3 of plan.md. Remaining work is tracked in [issues 
 - Distribution: **no notarization or Developer ID signing** (see [First launch](#first-launch--allow-it-in-gatekeeper)). Evaluating Sparkle auto-updates (#48), Homebrew CLI tap (#15), rotating the rule-data signing key (#20)
 - VM and real-device QA matrix (#21), GUI gaps (#22)
 - Localization: the GUI and CLI support Korean, English, and Japanese (English for any other language). Japanese UI review and translation proofreading: #27
-- Cleaning up CLI tools installed with a package manager (npm, cargo, pipx, uv), their data and caches: CLI only — [docs/packages.md](docs/packages.md) (#39)
+- Cleaning up CLI tools installed with a package manager (npm, cargo, pipx, uv) or an install script (`curl … | sh`), their data and caches: CLI only — [docs/packages.md](docs/packages.md) (#39)
+  - Install scripts leave no install record, so known tools are matched exactly from rule data and any other executable in `~/.local/bin` is shown by name only, at **low confidence and unselected by default**
 
 ## Feedback
 

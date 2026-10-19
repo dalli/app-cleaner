@@ -155,6 +155,7 @@ extension EvidenceSource {
         case .homebrewRecord: return L("Homebrew Caskroom 기록")
         case .pathRule: return L("경로 규칙")
         case .packageManager: return L("패키지 매니저 설치 기록")
+        case .standaloneScript: return L("설치 스크립트 경로 규칙")
         }
     }
 }

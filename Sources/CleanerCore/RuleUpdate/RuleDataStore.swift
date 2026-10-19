@@ -20,6 +20,7 @@ public final class RuleDataStore: RuleDataProviding, @unchecked Sendable {
     static let commonNamesFile = "common-names.json"
     static let exclusionsFile = "orphan-exclusions.json"
     static let casksFile = "homebrew-casks.json"
+    static let standaloneFile = "standalone-tools.json"
 
     public init(paths: SystemPaths, bundledDirectory: URL? = BundledRuleData.resourceDirectory(),
                 verifier: RuleDataVerifier = .embedded) {
@@ -87,6 +88,9 @@ public final class RuleDataStore: RuleDataProviding, @unchecked Sendable {
         }
         if let casks = try decode([HomebrewCask].self, casksFile) {
             result.casks = casks
+        }
+        if let standalone = try decode([StandaloneTool].self, standaloneFile) {
+            result.standaloneTools = standalone
         }
         result.signatureVerified = true
         result.updatedAt = manifest.updatedDate ?? FileDates.modified(directory.appendingPathComponent(RuleDataVerifier.manifestName))

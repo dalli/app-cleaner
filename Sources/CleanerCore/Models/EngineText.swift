@@ -224,6 +224,20 @@ extension EngineText {
         case packageManagerCache
         case packageCacheRedownloaded
 
+        // MARK: 설치 스크립트 도구 (docs/packages.md)
+
+        /// `args`: 도구 이름 (규칙 데이터에 있는 도구)
+        case standaloneInstalled
+        /// `args`: 도구 이름 (실행 파일만 보고 짐작한 것)
+        case standaloneGuessed
+        /// `args`: 도구 이름
+        case standaloneData
+        case standaloneNoRecord
+        /// `args`: 재설치 방법
+        case standaloneReinstall
+        /// `args`: 옮기지 못한 경로
+        case standaloneNeedsAdmin
+
         // MARK: 설치 파일 정리
 
         /// `args`: 파일 이름
@@ -448,6 +462,12 @@ extension EngineText {
             case .cargoRecordRemains: return "cargo 설치 기록(~/.cargo/.crates2.json)에 %@ 항목이 남음 — 다시 설치하면 갱신됨"
             case .packageManagerCache: return "%@ 다운로드 캐시"
             case .packageCacheRedownloaded: return "지우면 다음 설치 때 다시 내려받음"
+            case .standaloneInstalled: return "설치 스크립트가 설치한 실행 파일: %@"
+            case .standaloneGuessed: return "설치 기록이 없는 실행 파일로 보임: %@ (설치 방식 미확인)"
+            case .standaloneData: return "설치 스크립트 도구의 데이터(%@)"
+            case .standaloneNoRecord: return "%@ 은(는) 설치 스크립트로 설치돼 설치 기록이 남아 있지 않습니다 — 지운 뒤에는 설치 스크립트를 다시 실행해야 합니다"
+            case .standaloneReinstall: return "다시 설치하려면: %@"
+            case .standaloneNeedsAdmin: return "관리자 소유 위치라 옮기지 않음 — %@ 를 직접 정리하세요"
 
             case .installerFile: return "App Cleaner 설치 파일 (%@)"
             case .installerAppCopy: return "App Cleaner %@ 사본 (실행 중인 버전 %@)"
