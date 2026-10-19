@@ -4,32 +4,61 @@ import Foundation
 public enum PackageManager: String, Codable, Sendable, CaseIterable {
     /// `npm install -g` — `<prefix>/lib/node_modules`
     case npm
+    /// `bun add -g` — `~/.bun/install/global/node_modules`
+    case bun
+    /// `pnpm add -g` — `~/Library/pnpm/global/<major>/node_modules`
+    case pnpm
     /// `cargo install` — `~/.cargo/.crates2.json`
     case cargo
     /// `pipx install` — `<PIPX_HOME>/venvs/*/pipx_metadata.json`
     case pipx
     /// `uv tool install` — `~/.local/share/uv/tools/*/uv-receipt.toml`
     case uv
+    /// 설치 스크립트(`curl … | sh`) — 설치 기록이 없다. 규칙 데이터에 있는 도구와 `~/.local/bin` 자동 탐지로 찾는다
+    case standalone
 
     /// 사람이 읽는 이름 (번역하지 않는 고유 명칭)
     public var displayName: String {
         switch self {
         case .npm: return "npm"
+        case .bun: return "bun"
+        case .pnpm: return "pnpm"
         case .cargo: return "cargo"
         case .pipx: return "pipx"
         case .uv: return "uv tool"
+        case .standalone: return "standalone"
         }
     }
 
-    /// 패키지 매니저 자체의 제거 명령 (안내용 — 실행하지 않는다)
-    public func uninstallCommand(_ name: String) -> String {
+    /// 패키지 매니저 자체의 제거 명령 (안내용 — 실행하지 않는다). 제거 명령이 없는 설치 방식은 nil
+    public func uninstallCommand(_ name: String) -> String? {
         switch self {
         case .npm: return "npm uninstall -g \(name)"
+        case .bun: return "bun remove -g \(name)"
+        case .pnpm: return "pnpm remove -g \(name)"
         case .cargo: return "cargo uninstall \(name)"
         case .pipx: return "pipx uninstall \(name)"
         case .uv: return "uv tool uninstall \(name)"
+        case .standalone: return nil
         }
     }
+
+    /// **파일을 옮겨서 지울 수 없고** 매니저 명령만 안내하는 설치 방식 (docs/packages.md 1.5).
+    ///
+    /// 이 매니저들은 전역 설치 기록(잠금 파일)을 따로 관리한다. 폴더만 옮기면 다음 전역 설치 때 **되살아난다**
+    /// (샌드박스에서 bun·pnpm 모두 확인) — 옮겼는데 안 지워진 상태가 사용자를 가장 속이므로 옮기지 않는다.
+    public var isCommandOnly: Bool { self == .bun || self == .pnpm }
+
+    /// `--manager` 안내에 쓰는 이름 목록 (오류 문구에 노출된다)
+    public static var names: String { allCases.map(\.rawValue).joined(separator: ", ") }
+}
+
+/// 설치 항목의 발견 방식
+public enum Detection: String, Codable, Sendable, Hashable {
+    /// 설치 기록(규칙 데이터)에서 찾음
+    case recorded
+    /// 설치 기록 없이 실행 파일만 보고 짐작함 (이름만으로 판정하므로 신뢰도 낮음)
+    case guessed
 }
 
 /// 패키지 매니저로 설치한 패키지 1개
@@ -45,11 +74,17 @@ public struct InstalledPackage: Codable, Sendable, Hashable, Identifiable {
     public var installPaths: [URL]
     /// 실행 파일 이름
     public var executables: [String]
+    /// 발견 방식. 이전 기록에 없으면 설치 기록(`.recorded`)으로 읽는다
+    public var detection: Detection?
+    /// 재설치 방법 안내 (설치 스크립트 도구 — 규칙 데이터에 있을 때만)
+    public var reinstallHint: String?
 
     public var id: String { "\(manager.rawValue):\(installPaths.first?.path ?? root.path)" }
     /// 대표 경로 (CLI에서 패키지를 경로로 지정할 때 쓰는 값)
     public var location: URL { installPaths.first ?? root }
     public var title: String { version.map { "\(name) \($0)" } ?? name }
+    /// 설치 기록 없이 짐작한 항목인지
+    public var isGuessed: Bool { detection == .guessed }
 
     /// `path`가 이 패키지의 설치 항목인지 (대소문자·유니코드 정규화 무시)
     public func isInstallPath(_ path: String) -> Bool {
@@ -58,7 +93,7 @@ public struct InstalledPackage: Codable, Sendable, Hashable, Identifiable {
     }
 
     public init(manager: PackageManager, name: String, version: String? = nil, root: URL, rootLabel: String? = nil,
-                installPaths: [URL], executables: [String] = []) {
+                installPaths: [URL], executables: [String] = [], detection: Detection? = nil, reinstallHint: String? = nil) {
         self.manager = manager
         self.name = name
         self.version = version
@@ -66,6 +101,8 @@ public struct InstalledPackage: Codable, Sendable, Hashable, Identifiable {
         self.rootLabel = rootLabel
         self.installPaths = installPaths
         self.executables = executables
+        self.detection = detection
+        self.reinstallHint = reinstallHint
     }
 }
 

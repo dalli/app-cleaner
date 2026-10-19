@@ -1,0 +1,65 @@
+[
+  {
+    "name": "opencode",
+    "executables": ["~/.opencode/bin/opencode", "~/.local/bin/opencode", "~/.config/opencode/bin/opencode"],
+    "versionFiles": ["~/.opencode/VERSION", "~/.local/share/opencode/version"],
+    "dataPaths": ["~/.opencode", "~/.config/opencode", "~/.local/share/opencode", "~/.cache/opencode"],
+    "reinstall": "curl -fsSL https://opencode.ai/install | bash"
+  },
+  {
+    "name": "omo",
+    "executables": ["~/.local/bin/omo", "~/.omo/bin/omo"],
+    "versionFiles": ["~/.omo/VERSION", "~/.omo/version"],
+    "dataPaths": ["~/.omo"],
+    "reinstall": null
+  },
+  {
+    "name": "claude",
+    "executables": ["~/.local/bin/claude", "~/.claude/local/claude"],
+    "versionFiles": [],
+    "dataPaths": ["~/.claude", "~/.local/share/claude", "~/.cache/claude", "~/Library/Caches/claude"],
+    "reinstall": "claude update"
+  },
+  {
+    "name": "codex",
+    "executables": ["~/.local/bin/codex", "~/.codex/bin/codex"],
+    "versionFiles": ["~/.codex/packages/standalone/auto-update-version"],
+    "dataPaths": ["~/.codex"],
+    "reinstall": "npm install -g @openai/codex"
+  },
+  {
+    "name": "codegraph",
+    "executables": ["~/.local/bin/codegraph"],
+    "versionFiles": [],
+    "dataPaths": ["~/.codegraph"],
+    "reinstall": "npm install -g @codegraph/cli"
+  },
+  {
+    "name": "bun",
+    "executables": ["~/.bun/bin/bun"],
+    "versionFiles": [],
+    "dataPaths": ["~/.bun"],
+    "reinstall": "curl -fsSL https://bun.sh/install | bash"
+  },
+  {
+    "name": "deno",
+    "executables": ["~/.deno/bin/deno"],
+    "versionFiles": [],
+    "dataPaths": ["~/.deno"],
+    "reinstall": "curl -fsSL https://deno.land/install.sh | sh"
+  },
+  {
+    "name": "ollama",
+    "executables": ["/usr/local/bin/ollama", "/opt/homebrew/bin/ollama", "~/.local/bin/ollama"],
+    "versionFiles": [],
+    "dataPaths": ["~/.ollama"],
+    "reinstall": "https://ollama.com/download"
+  },
+  {
+    "name": "cursor-agent",
+    "executables": ["~/.local/bin/cursor-agent", "~/.local/bin/agent"],
+    "versionFiles": [],
+    "dataPaths": ["~/.local/share/cursor-agent", "~/.cursor"],
+    "reinstall": "curl https://cursor.com/install -fsS | bash"
+  }
+]

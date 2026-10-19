@@ -166,7 +166,11 @@ struct CLI {
                     for n in c.notes { err("! \(r.package.name): \(format.engine(n))") }
                 }
             }
-            for c in r.installCandidates where c.isSelected && c.isSelectable { selected.insert(c.path) }
+            for c in r.installCandidates where c.isSelectable { selected.insert(c.path) }
+            // 이름을 직접 적은 것은 제거 의도다. 기본 미선택(짝작한 항목)이어도 옮긴다 — 확인과 되돌리기는 그대로 지킨다
+            if r.package.isGuessed && !json {
+                out(t("! %@: 설치 기록이 없는 실행 파일입니다. 지우면 설치 방법이 없습니다", r.package.name))
+            }
             guard withData else { continue }
             for c in r.dataCandidates where c.isSelectable {
                 // 함께 찾은 다른 설치도 이번에 지우는 경우에만 옮긴다.
@@ -324,6 +328,8 @@ struct CLI {
         let install = report.packages.reduce(Int64(0)) { $0 + $1.installSize }
         let data = report.dataSize
         out(t("패키지 %lld개 · 설치 %@ · 이름이 같은 데이터 %@", report.packages.count, format.size(install), format.size(data)))
+        let guessed = report.packages.filter { $0.package.isGuessed }.count
+        if guessed > 0 { out(t("설치 기록이 없어 짐작한 항목 %lld개 — 실행 파일만으로 찾았습니다 (기본 미선택)", guessed)) }
         var groups: [(key: String, items: [PackageReport])] = []
         for r in report.packages {
             let key = r.package.manager.displayName + (r.package.rootLabel.map { " (\($0))" } ?? "")
@@ -334,6 +340,10 @@ struct CLI {
             for r in g.items {
                 var line = "  \(r.package.title)  \(format.size(r.installSize))"
                 if !r.package.executables.isEmpty { line += "  " + t("실행 파일: %@", r.package.executables.joined(separator: ", ")) }
+                // 설치 기록이 없어 짐작한 항목은 이름만으로 판정한 것이므로 표시한다
+                if r.package.isGuessed { line += "  " + t("[신뢰도 낮음 · 설치 방식 미확인]") }
+                // bun·pnpm은 잠금 파일이 따로 있어 옮겨서 지울 수 없다
+                if r.package.manager.isCommandOnly { line += "  " + t("[제거 명령만 · 되돌리기 불가]") }
                 if !r.isRemovable { line += "  [🔒]" }
                 out(line)
                 for c in r.installCandidates where !c.isSelectable {

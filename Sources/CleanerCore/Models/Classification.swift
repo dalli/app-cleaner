@@ -142,6 +142,7 @@ public enum EvidenceSource: String, Codable, Sendable {
     case homebrewRecord     // 고아 스캔: Caskroom 기록
     case pathRule           // 기타 경로 규칙
     case packageManager     // 패키지 매니저 설치 기록 (npm·cargo·pipx·uv)
+    case standaloneScript    // 설치 스크립트 도구의 규칙 데이터 경로
 }
 
 public struct Evidence: Codable, Sendable, Hashable {

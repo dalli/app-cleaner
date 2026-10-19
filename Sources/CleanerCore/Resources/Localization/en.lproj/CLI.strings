@@ -143,6 +143,10 @@ Common options:
 "아무것도 지우지 않았습니다. 제거: appcleaner packages remove <이름> [--with-data] [--dry-run]" = "Nothing was removed. To remove: appcleaner packages remove <name> [--with-data] [--dry-run]";
 "패키지 매니저 캐시" = "Package manager caches";
 "실행 파일: %@" = "Executables: %@";
+"[신뢰도 낮음 · 설치 방식 미확인]" = "[low confidence · install method unknown]";
+"[제거 명령만 · 되돌리기 불가]" = "[removal via command only · can't be undone]";
+"설치 기록이 없어 짐작한 항목 %lld개 — 실행 파일만으로 찾았습니다 (기본 미선택)" = "%lld items found by guessing — located from the executable alone (no install record, unselected by default)";
+"! %@: 설치 기록이 없는 실행 파일입니다. 지우면 설치 방법이 없습니다" = "! %@: an executable with no install record. There's no install method to restore it with";
 "패키지 정리" = "Package cleanup";
 "참고: %@" = "Note: %@";
 "알 수 없는 하위 명령: packages %@" = "Unknown subcommand: packages %@";
@@ -150,5 +154,5 @@ Common options:
 "설치된 패키지에서 '%@'을(를) 찾지 못했습니다. `appcleaner packages`로 확인하세요." = "Couldn't find '%@' among installed packages. Check with `appcleaner packages`.";
 "제거할 패키지를 지정하세요" = "Specify the package to remove";
 "--manager 값이 필요합니다" = "--manager needs a value";
-"--manager는 npm, cargo, pipx, uv 중 하나입니다: %@" = "--manager must be one of npm, cargo, pipx, uv: %@";
+"알 수 없는 관리자입니다: %@ (사용 가능: %@)" = "Unknown package manager: %@ (available: %@)";
 "'%@'에 해당하는 설치가 여러 개입니다. 경로로 지정하세요:\n%@" = "'%@' matches more than one installation. Specify it by path:\n%@";

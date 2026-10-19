@@ -96,6 +96,15 @@
 "cargoRecordRemains" = "cargo のインストール記録 (~/.cargo/.crates2.json) に %@ の項目が残ります — 再インストールすると更新されます";
 "packageManagerCache" = "%@ のダウンロードキャッシュ";
 "packageCacheRedownloaded" = "削除しても次回のインストール時に再ダウンロードされます";
+"packageCommandOnly" = "ロックファイルの管理があるため、ファイルを移動しても削除できません — %@ で削除してください（ここでは元に戻せません）";
+
+/* インストールスクリプトのツール */
+"standaloneInstalled" = "インストールスクリプトがインストールした実行ファイル: %@";
+"standaloneGuessed" = "インストール記録のない実行ファイルのようです: %@（インストール方法は不明）";
+"standaloneData" = "インストールスクリプトのツールのデータ（%@）";
+"standaloneNoRecord" = "%@ はインストールスクリプトでインストールされたため記録は残っていません — 再インストールにはインストールスクリプトをもう一度実行してください";
+"standaloneReinstall" = "再インストールするには: %@";
+"standaloneNeedsAdmin" = "管理者が所有する場所のため移動しません — %@ を自分で整理してください";
 
 /* 共有理由 */
 "sharedAppGroup" = "同じ App Group (%@) をほかの App も使用";
