@@ -4,8 +4,8 @@
 class Appcleaner < Formula
   desc "Find and safely remove leftover files of macOS apps"
   homepage "https://github.com/dallisoft/app-cleaner"
-  url "https://github.com/dallisoft/app-cleaner/archive/refs/tags/v0.2.0.tar.gz"
-  sha256 "0f00af9ed6fdc329e9babe00edc4427618b09e5595245c4c587aef8a7905fd95"
+  url "https://github.com/dallisoft/app-cleaner/archive/refs/tags/v0.3.8.tar.gz"
+  sha256 "c56408f38b72d75d4a2f993c22cfc68a98a5a6c34adc24b72b291d0d06a0f55c"
   license "MIT"
   head "https://github.com/dallisoft/app-cleaner.git", branch: "main"
 
