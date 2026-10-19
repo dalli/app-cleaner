@@ -20,6 +20,29 @@ public struct HomebrewCask: Codable, Sendable, Hashable {
     }
 }
 
+/// 설치 스크립트(`curl … | sh`, `npm i -g` 밖의 설치)로 설치하는 CLI 도구 1개 (docs/packages.md)
+public struct StandaloneTool: Codable, Sendable, Hashable {
+    /// 도구 이름 (설치 항목·데이터 폴더 이름 기준)
+    public var name: String
+    /// 실행 파일이 놓이는 경로 (`~` 사용 가능). 앞에 있는 것부터 확인하고, 있으면 설치 항목으로 본다
+    public var executables: [String]
+    /// 버전이 적힌 파일 (`~` 사용 가능). 있으면 내용을 버전으로 보여 준다
+    public var versionFiles: [String]
+    /// 도구의 데이터 폴더 (`~` 사용 가능). 이름이 같은 폴더를 찾는 대신 이 목록을 쓴다
+    public var dataPaths: [String]
+    /// 재설치 방법 안내 (예: `curl -fsSL https://… | bash`)
+    public var reinstall: String?
+
+    public init(name: String, executables: [String] = [], versionFiles: [String] = [], dataPaths: [String] = [],
+                reinstall: String? = nil) {
+        self.name = name
+        self.executables = executables
+        self.versionFiles = versionFiles
+        self.dataPaths = dataPaths
+        self.reinstall = reinstall
+    }
+}
+
 /// 고아 스캔 제외 목록 (plan.md 4.5.5)
 public struct OrphanExclusions: Codable, Sendable, Hashable {
     /// `Application Support/` 등 아래 Apple 시스템 데이터 이름
@@ -61,16 +84,19 @@ public struct RuleData: Sendable {
     public var commonNames: Set<String>
     public var exclusions: OrphanExclusions
     public var casks: [HomebrewCask]
+    /// 설치 스크립트로 설치한 CLI 도구
+    public var standaloneTools: [StandaloneTool]
     /// 서명 검증 상태 (번들 기본값은 앱 서명으로 보호되므로 true)
     public var signatureVerified: Bool
     public var updatedAt: Date?
 
     public init(version: String, commonNames: Set<String>, exclusions: OrphanExclusions, casks: [HomebrewCask],
-                signatureVerified: Bool = true, updatedAt: Date? = nil) {
+                standaloneTools: [StandaloneTool] = [], signatureVerified: Bool = true, updatedAt: Date? = nil) {
         self.version = version
         self.commonNames = commonNames
         self.exclusions = exclusions
         self.casks = casks
+        self.standaloneTools = standaloneTools
         self.signatureVerified = signatureVerified
         self.updatedAt = updatedAt
     }
@@ -88,6 +114,10 @@ public struct RuleData: Sendable {
 
     public func casks(matchingAppName appFileName: String) -> [HomebrewCask] {
         casks.filter { $0.apps.contains { $0.caseInsensitiveCompare(appFileName) == .orderedSame } }
+    }
+
+    public func standaloneTool(named name: String) -> StandaloneTool? {
+        standaloneTools.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }
     }
 
     public static let empty = RuleData(version: "empty", commonNames: [], exclusions: OrphanExclusions(), casks: [])
@@ -122,7 +152,9 @@ public enum BundledRuleData {
             .flatMap { try? decoder.decode(OrphanExclusions.self, from: $0) } ?? OrphanExclusions()
         let casks = (try? Data(contentsOf: dir.appendingPathComponent("homebrew-casks.json")))
             .flatMap { try? decoder.decode([HomebrewCask].self, from: $0) } ?? []
+        let standalone = (try? Data(contentsOf: dir.appendingPathComponent("standalone-tools.json")))
+            .flatMap { try? decoder.decode([StandaloneTool].self, from: $0) } ?? []
         return RuleData(version: manifest?.version ?? "unknown", commonNames: Set(common.map { $0.lowercased() }),
-                        exclusions: exclusions, casks: casks)
+                        exclusions: exclusions, casks: casks, standaloneTools: standalone)
     }
 }

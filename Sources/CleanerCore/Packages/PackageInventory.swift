@@ -5,28 +5,66 @@ import Foundation
 /// | 매니저 | 설치 기록 | 설치 항목 |
 /// |---|---|---|
 /// | npm | `<prefix>/lib/node_modules/<name>/package.json` | 패키지 폴더 + `<prefix>/bin`에서 그 폴더를 가리키는 링크 |
+/// | bun | `~/.bun/install/global/node_modules/<name>/package.json` | 패키지 폴더 + `~/.bun/bin`의 링크 |
+/// | pnpm | `~/Library/pnpm/global/<major>/node_modules/<name>/package.json` | 패키지 폴더(링크) + `~/Library/pnpm`의 링크 |
 /// | cargo | `~/.cargo/.crates2.json` (`.crates.toml`) | `~/.cargo/bin/<bin>` |
 /// | pipx | `<PIPX_HOME>/venvs/<name>/pipx_metadata.json` | venv + `~/.local/bin`·`~/.local/share/man`에서 venv를 가리키는 링크 |
 /// | uv | `~/.local/share/uv/tools/<name>/uv-receipt.toml` | 도구 폴더 + receipt의 `install-path` 중 도구 폴더를 가리키는 링크 |
+/// | standalone | 규칙 데이터(`standalone-tools.json`)의 실행 파일 경로 | 그 경로들 (설치 스크립트는 설치 기록을 남기지 않는다) |
+///
+/// bun·pnpm은 npm과 같은 node_modules 구조지만 **잠금 파일을 따로 관리해 파일 이동으로 지워지지 않는다**
+/// (docs/packages.md 1.5 — `PackageManager.isCommandOnly`).
 ///
 /// 실행 파일 링크는 **설치 폴더를 가리키는 심볼릭 링크만** 설치 항목으로 본다 (기록이 다른 파일을 가리켜도 옮기지 않는다).
 public struct PackageInventory: Sendable {
     public let paths: SystemPaths
+    /// 설치 스크립트 도구 목록 (규칙 데이터). 갱신된 규칙 데이터도 따라가도록 지연 조회한다
+    let standaloneToolsProvider: @Sendable () -> [StandaloneTool]
 
     /// node에 딸려 오는 패키지 — 지우면 npm 자체가 망가진다
     static let bundledNpmPackages: Set<String> = ["npm", "corepack"]
 
-    public init(paths: SystemPaths) {
+    public init(paths: SystemPaths, standaloneTools: [StandaloneTool] = []) {
         self.paths = paths
+        standaloneToolsProvider = { standaloneTools }
     }
+
+    /// 규칙 데이터가 나중에 갱신돼도 다음 검사부터 따라간다 (`RuleDataStore`)
+    public init(paths: SystemPaths, rules: any RuleDataProviding) {
+        self.paths = paths
+        standaloneToolsProvider = { rules.current().standaloneTools }
+    }
+
+    var standaloneTools: [StandaloneTool] { standaloneToolsProvider() }
 
     public func packages(_ options: PackageScanOptions = PackageScanOptions()) -> [InstalledPackage] {
         var out: [InstalledPackage] = []
         if options.includes(.npm) { out += npmPackages() }
+        if options.includes(.bun) { out += bunPackages() }
+        if options.includes(.pnpm) { out += pnpmPackages() }
         if options.includes(.cargo) { out += cargoPackages() }
         if options.includes(.pipx) { out += pipxPackages() }
         if options.includes(.uv) { out += uvPackages() }
+        if options.includes(.standalone) {
+            let known = standalonePackages()
+            out += known
+            out += guessedStandalonePackages(known: out)
+        }
         return out
+    }
+
+    // MARK: - npm 계열 (npm · bun · pnpm)
+
+    /// node_modules 계 전역 설치 위치 하나. npm만 `node_modules`가 `<prefix>/lib/` 아래에 있고 bun·pnpm은 다른 곳이다.
+    struct NodeInstallRoot {
+        var root: URL
+        var modules: URL
+        /// 실행 파일 링크가 놓이는 폴더
+        var bin: URL
+        var label: String?
+        /// `dependencies`에 **직접 설치된** 패키지만 적힌 전역 `package.json` (bun·pnpm).
+        /// 있으면 전이 의존성은 목록에서 뺀다 — 다른 패키지가 쓰고 있으니 지울 수 있는 항목이 아니다.
+        var record: URL?
     }
 
     // MARK: - npm
@@ -56,6 +94,42 @@ public struct PackageInventory: Sendable {
         }
     }
 
+    // MARK: - bun · pnpm
+
+    /// `bun add -g` — `~/.bun/install/global/node_modules`, 실행 파일 링크는 `~/.bun/bin`
+    func bunPackages() -> [InstalledPackage] {
+        let global = paths.home(".bun/install/global")
+        return nodePackages(.bun, roots: [
+            NodeInstallRoot(root: global, modules: global.appendingPathComponent("node_modules"),
+                            bin: paths.home(".bun/bin"), label: "~/.bun/install/global",
+                            record: global.appendingPathComponent("package.json")),
+        ])
+    }
+
+    /// `pnpm add -g` — `~/Library/pnpm/global/<major>/node_modules`, 실행 파일 링크는 `~/Library/pnpm`
+    /// (주 버전 폴더 — `global/5` — 가 하나뿐이므로 있는 것만 읽는다)
+    func pnpmPackages() -> [InstalledPackage] {
+        let fm = FileManager.default
+        let home = paths.home("Library/pnpm")
+        let roots = fm.children(of: home.appendingPathComponent("global"))
+            .sorted(by: { $0.lastPathComponent < $1.lastPathComponent })
+            .map { dir in
+                NodeInstallRoot(root: dir, modules: dir.appendingPathComponent("node_modules"),
+                                bin: home, label: "pnpm \(dir.lastPathComponent)",
+                                record: dir.appendingPathComponent("package.json"))
+            }
+        return nodePackages(.pnpm, roots: roots)
+    }
+
+    /// 전역 `package.json`의 `dependencies`·`optionalDependencies`에 적힌 이름.
+    /// 기록을 못 읽으면 nil — 그때는 전이 의존성까지 모두 보여 준다 (숨기는 쪽이 더 위험하다).
+    static func directDependencies(_ record: URL?) -> Set<String>? {
+        guard let record, let json = readJSON(record),
+              let deps = json["dependencies"] as? [String: Any] else { return nil }
+        let optional = json["optionalDependencies"] as? [String: Any] ?? [:]
+        return Set((Set(deps.keys).union(optional.keys)).map { $0.lowercased() })
+    }
+
     /// 홈 아래면 `~/…`, 아니면 전체 경로
     func homeLabel(_ url: URL) -> String {
         url.relativePath(from: paths.home).map { "~/" + $0 } ?? url.path
@@ -78,12 +152,23 @@ public struct PackageInventory: Sendable {
     }
 
     func npmPackages() -> [InstalledPackage] {
+        nodePackages(.npm, roots: npmPrefixes().map {
+            NodeInstallRoot(root: $0.url, modules: $0.url.appendingPathComponent("lib/node_modules"),
+                            bin: $0.url.appendingPathComponent("bin"), label: $0.label)
+        })
+    }
+
+    /// npm 계열(npm·bun·pnpm) 전역 설치 목록. `node_modules` 위치와 실행 파일 링크 위치만 매니저마다 다르다.
+    ///
+    /// - `node_modules/<name>` 폴더(또는 pnpm의 링크) + 그 폴더를 가리키는 실행 파일 링크가 설치 항목이다.
+    /// - `package.json`의 `name`·`version`을 읽는다. 기록이 없으면 폴더 이름으로 간주한다.
+    func nodePackages(_ manager: PackageManager, roots: [NodeInstallRoot]) -> [InstalledPackage] {
         let fm = FileManager.default
         var out: [InstalledPackage] = []
-        for (prefix, label) in npmPrefixes() {
-            let lib = prefix.appendingPathComponent("lib/node_modules")
+        for root in roots {
+            guard fm.isDirectory(root.modules) else { continue }
             var dirs: [URL] = []
-            for child in fm.children(of: lib) {
+            for child in fm.children(of: root.modules) {
                 let name = child.lastPathComponent
                 if name.hasPrefix(".") { continue }
                 if name.hasPrefix("@") {
@@ -92,17 +177,23 @@ public struct PackageInventory: Sendable {
                     dirs.append(child)
                 }
             }
-            let links = binLinks(in: prefix.appendingPathComponent("bin"))
+            let links = binLinks(in: root.bin)
+            let direct = Self.directDependencies(root.record)
             for dir in dirs.sorted(by: { $0.path < $1.path }) {
                 let manifest = Self.readJSON(dir.appendingPathComponent("package.json"))
-                let folderName = dir.deletingLastPathComponent() == lib
+                // 상위 폴더 비교는 경로 끝 슬래시가 없어야 한다 (`appendingPathComponent`가 붙인다)
+                let inModules = dir.deletingLastPathComponent().standardizedFileURL.path
+                    == root.modules.standardizedFileURL.path
+                let folderName = inModules
                     ? dir.lastPathComponent
                     : "\(dir.deletingLastPathComponent().lastPathComponent)/\(dir.lastPathComponent)"
                 let name = (manifest?["name"] as? String) ?? folderName
-                if Self.bundledNpmPackages.contains(folderName) { continue }
+                if manager == .npm, Self.bundledNpmPackages.contains(folderName) { continue }
+                // 전이 의존성은 다른 패키지가 쓰고 있다 — 지울 수 있는 항목이 아니므로 목록에 넣지 않는다
+                if let direct, !direct.contains(folderName.lowercased()) { continue }
                 let mine = links.filter { Self.points($0.target, into: dir) }
-                out.append(InstalledPackage(manager: .npm, name: name, version: manifest?["version"] as? String,
-                                            root: prefix, rootLabel: label,
+                out.append(InstalledPackage(manager: manager, name: name, version: manifest?["version"] as? String,
+                                            root: root.root, rootLabel: root.label,
                                             installPaths: [dir] + mine.map(\.link),
                                             executables: mine.map(\.link.lastPathComponent)))
             }
@@ -239,6 +330,80 @@ public struct PackageInventory: Sendable {
             }
         }
         return nil
+    }
+
+    // MARK: - standalone (설치 스크립트)
+
+    /// 규칙 데이터(`standalone-tools.json`)에 있는 도구. 실행 파일이 실제로 있는 것만 설치 항목으로 본다.
+    ///
+    /// 실행 파일 경로는 규칙 데이터가 정한 순서대로 확인하고, **처음 발견한 경로들만** 쓴다
+    /// (같은 이름의 다른 사본까지 옮기면 안 되므로). 심볼릭 링크라면 링크 자체만 옮긴다.
+    func standalonePackages() -> [InstalledPackage] {
+        let fm = FileManager.default
+        return standaloneTools.compactMap { tool in
+            let found = tool.executables.compactMap { paths.mapExternalPath($0) }.filter { fm.itemExists($0) }
+            guard !found.isEmpty else { return nil }
+            return InstalledPackage(manager: .standalone, name: tool.name, version: standaloneVersion(tool),
+                                    root: found[0].deletingLastPathComponent(),
+                                    installPaths: found,
+                                    executables: found.map(\.lastPathComponent),
+                                    detection: .recorded, reinstallHint: tool.reinstall)
+        }
+    }
+
+    /// 버전 파일 내용에서 버전 문자열을 뽑는다 (첫 줄 전체). 파일이 없으면 nil.
+    func standaloneVersion(_ tool: StandaloneTool) -> String? {
+        for rel in tool.versionFiles {
+            guard let url = paths.mapExternalPath(rel),
+                  let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            let line = text.split(whereSeparator: \.isNewline).first.map(String.init)?
+                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !line.isEmpty { return line }
+        }
+        return nil
+    }
+
+    /// 자동 탐지 대상 bin 폴더. 설치 스크립트가 실행 파일을 두는 곳이다.
+    ///
+    /// 사용자 소유 폴더만 본다. `/usr/local/bin`처럼 관리자 소유인 곳은 옮길 수 없어(root 소유) 안내만 되고,
+    /// Homebrew·공식 설치 프로그램의 실행 파일과 구분도 안 되므로 규칙 데이터로만 찾는다.
+    var standaloneBinDirs: [URL] {
+        let fm = FileManager.default
+        return [paths.home(".local/bin"), paths.home("bin")]
+            .filter { fm.isDirectory($0) && access($0.path, W_OK) == 0 }
+    }
+
+    /// 규칙 데이터에 없는 설치 스크립트 도구를 `~/.local/bin` 등에서 찾는다.
+    ///
+    /// - 다른 매니저가 이미 설명하는 링크(npm·pipx·uv·cargo)와 규칙 데이터에 있는 도구는 제외한다.
+    /// - 이름만으로 판정하므로 **낮음 · 기본 미선택**이다 (`detection: .guessed`).
+    func guessedStandalonePackages(known: [InstalledPackage]) -> [InstalledPackage] {
+        let fm = FileManager.default
+        var claimed = Set<String>()
+        for p in known {
+            claimed.insert(SafetyGuard.key(SafetyGuard.normalize(p.location.path)))
+            for path in p.installPaths { claimed.insert(SafetyGuard.key(SafetyGuard.normalize(path.path))) }
+        }
+        let knownNames = Set(known.map { $0.name.lowercased() })
+        var out: [InstalledPackage] = []
+        for dir in standaloneBinDirs {
+            for url in fm.children(of: dir).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                let name = url.lastPathComponent
+                var isDir: ObjCBool = false
+                guard Self.isPlainName(name), !name.hasPrefix("."),
+                      fm.fileExists(atPath: url.path, isDirectory: &isDir), !isDir.boolValue,
+                      fm.isExecutableFile(atPath: url.path) else { continue }
+                guard !knownNames.contains(name.lowercased()) else { continue }
+                // 다른 매니저의 설치 항목(또는 링크)이면 이미 목록에 있다
+                guard !claimed.contains(SafetyGuard.key(SafetyGuard.normalize(url.path))) else { continue }
+                // 링크는 매니저 설치 항목일 수 있다. 규칙 데이터에 없는 링크는 짐작하지 않는다 (대상만 옮기면 깨진다)
+                guard !fm.isSymlink(url) else { continue }
+                claimed.insert(SafetyGuard.key(SafetyGuard.normalize(url.path)))
+                out.append(InstalledPackage(manager: .standalone, name: name, root: dir,
+                                            installPaths: [url], executables: [name], detection: .guessed))
+            }
+        }
+        return out
     }
 
     // MARK: - 공용

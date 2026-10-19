@@ -97,6 +97,15 @@
 "cargoRecordRemains" = "The cargo install record (~/.cargo/.crates2.json) keeps an entry for %@ — it's updated when you reinstall";
 "packageManagerCache" = "%@ download cache";
 "packageCacheRedownloaded" = "Downloaded again the next time you install something";
+"packageCommandOnly" = "This manager keeps a lockfile, so moving the files won't remove it — remove it with %@ (can't be undone here)";
+
+/* 설치 스크립트 도구 */
+"standaloneInstalled" = "Executable installed by an install script: %@";
+"standaloneGuessed" = "Looks like an executable with no install record: %@ (install method unknown)";
+"standaloneData" = "Data of the install-script tool (%@)";
+"standaloneNoRecord" = "%@ was installed by an install script, so no install record remains — run the install script again to reinstall it";
+"standaloneReinstall" = "To reinstall: %@";
+"standaloneNeedsAdmin" = "Owned by an administrator, so it isn't moved — clean up %@ yourself";
 
 /* 공유 사유 */
 "sharedAppGroup" = "Other apps also use the same App Group (%@)";

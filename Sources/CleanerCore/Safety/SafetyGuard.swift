@@ -64,6 +64,10 @@ public struct SafetyGuard: SafetyChecking {
         // 패키지 매니저 설치 위치의 상위 폴더 (docs/packages.md) — 그 안의 항목만 옮긴다
         ".local/bin", ".local/state", ".local/lib", ".local/lib/node_modules", ".local/pipx", ".local/pipx/venvs",
         ".local/share/uv", ".local/share/uv/tools", ".local/share/man", ".cargo/bin",
+        // npm 계열 전역 설치 (bun·pnpm) — 아래 download cache만 옮길 수 있다
+        ".bun", ".bun/bin", ".bun/install/global/node_modules", "Library/pnpm", "Library/pnpm/global",
+        // 설치 스크립트가 실행 파일을 두는 폴더 (docs/packages.md)
+        "bin", ".bun/bin", ".deno/bin", ".opencode/bin",
     ]
 
     /// 홈 기준, 하위 전체 보호

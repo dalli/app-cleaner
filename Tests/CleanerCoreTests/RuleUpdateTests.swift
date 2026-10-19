@@ -55,12 +55,14 @@ final class RuleUpdateFakeServer: @unchecked Sendable {
     let remoteExclusions = OrphanExclusions(appleSystemNames: ["NewAppleThing"], alwaysExcludedPaths: [".newsecret"],
                                             vendorFolders: [], securityDotfiles: [".vault"], nonAppBundleIDPrefixes: [])
     let remoteCasks = [HomebrewCask(token: "newapp", names: ["New App"], apps: ["New App.app"], bundleIDs: ["com.example.newapp"])]
+    let remoteStandalone = [StandaloneTool(name: "newtool", executables: ["~/.local/bin/newtool"], dataPaths: ["~/.newtool"])]
 
     func remoteFiles() throws -> [String: Data] {
         [
             "orphan-exclusions.json": try ruleJSON(remoteExclusions),
             "homebrew-casks.json": try ruleJSON(remoteCasks),
             "common-names.json": try ruleJSON(["widget"]),
+            "standalone-tools.json": try ruleJSON(remoteStandalone),
         ]
     }
 
@@ -77,7 +79,7 @@ final class RuleUpdateFakeServer: @unchecked Sendable {
         try signer.write(try signer.bundle(version: "2099.1.1", files: try remoteFiles()), to: dir)
         let manifest = try signer.verifier.verify(directory: dir)
         #expect(manifest.version == "2099.1.1")
-        #expect(manifest.files.count == 3)
+        #expect(manifest.files.count == 4)
         #expect(manifest.updatedDate != nil)
     }
 
@@ -168,7 +170,26 @@ final class RuleUpdateFakeServer: @unchecked Sendable {
         #expect(data.commonNames.isSuperset(of: bundled.commonNames))
         #expect(data.commonNames.contains("widget"))
         #expect(data.casks.map(\.token) == ["newapp"])
+        #expect(data.standaloneTools.map(\.name) == ["newtool"])
         #expect(store.info() == RuleDataInfo(version: "2099.1.1", updatedAt: data.updatedAt, signatureVerified: true, caskCount: 1))
+    }
+
+    /// 번들 스냅샷에 설치 스크립트 도구가 들어 있고, 항목 구조가 올바르다
+    @Test func bundledStandaloneToolsAreUsable() throws {
+        let tools = BundledRuleData.load().standaloneTools
+        #expect(!tools.isEmpty)
+        for tool in tools {
+            if tool.executables.isEmpty { Issue.record("실행 파일 경로가 비어 있음: \(tool.name)") }
+            if tool.name.isEmpty { Issue.record("이름이 비어 있음") }
+            for path in tool.executables + tool.versionFiles + tool.dataPaths {
+                if !path.hasPrefix("~") && !path.hasPrefix("/") {
+                    Issue.record("경로에 `~` 없이 상대 경로 사용: \(tool.name) → \(path)")
+                }
+                if path.contains("..") { Issue.record("경로에 `..` 사용: \(tool.name) → \(path)") }
+            }
+        }
+        #expect(Set(tools.map(\.name)).count == tools.count, "이름이 중복된 도구")
+        #expect(tools.contains { $0.dataPaths.contains("~/.config/opencode") })
     }
 
     @Test func storeIgnoresTamperedOrOlderUpdateOnDisk() throws {
