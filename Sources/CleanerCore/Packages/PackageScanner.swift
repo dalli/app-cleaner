@@ -62,14 +62,19 @@ public struct PackageScanner: Sendable {
             var c = Candidate(url: url, category: .package, confidence: confidence,
                               evidence: [Evidence(.packageManager, detail)], isSelected: selected)
             guarded(&c)
-            if !writable {
+            // bun·pnpm은 잠금 파일이 따로 있어 폴더만 옮겨도 다음 전역 설치 때 되살아난다 (docs/packages.md 1.5).
+            // 옮기면 "지웠는데 안 지워진" 상태가 되므로 옮기지 않고 제거 명령만 안내한다.
+            if package.manager.isCommandOnly {
+                c.protection = c.protection ?? .detectOnly
                 if let command = package.manager.uninstallCommand(package.name) {
-                    c.protection = c.protection ?? .detectOnly
-                    c.notes.append(EngineText(.packageNeedsAdmin, command))
-                } else if package.manager == .standalone {
-                    c.protection = c.protection ?? .detectOnly
-                    c.notes.append(EngineText(.standaloneNeedsAdmin, url.path))
+                    c.notes.append(EngineText(.packageCommandOnly, command))
                 }
+            } else if !writable, let command = package.manager.uninstallCommand(package.name) {
+                c.protection = c.protection ?? .detectOnly
+                c.notes.append(EngineText(.packageNeedsAdmin, command))
+            } else if !writable && package.manager == .standalone {
+                c.protection = c.protection ?? .detectOnly
+                c.notes.append(EngineText(.standaloneNeedsAdmin, url.path))
             }
             if c.protection != nil { c.isSelected = false }
             candidates.append(c)
@@ -220,7 +225,10 @@ public struct PackageScanner: Sendable {
     func managerRoots() -> [URL] {
         [".npm", ".nvm", ".fnm", ".npm-global", ".cargo", ".rustup", ".local", ".local/bin", ".local/pipx",
          ".local/share/uv", ".cache/uv", ".local/share/man", "Library/Application Support/pipx",
-         "Library/Application Support/fnm", "Library/Caches/pip", "Library/Caches/pipx", ".cache/pip"]
+         "Library/Application Support/fnm", "Library/Caches/pip", "Library/Caches/pipx", ".cache/pip",
+         // npm 계열 전역 설치와 설치 스크립트가 실행 파일을 두는 곳 (docs/packages.md)
+         ".bun", ".bun/bin", ".bun/install/global/node_modules", ".deno/bin", ".opencode/bin", "bin",
+         "Library/pnpm", "Library/pnpm/global"]
             .map { paths.home($0) }
     }
 
@@ -258,6 +266,9 @@ public struct PackageScanner: Sendable {
             (.uv, "uv", ".cache/uv"), (.uv, "uv", "Library/Caches/uv"),
             (.pipx, "pipx", ".local/pipx/.cache"), (.pipx, "pipx", "Library/Caches/pipx"),
             (.pipx, "pip", "Library/Caches/pip"), (.pipx, "pip", ".cache/pip"),
+            // npm 계열 다운로드 캐시. pnpm store는 전역 설치뿐 아니라 로컬 프로젝트도 하드링크로 참조하므로
+            // 지워도 되지만(재생성 가능), 전역 설치 폴더까지 담는 곳이 아니라 별도로 둔다 (docs/packages.md 1.5)
+            (.bun, "bun", ".bun/install/cache"), (.pnpm, "pnpm", "Library/pnpm/store"),
         ]
         var out: [Candidate] = []
         for (manager, label, rel) in specs where options.includes(manager) {

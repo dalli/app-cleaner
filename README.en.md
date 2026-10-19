@@ -132,7 +132,7 @@ appcleaner remove Foo --dry-run                  # cleanup plan as JSON
 appcleaner remove Foo                            # confirm, then move to Trash / holding folder
 appcleaner orphans --min-confidence medium       # scan for orphaned leftovers
 appcleaner orphans clean --dry-run               # orphan cleanup plan (default: high confidence + not user data)
-appcleaner packages                              # CLI tools installed with npm/cargo/pipx/uv or an install script + their data
+appcleaner packages                              # CLI tools installed with npm/bun/pnpm/cargo/pipx/uv or an install script + their data
 appcleaner packages remove <name> --dry-run      # plan to remove a CLI tool (--with-data: its data too)
 appcleaner packages caches clean --dry-run       # plan to clean package manager download caches
 appcleaner history                               # removal history
@@ -161,6 +161,7 @@ Covers Phases 1a, 1b, 2, and 3 of plan.md. Remaining work is tracked in [issues 
 - Localization: the GUI and CLI support Korean, English, and Japanese (English for any other language). Japanese UI review and translation proofreading: #27
 - Cleaning up CLI tools installed with a package manager (npm, cargo, pipx, uv) or an install script (`curl … | sh`), their data and caches: CLI only — [docs/packages.md](docs/packages.md) (#39)
   - Install scripts leave no install record, so known tools are matched exactly from rule data and any other executable in `~/.local/bin` is shown by name only, at **low confidence and unselected by default**
+  - bun and pnpm keep their own lockfile, so moving the files brings them back on the next global install. They are not moved at all — the app only points you at `bun remove -g` (read-only, like Homebrew)
 
 ## Feedback
 

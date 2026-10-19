@@ -5,11 +5,15 @@ import Foundation
 /// | 매니저 | 설치 기록 | 설치 항목 |
 /// |---|---|---|
 /// | npm | `<prefix>/lib/node_modules/<name>/package.json` | 패키지 폴더 + `<prefix>/bin`에서 그 폴더를 가리키는 링크 |
+/// | bun | `~/.bun/install/global/node_modules/<name>/package.json` | 패키지 폴더 + `~/.bun/bin`의 링크 |
+/// | pnpm | `~/Library/pnpm/global/<major>/node_modules/<name>/package.json` | 패키지 폴더(링크) + `~/Library/pnpm`의 링크 |
 /// | cargo | `~/.cargo/.crates2.json` (`.crates.toml`) | `~/.cargo/bin/<bin>` |
 /// | pipx | `<PIPX_HOME>/venvs/<name>/pipx_metadata.json` | venv + `~/.local/bin`·`~/.local/share/man`에서 venv를 가리키는 링크 |
 /// | uv | `~/.local/share/uv/tools/<name>/uv-receipt.toml` | 도구 폴더 + receipt의 `install-path` 중 도구 폴더를 가리키는 링크 |
 /// | standalone | 규칙 데이터(`standalone-tools.json`)의 실행 파일 경로 | 그 경로들 (설치 스크립트는 설치 기록을 남기지 않는다) |
-/// | standalone | 규칙 데이터(`standalone-tools.json`)의 실행 파일 경로 | 그 경로 (설치 스크립트는 설치 기록을 남기지 않는다) |
+///
+/// bun·pnpm은 npm과 같은 node_modules 구조지만 **잠금 파일을 따로 관리해 파일 이동으로 지워지지 않는다**
+/// (docs/packages.md 1.5 — `PackageManager.isCommandOnly`).
 ///
 /// 실행 파일 링크는 **설치 폴더를 가리키는 심볼릭 링크만** 설치 항목으로 본다 (기록이 다른 파일을 가리켜도 옮기지 않는다).
 public struct PackageInventory: Sendable {
@@ -36,6 +40,8 @@ public struct PackageInventory: Sendable {
     public func packages(_ options: PackageScanOptions = PackageScanOptions()) -> [InstalledPackage] {
         var out: [InstalledPackage] = []
         if options.includes(.npm) { out += npmPackages() }
+        if options.includes(.bun) { out += bunPackages() }
+        if options.includes(.pnpm) { out += pnpmPackages() }
         if options.includes(.cargo) { out += cargoPackages() }
         if options.includes(.pipx) { out += pipxPackages() }
         if options.includes(.uv) { out += uvPackages() }
@@ -45,6 +51,20 @@ public struct PackageInventory: Sendable {
             out += guessedStandalonePackages(known: out)
         }
         return out
+    }
+
+    // MARK: - npm 계열 (npm · bun · pnpm)
+
+    /// node_modules 계 전역 설치 위치 하나. npm만 `node_modules`가 `<prefix>/lib/` 아래에 있고 bun·pnpm은 다른 곳이다.
+    struct NodeInstallRoot {
+        var root: URL
+        var modules: URL
+        /// 실행 파일 링크가 놓이는 폴더
+        var bin: URL
+        var label: String?
+        /// `dependencies`에 **직접 설치된** 패키지만 적힌 전역 `package.json` (bun·pnpm).
+        /// 있으면 전이 의존성은 목록에서 뺀다 — 다른 패키지가 쓰고 있으니 지울 수 있는 항목이 아니다.
+        var record: URL?
     }
 
     // MARK: - npm
@@ -74,6 +94,42 @@ public struct PackageInventory: Sendable {
         }
     }
 
+    // MARK: - bun · pnpm
+
+    /// `bun add -g` — `~/.bun/install/global/node_modules`, 실행 파일 링크는 `~/.bun/bin`
+    func bunPackages() -> [InstalledPackage] {
+        let global = paths.home(".bun/install/global")
+        return nodePackages(.bun, roots: [
+            NodeInstallRoot(root: global, modules: global.appendingPathComponent("node_modules"),
+                            bin: paths.home(".bun/bin"), label: "~/.bun/install/global",
+                            record: global.appendingPathComponent("package.json")),
+        ])
+    }
+
+    /// `pnpm add -g` — `~/Library/pnpm/global/<major>/node_modules`, 실행 파일 링크는 `~/Library/pnpm`
+    /// (주 버전 폴더 — `global/5` — 가 하나뿐이므로 있는 것만 읽는다)
+    func pnpmPackages() -> [InstalledPackage] {
+        let fm = FileManager.default
+        let home = paths.home("Library/pnpm")
+        let roots = fm.children(of: home.appendingPathComponent("global"))
+            .sorted(by: { $0.lastPathComponent < $1.lastPathComponent })
+            .map { dir in
+                NodeInstallRoot(root: dir, modules: dir.appendingPathComponent("node_modules"),
+                                bin: home, label: "pnpm \(dir.lastPathComponent)",
+                                record: dir.appendingPathComponent("package.json"))
+            }
+        return nodePackages(.pnpm, roots: roots)
+    }
+
+    /// 전역 `package.json`의 `dependencies`·`optionalDependencies`에 적힌 이름.
+    /// 기록을 못 읽으면 nil — 그때는 전이 의존성까지 모두 보여 준다 (숨기는 쪽이 더 위험하다).
+    static func directDependencies(_ record: URL?) -> Set<String>? {
+        guard let record, let json = readJSON(record),
+              let deps = json["dependencies"] as? [String: Any] else { return nil }
+        let optional = json["optionalDependencies"] as? [String: Any] ?? [:]
+        return Set((Set(deps.keys).union(optional.keys)).map { $0.lowercased() })
+    }
+
     /// 홈 아래면 `~/…`, 아니면 전체 경로
     func homeLabel(_ url: URL) -> String {
         url.relativePath(from: paths.home).map { "~/" + $0 } ?? url.path
@@ -96,12 +152,23 @@ public struct PackageInventory: Sendable {
     }
 
     func npmPackages() -> [InstalledPackage] {
+        nodePackages(.npm, roots: npmPrefixes().map {
+            NodeInstallRoot(root: $0.url, modules: $0.url.appendingPathComponent("lib/node_modules"),
+                            bin: $0.url.appendingPathComponent("bin"), label: $0.label)
+        })
+    }
+
+    /// npm 계열(npm·bun·pnpm) 전역 설치 목록. `node_modules` 위치와 실행 파일 링크 위치만 매니저마다 다르다.
+    ///
+    /// - `node_modules/<name>` 폴더(또는 pnpm의 링크) + 그 폴더를 가리키는 실행 파일 링크가 설치 항목이다.
+    /// - `package.json`의 `name`·`version`을 읽는다. 기록이 없으면 폴더 이름으로 간주한다.
+    func nodePackages(_ manager: PackageManager, roots: [NodeInstallRoot]) -> [InstalledPackage] {
         let fm = FileManager.default
         var out: [InstalledPackage] = []
-        for (prefix, label) in npmPrefixes() {
-            let lib = prefix.appendingPathComponent("lib/node_modules")
+        for root in roots {
+            guard fm.isDirectory(root.modules) else { continue }
             var dirs: [URL] = []
-            for child in fm.children(of: lib) {
+            for child in fm.children(of: root.modules) {
                 let name = child.lastPathComponent
                 if name.hasPrefix(".") { continue }
                 if name.hasPrefix("@") {
@@ -110,17 +177,23 @@ public struct PackageInventory: Sendable {
                     dirs.append(child)
                 }
             }
-            let links = binLinks(in: prefix.appendingPathComponent("bin"))
+            let links = binLinks(in: root.bin)
+            let direct = Self.directDependencies(root.record)
             for dir in dirs.sorted(by: { $0.path < $1.path }) {
                 let manifest = Self.readJSON(dir.appendingPathComponent("package.json"))
-                let folderName = dir.deletingLastPathComponent() == lib
+                // 상위 폴더 비교는 경로 끝 슬래시가 없어야 한다 (`appendingPathComponent`가 붙인다)
+                let inModules = dir.deletingLastPathComponent().standardizedFileURL.path
+                    == root.modules.standardizedFileURL.path
+                let folderName = inModules
                     ? dir.lastPathComponent
                     : "\(dir.deletingLastPathComponent().lastPathComponent)/\(dir.lastPathComponent)"
                 let name = (manifest?["name"] as? String) ?? folderName
-                if Self.bundledNpmPackages.contains(folderName) { continue }
+                if manager == .npm, Self.bundledNpmPackages.contains(folderName) { continue }
+                // 전이 의존성은 다른 패키지가 쓰고 있다 — 지울 수 있는 항목이 아니므로 목록에 넣지 않는다
+                if let direct, !direct.contains(folderName.lowercased()) { continue }
                 let mine = links.filter { Self.points($0.target, into: dir) }
-                out.append(InstalledPackage(manager: .npm, name: name, version: manifest?["version"] as? String,
-                                            root: prefix, rootLabel: label,
+                out.append(InstalledPackage(manager: manager, name: name, version: manifest?["version"] as? String,
+                                            root: root.root, rootLabel: root.label,
                                             installPaths: [dir] + mine.map(\.link),
                                             executables: mine.map(\.link.lastPathComponent)))
             }

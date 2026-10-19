@@ -131,7 +131,7 @@ appcleaner remove Foo --dry-run                  # 整理計画を JSON で出�
 appcleaner remove Foo                            # 確認後、ゴミ箱／保留フォルダへ移動
 appcleaner orphans --min-confidence medium       # 孤立ファイルをスキャン
 appcleaner orphans clean --dry-run               # 孤立ファイルの整理計画（既定: 信頼度「高」かつユーザデータ以外）
-appcleaner packages                              # npm・cargo・pipx・uv・インストールスクリプトで入れた CLI ツール＋データ
+appcleaner packages                              # npm・bun・pnpm・cargo・pipx・uv・インストールスクリプトで入れた CLI ツール＋データ
 appcleaner packages remove <名前> --dry-run      # CLI ツールの削除計画（--with-data: データも）
 appcleaner packages caches clean --dry-run       # パッケージマネージャのダウンロードキャッシュの整理計画
 appcleaner history                               # 削除履歴
@@ -160,6 +160,7 @@ plan.md の Phase 1a・1b・2・3 の範囲です。残りの作業は [`backlog
 - 多言語対応: GUI・CLI ともに韓国語・英語・日本語に対応（その他の言語では英語）。日本語画面の確認と翻訳の校正は #27
 - パッケージマネージャ（npm・cargo・pipx・uv）やインストールスクリプト（`curl … | sh`）で入れた CLI ツール・データ・キャッシュの整理は CLI のみ — [docs/packages.md](docs/packages.md)（#39）
   - インストールスクリプトはインストール記録を残さないため、既知のツールはルールデータで正確に検出し、それ以外の `~/.local/bin` の実行ファイルは名前だけで **信頼度 低・既定で選択なし** として表示します
+  - bun と pnpm はロックファイルを持つため、ファイルを移動しても次回のグローバルインストールで戻ります。そのため移動せず `bun remove -g` を案内するだけです（Homebrew と同じく読み取り専用）
 
 ## フィードバック
 

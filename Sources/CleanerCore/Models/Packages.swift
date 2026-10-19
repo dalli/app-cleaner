@@ -4,6 +4,10 @@ import Foundation
 public enum PackageManager: String, Codable, Sendable, CaseIterable {
     /// `npm install -g` — `<prefix>/lib/node_modules`
     case npm
+    /// `bun add -g` — `~/.bun/install/global/node_modules`
+    case bun
+    /// `pnpm add -g` — `~/Library/pnpm/global/<major>/node_modules`
+    case pnpm
     /// `cargo install` — `~/.cargo/.crates2.json`
     case cargo
     /// `pipx install` — `<PIPX_HOME>/venvs/*/pipx_metadata.json`
@@ -17,6 +21,8 @@ public enum PackageManager: String, Codable, Sendable, CaseIterable {
     public var displayName: String {
         switch self {
         case .npm: return "npm"
+        case .bun: return "bun"
+        case .pnpm: return "pnpm"
         case .cargo: return "cargo"
         case .pipx: return "pipx"
         case .uv: return "uv tool"
@@ -28,12 +34,23 @@ public enum PackageManager: String, Codable, Sendable, CaseIterable {
     public func uninstallCommand(_ name: String) -> String? {
         switch self {
         case .npm: return "npm uninstall -g \(name)"
+        case .bun: return "bun remove -g \(name)"
+        case .pnpm: return "pnpm remove -g \(name)"
         case .cargo: return "cargo uninstall \(name)"
         case .pipx: return "pipx uninstall \(name)"
         case .uv: return "uv tool uninstall \(name)"
         case .standalone: return nil
         }
     }
+
+    /// **파일을 옮겨서 지울 수 없고** 매니저 명령만 안내하는 설치 방식 (docs/packages.md 1.5).
+    ///
+    /// 이 매니저들은 전역 설치 기록(잠금 파일)을 따로 관리한다. 폴더만 옮기면 다음 전역 설치 때 **되살아난다**
+    /// (샌드박스에서 bun·pnpm 모두 확인) — 옮겼는데 안 지워진 상태가 사용자를 가장 속이므로 옮기지 않는다.
+    public var isCommandOnly: Bool { self == .bun || self == .pnpm }
+
+    /// `--manager` 안내에 쓰는 이름 목록 (오류 문구에 노출된다)
+    public static var names: String { allCases.map(\.rawValue).joined(separator: ", ") }
 }
 
 /// 설치 항목의 발견 방식

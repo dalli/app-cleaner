@@ -342,6 +342,8 @@ struct CLI {
                 if !r.package.executables.isEmpty { line += "  " + t("실행 파일: %@", r.package.executables.joined(separator: ", ")) }
                 // 설치 기록이 없어 짐작한 항목은 이름만으로 판정한 것이므로 표시한다
                 if r.package.isGuessed { line += "  " + t("[신뢰도 낮음 · 설치 방식 미확인]") }
+                // bun·pnpm은 잠금 파일이 따로 있어 옮겨서 지울 수 없다
+                if r.package.manager.isCommandOnly { line += "  " + t("[제거 명령만 · 되돌리기 불가]") }
                 if !r.isRemovable { line += "  [🔒]" }
                 out(line)
                 for c in r.installCandidates where !c.isSelectable {

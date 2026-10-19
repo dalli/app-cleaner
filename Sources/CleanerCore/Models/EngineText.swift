@@ -223,6 +223,8 @@ extension EngineText {
         /// `args`: 매니저
         case packageManagerCache
         case packageCacheRedownloaded
+        /// `args`: 제거 명령 (bun·pnpm — 잠금 파일 때문에 파일 이동으로 지울 수 없음)
+        case packageCommandOnly
 
         // MARK: 설치 스크립트 도구 (docs/packages.md)
 
@@ -462,6 +464,7 @@ extension EngineText {
             case .cargoRecordRemains: return "cargo 설치 기록(~/.cargo/.crates2.json)에 %@ 항목이 남음 — 다시 설치하면 갱신됨"
             case .packageManagerCache: return "%@ 다운로드 캐시"
             case .packageCacheRedownloaded: return "지우면 다음 설치 때 다시 내려받음"
+            case .packageCommandOnly: return "잠금 파일이 따로 있어 파일 이동으로는 지워지지 않습니다 — %@ 로 제거하세요 (되돌릴 수 없음)"
             case .standaloneInstalled: return "설치 스크립트가 설치한 실행 파일: %@"
             case .standaloneGuessed: return "설치 기록이 없는 실행 파일로 보임: %@ (설치 방식 미확인)"
             case .standaloneData: return "설치 스크립트 도구의 데이터(%@)"

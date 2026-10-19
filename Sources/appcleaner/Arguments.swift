@@ -90,7 +90,7 @@ enum ArgumentParser {
             var managers = Set<PackageManager>()
             for v in (values["--manager"] ?? "").split(separator: ",") {
                 guard let m = PackageManager(rawValue: v.trimmingCharacters(in: .whitespaces).lowercased()) else {
-                    throw UsageError("--manager는 npm, cargo, pipx, uv, standalone 중 하나입니다: %@", String(v))
+                    throw UsageError("알 수 없는 관리자입니다: %@ (사용 가능: %@)", String(v), PackageManager.names)
                 }
                 managers.insert(m)
             }

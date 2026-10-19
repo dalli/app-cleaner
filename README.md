@@ -135,7 +135,7 @@ appcleaner remove Foo --dry-run                  # 정리 계획 JSON
 appcleaner remove Foo                            # 확인 후 휴지통/보류 폴더로 이동
 appcleaner orphans --min-confidence medium       # 고아 잔여물 스캔
 appcleaner orphans clean --dry-run               # 고아 정리 계획 (기본: 높음 + 사용자 데이터 아님)
-appcleaner packages                              # npm·cargo·pipx·uv·설치 스크립트로 설치한 CLI 도구 + 데이터
+appcleaner packages                              # npm·bun·pnpm·cargo·pipx·uv·설치 스크립트로 설치한 CLI 도구 + 데이터
 appcleaner packages remove <이름> --dry-run      # CLI 도구 제거 계획 (--with-data: 데이터도)
 appcleaner packages caches clean --dry-run       # 패키지 매니저 다운로드 캐시 정리 계획
 appcleaner history                               # 삭제 기록
@@ -162,8 +162,9 @@ plan.md의 Phase 1a·1b·2·3 범위. 남은 작업은 [`backlog` 라벨 이슈]
 - 배포: **공증·Developer ID 서명은 하지 않는다** (위 [처음 실행](#처음-실행--gatekeeper-허용)). Sparkle 자동 업데이트 검토 (#48), Homebrew CLI tap (#15), 규칙 데이터 서명 키 교체 (#20)
 - VM·실기기 QA 매트릭스 (#21), GUI 미비점 (#22)
 - 다국어: GUI·CLI 모두 한국어·영어·일본어 지원 (그 밖의 언어는 영어). 일본어 화면 확인·번역 검수는 #27
-- 패키지 매니저(npm·cargo·pipx·uv)와 설치 스크립트(`curl … | sh`)로 설치한 CLI 도구·데이터·캐시 정리는 CLI만 — [docs/packages.md](docs/packages.md) (#39)
+- 패키지 매니저(npm·bun·pnpm·cargo·pipx·uv)와 설치 스크립트(`curl … | sh`)로 설치한 CLI 도구·데이터·캐시 정리는 CLI만 — [docs/packages.md](docs/packages.md) (#39)
   - 설치 스크립트로 설치한 도구는 설치 기록이 없어, 알려진 도구는 규칙 데이터로 정확히 잡고 그 외 `~/.local/bin`의 실행 파일은 이름 추정으로 **낮음·기본 미선택**으로 보여 줍니다
+  - bun·pnpm은 잠금 파일이 따로 있어 파일을 옮겨도 다음 전역 설치 때 되살아납니다. 그래서 옮기지 않고 `bun remove -g` 안내만 합니다 (Homebrew처럼 읽기 전용)
 
 ## 기여·문의
 

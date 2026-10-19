@@ -233,6 +233,7 @@ GUI 설정(S7) "관리자 헬퍼"에서 `SMAppService.daemon(plistName:)`로 등
 | Sentinel 재등록 | 같은 ID로 다른 빌드(코드 해시가 다름)를 등록했던 적이 있으면 새 빌드의 로그인 항목이 실행되지 않는다 (`launchctl print`: spawn failed, EX_CONFIG, `needs LWCR update`). S7에서 끄고 다시 켜면 정상. 본 앱이 시작할 때 등록 당시 빌드(Sentinel 실행 파일 SHA-256, 설정 키 `sentinelRegisteredBuild`)와 다르면 자동으로 해제 → 다시 등록한다 | #50 |
 | 규칙 데이터 서명 키 | `RuleDataVerifier`의 내장 공개키는 개발용. 배포 전 `swift scripts/sign-rule-data.swift keygen`으로 교체 | #20 |
 | 설치 스크립트 도구 (standalone) | `curl … | sh`로 설치한 도구는 설치 기록을 남기지 않는다. 규칙 데이터(`standalone-tools.json`)에 있는 도구만 정확히 잡고, 그 외 `~/.local/bin`의 실행 파일은 이름 추정으로 낮음·기본 미선택으로 보여 준다. 재설치는 설치 스크립트를 다시 실행해야 한다 (안내만) | — |
+| bun·pnpm 전역 설치 | 잠금 파일(`bun.lock`·`pnpm-lock.yaml`)이 기준이라 파일을 옮겨도 다음 전역 설치 때 되살아난다 (샌드박스에서 확인). 옮기지 않고 `bun remove -g` / `pnpm remove -g` 안내만 한다 — journal·되돌리기 대상이 아니다 | — |
 | SwiftUI `@State` | macOS 27 SDK에서 매크로가 되어 CLT에 플러그인이 없음 → 모든 상태를 뷰 모델에 둔다 | — |
 | String Catalog | CLT에 `xcstringstool`이 없어 `<언어>.lproj`의 `.strings`·`.stringsdict` 사용 ("번역 추가 절차") | — |
 | Sentinel 휴지통 읽기 | `~/.Trash`는 TCC로 보호된다. 로그인 항목으로 실행된 Sentinel은 본 앱의 전체 디스크 접근을 함께 쓰므로, 본 앱에 권한이 없으면 휴지통을 읽지 못하고 메뉴·S7에 안내만 한다. 외장 볼륨 휴지통(`.Trashes`)은 감시하지 않는다 | — |
