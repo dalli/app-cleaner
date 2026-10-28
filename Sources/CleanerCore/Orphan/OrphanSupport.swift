@@ -83,7 +83,7 @@ final class InventoryIndex {
             if let v = BundleIDHeuristics.vendorPrefix(app.bundleID) { vendors[v, default: []].append(app.name) }
             if let v = BundleIDHeuristics.vendorName(app.bundleID), v.count >= 3 { vendorNames.insert(BundleIDHeuristics.normalizedName(v)) }
             let fileName = app.url.deletingPathExtension().lastPathComponent
-            for n in [app.name, fileName, app.executableName].compactMap({ $0 }) {
+            for n in [app.name, fileName, app.executableName, Self.bundleIDAppName(app.bundleID)].compactMap({ $0 }) {
                 let norm = BundleIDHeuristics.normalizedName(n)
                 if !norm.isEmpty { names.insert(norm) }
                 if let first = n.split(separator: " ").first, first.count >= 3, n.contains(" ") {
@@ -117,6 +117,14 @@ final class InventoryIndex {
         let r = LaunchServicesRegistry.registration(for: bid, lookup: launchServices, paths: paths, isMounted: isMounted)
         registrationCache[bid] = r
         return r
+    }
+
+    /// BID의 앱 구성요소 — 표시 이름이 바뀐 앱의 옛 이름 폴더도 그 앱 것으로 본다
+    /// (`com.openai.codex` → `codex`: 표시 이름은 ChatGPT, 데이터는 `Codex`·`~/.codex`). 벤더 이름만 남으면 nil.
+    static func bundleIDAppName(_ bid: String) -> String? {
+        guard let comp = OrphanGrouper.meaningfulComponent(of: bid),
+              comp.lowercased() != BundleIDHeuristics.vendorName(bid), comp.count >= 3 else { return nil }
+        return comp
     }
 
     func matchesInstalledName(_ name: String) -> Bool {

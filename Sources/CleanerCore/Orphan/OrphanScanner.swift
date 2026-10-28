@@ -67,8 +67,10 @@ public struct OrphanScanner: OrphanScanning {
         progress(.phase(.collectingCandidates))
         let index = InventoryIndex(snapshot: snapshot, paths: paths, launchServices: launchServices, isMounted: isMounted)
         let exclusions = ExclusionRules(exclusions: ruleData.exclusions, paths: paths)
+        let commands = CommandIndex(paths: paths, standaloneTools: ruleData.standaloneTools,
+                                    dataOwners: ruleData.exclusions.toolDataOwners ?? [:])
         let collector = OrphanCollector(paths: paths, runner: runner, index: index, rules: ruleData, exclusions: exclusions,
-                                        options: options, isMounted: isMounted)
+                                        commands: commands, options: options, isMounted: isMounted)
         let (rootItems, unreadable) = collector.collectRoots()
         var items = rootItems
         items += collector.collectDotfiles()
@@ -84,6 +86,18 @@ public struct OrphanScanner: OrphanScanning {
                                     paths: paths)
         grouper.attachCasks(&items)
         var groups = grouper.group(items)
+        // 설치된 앱의 cask zap 경로·BID로 묶인 그룹은 그 앱의 데이터다
+        // (ChatGPT.app의 `~/.codex`·`com.openai.sky.CUAService.cli`, VS Code의 `~/.vscode`)
+        var caskInUse: [String: Bool] = [:]
+        groups.removeAll { g in
+            g.items.contains { item in
+                guard let token = item.caskToken, let cask = grouper.cask(token) else { return false }
+                if let hit = caskInUse[token] { return hit }
+                let hit = Self.isInUse(cask, index: index)
+                caskInUse[token] = hit
+                return hit
+            }
+        }
         let spotlightReliable = snapshot.spotlight.isReliable
         let currentDate = now()
         for g in groups.indices {
@@ -127,6 +141,14 @@ public struct OrphanScanner: OrphanScanning {
         guard current.isSubset(of: cached) else { return false }
         let cachedStandard = cached.filter { p in roots.contains { AppInventory.isInside(URL(fileURLWithPath: p), $0) } }
         return cachedStandard.isSubset(of: current) && snapshot.apps.allSatisfy { FileManager.default.itemExists($0.url) }
+    }
+
+    /// cask의 앱이 설치돼 있는지 (앱 파일명 또는 BID). 앱이 없는 cask(CLI·pkg)는 `brew list --cask`에 있으면 설치된 것으로 본다.
+    /// Caskroom 기록만 남은 cask(앱 없음)는 설치되지 않은 것이므로 High 근거가 그대로 남는다.
+    static func isInUse(_ cask: HomebrewCask, index: InventoryIndex) -> Bool {
+        if cask.apps.contains(where: { index.appFileNames.contains($0.lowercased()) }) { return true }
+        if cask.bundleIDs.contains(where: { index.ownership(of: $0) == .installed }) { return true }
+        return cask.apps.isEmpty && index.snapshot.homebrewCasks.contains(cask.token)
     }
 
     // MARK: - 판정 조정

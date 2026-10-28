@@ -36,6 +36,18 @@
     "com.apple.", "org.python.", "org.ruby-lang.", "org.nodejs.", "com.oracle.java.", "org.openjdk.", "net.java.",
     "org.mozilla.crashreporter", "com.github.Electron.", "systemgroup.com.apple.",
     "org.sparkle-project.", "com.plausiblelabs.", "io.sentry", "com.segment.", "com.crashlytics", "com.onevcat.Kingfisher.",
-    "com.google.firebase", "org.cups.", "com.qtproject", "ort.pyke.", "com.microsoft.autoupdate.fba"
-  ]
+    "com.google.firebase", "org.cups.", "com.qtproject", "ort.pyke.", "com.microsoft.autoupdate.fba", "org.swift."
+  ],
+  "toolDataOwners": {
+    "Homebrew": ["brew"],
+    "ms-playwright": ["node", "bun", "deno"],
+    "ms-playwright-go": ["go"],
+    "ms-playwright-mcp": ["node", "bun"],
+    "puppeteer": ["node", "bun"],
+    "typescript": ["node", "tsc"],
+    "pypoetry": ["poetry"],
+    "swiftpm": ["swift"],
+    "gopls": ["gopls", "go"],
+    "goimports": ["goimports", "go"]
+  }
 }

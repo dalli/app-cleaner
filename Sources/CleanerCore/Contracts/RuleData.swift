@@ -55,25 +55,33 @@ public struct OrphanExclusions: Codable, Sendable, Hashable {
     public var securityDotfiles: [String]
     /// 앱이 아닌 주체가 만드는 BID 접두사 (예: "com.apple.", "org.python.")
     public var nonAppBundleIDPrefixes: [String]
+    /// 명령 이름과 다른 이름의 CLI 도구 데이터 → 그 데이터를 쓰는 명령 (예: "Homebrew" → ["brew"]).
+    /// 명령이 하나라도 설치돼 있으면 고아로 보지 않는다. 이름이 명령과 같은 데이터(`uv`, `npm`)는 적지 않아도 된다.
+    /// 나중에 추가한 키라 옛 규칙 데이터에는 없다.
+    public var toolDataOwners: [String: [String]]?
 
     public init(appleSystemNames: [String] = [], alwaysExcludedPaths: [String] = [], vendorFolders: [String] = [],
-                securityDotfiles: [String] = [], nonAppBundleIDPrefixes: [String] = []) {
+                securityDotfiles: [String] = [], nonAppBundleIDPrefixes: [String] = [], toolDataOwners: [String: [String]]? = nil) {
         self.appleSystemNames = appleSystemNames
         self.alwaysExcludedPaths = alwaysExcludedPaths
         self.vendorFolders = vendorFolders
         self.securityDotfiles = securityDotfiles
         self.nonAppBundleIDPrefixes = nonAppBundleIDPrefixes
+        self.toolDataOwners = toolDataOwners
     }
 
     /// 원격 갱신은 항목 추가만 허용한다 (plan.md 4.6)
     public func addingOnly(_ other: OrphanExclusions) -> OrphanExclusions {
         func union(_ a: [String], _ b: [String]) -> [String] { a + b.filter { !a.contains($0) } }
+        var owners = toolDataOwners ?? [:]
+        for (name, commands) in other.toolDataOwners ?? [:] { owners[name] = union(owners[name] ?? [], commands) }
         return OrphanExclusions(
             appleSystemNames: union(appleSystemNames, other.appleSystemNames),
             alwaysExcludedPaths: union(alwaysExcludedPaths, other.alwaysExcludedPaths),
             vendorFolders: union(vendorFolders, other.vendorFolders),
             securityDotfiles: union(securityDotfiles, other.securityDotfiles),
-            nonAppBundleIDPrefixes: union(nonAppBundleIDPrefixes, other.nonAppBundleIDPrefixes)
+            nonAppBundleIDPrefixes: union(nonAppBundleIDPrefixes, other.nonAppBundleIDPrefixes),
+            toolDataOwners: owners.isEmpty ? nil : owners
         )
     }
 }

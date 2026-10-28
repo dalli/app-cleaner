@@ -8,6 +8,8 @@ struct OrphanCollector {
     let index: InventoryIndex
     let rules: RuleData
     let exclusions: ExclusionRules
+    /// 설치된 명령줄 도구 — 이름 기반 항목이 그 도구의 데이터면 고아가 아니다
+    let commands: CommandIndex
     let options: OrphanScanOptions
     let isMounted: @Sendable (URL) -> Bool
 
@@ -240,13 +242,17 @@ struct OrphanCollector {
     /// BID가 아닌 이름 (Electron 앱의 Application Support 등): 설치 앱 이름과 일치하지 않으면 Low
     func judgeName(_ name: String, url: URL, root: Root, daemonNames: Bool) -> OrphanItem? {
         if exclusions.isAppleSystemName(name, daemonNames: daemonNames) { return nil }
-        if index.matchesInstalledName(name) { return nil }
-        let normalized = BundleIDHeuristics.normalizedName(name)
+        // electron-updater 캐시(`<앱>-updater`)는 앱 이름으로 본다 (`orca-updater` ↔ Orca)
+        let appName = Self.updaterCacheAppName(name) ?? name
+        if index.matchesInstalledName(appName) { return nil }
+        let normalized = BundleIDHeuristics.normalizedName(appName)
         guard !normalized.isEmpty else { return nil }
         // 같은 벤더의 다른 앱이 설치돼 있으면 공용 폴더 — 고아로 보지 않는다 (`Docker Desktop` ↔ Docker, `Google Drive` ↔ Chrome)
         if index.vendorNames.contains(normalized) { return nil }
-        if name.contains(" "), let first = name.split(separator: " ").first,
+        if appName.contains(" "), let first = appName.split(separator: " ").first,
            index.vendorNames.contains(BundleIDHeuristics.normalizedName(String(first))) { return nil }
+        // 설치된 CLI 도구의 데이터·캐시 (`Caches/pip`, `Caches/go-build`, `Caches/Homebrew`)
+        if commands.ownsData(named: name, at: url) { return nil }
         var item = OrphanItem(url: url, category: root.category, domain: root.domain, name: name, confidence: .low, evidence: [])
         if exclusions.isVendorFolder(name) {
             item.evidence.append(Evidence(.name, EngineText(.vendorFolderNoInstalledApp, name)))
@@ -256,6 +262,13 @@ struct OrphanCollector {
             if rules.isWeakName(name) { item.addNote(EngineText(.commonName)) }
         }
         return item
+    }
+
+    /// `orca-updater` → `orca` (electron-updater가 `<앱 이름>-updater`로 만드는 캐시 폴더)
+    static func updaterCacheAppName(_ name: String) -> String? {
+        let suffix = "-updater"
+        guard name.count > suffix.count, name.lowercased().hasSuffix(suffix) else { return nil }
+        return String(name.dropLast(suffix.count))
     }
 
     // MARK: - Launch plist
@@ -344,6 +357,8 @@ struct OrphanCollector {
         func consider(_ url: URL, stem: String) {
             if exclusions.isExcludedPath(url) { return }
             if exclusions.isAppleSystemName(stem) || index.matchesInstalledName(stem) { return }
+            // 설치된 CLI 도구의 설정·데이터 (`~/.npm`, `~/.rustup`, `~/.config/gh`) — 정리는 `appcleaner packages`에서 한다
+            if commands.ownsData(named: stem, at: url) { return }
             var item = OrphanItem(url: url, category: .dotfile, domain: .user, name: stem, confidence: .low,
                                   evidence: [Evidence(.name, EngineText(.noInstalledAppNamedDotfile, stem))])
             item.addNote(EngineText(.maybeCLIData))
