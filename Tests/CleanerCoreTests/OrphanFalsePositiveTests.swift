@@ -201,6 +201,86 @@ import CleanerTestSupport
         for url in [ssh.deletingLastPathComponent(), gnupg, aws] { #expect(!withDotfiles.contains(url)) }
     }
 
+    /// 설치된 CLI 도구의 데이터·캐시는 대응하는 `.app`이 없어도 고아가 아니다 (plan.md 4.5.5)
+    @Test func dataOfInstalledCommandLineToolsIsNotOrphan() async throws {
+        let h = try OrphanHarness()
+        let fx = h.fx
+        for cmd in ["uv", "pip3.13", "go", "brew"] { try fx.file(fx.root("opt/homebrew/bin/\(cmd)")) }
+        try fx.dir(fx.root("opt/homebrew/opt/rustup"))
+        try fx.file(fx.home(".nvm/versions/node/v22.0.0/bin/node"))
+        try fx.symlink(fx.home(".local/bin/mt"), to: try fx.file(fx.home(".mytool/current/mt")))
+        try fx.file(fx.home(".local/bin/cursor-agent"))
+        let inUse = [
+            try fx.dir(fx.home(".cache/uv")),                  // 명령 이름
+            try fx.dir(fx.home("Library/Caches/pip")),         // 끝의 버전 숫자만 다름 (pip3.13)
+            try fx.dir(fx.home("Library/Caches/go-build")),    // 사용자 설치 명령 + 구분자
+            try fx.dir(fx.home("Library/Caches/Homebrew")),    // 규칙 데이터 toolDataOwners (brew)
+            try fx.dir(fx.home(".rustup")),                    // Homebrew formula
+            try fx.dir(fx.home(".cache/node")),                // 버전별 node bin의 명령
+            fx.home(".nvm"),                                   // 버전별 node bin이 안에 있음
+            fx.home(".mytool"),                                // ~/.local/bin/mt의 링크 대상이 안에 있음
+            try fx.dir(fx.home(".cursor")),                    // 설치 스크립트 도구(cursor-agent)의 데이터 폴더
+        ]
+        // 시스템 명령은 접두 일치에 쓰지 않고, 깨진 링크는 명령이 아니며, 설치되지 않은 도구의 데이터는 남는다
+        try fx.file(fx.root("usr/bin/open"))
+        try fx.symlink(fx.home(".local/bin/buzz"), to: fx.root("Applications/Buzz.app/Contents/MacOS/buzz"))
+        let remain = [
+            try fx.dir(fx.home("Library/Application Support/open-webui")),
+            try fx.dir(fx.home(".buzz")),
+            try fx.dir(fx.home(".cache/pre-commit")),
+        ]
+        let report = try await h.scan(options: OrphanScanOptions(includeDotfiles: true))
+        for url in inUse { #expect(!report.contains(url), "\(url.lastPathComponent)") }
+        for url in remain { #expect(report.item(url)?.confidence == .low, "\(url.lastPathComponent)") }
+    }
+
+    @Test func commandVersionBase() {
+        #expect(CommandIndex.versionBase("pip3.13") == "pip")
+        #expect(CommandIndex.versionBase("python3") == "python")
+        #expect(CommandIndex.versionBase("uv") == nil)
+        #expect(CommandIndex.versionBase("x11") == nil)
+    }
+
+    /// Homebrew cask의 앱이 설치돼 있으면 그 cask의 zap 경로와 같은 BID로 묶인 항목은 앱의 데이터다
+    @Test func dataOfInstalledCaskAppIsNotOrphan() async throws {
+        let h = try OrphanHarness()
+        // `chatgpt` cask: ChatGPT.app(com.openai.codex), zap에 `com.openai.sky.CUAService.cli.plist`
+        try h.fx.makeApp(name: "ChatGPT", bundleID: "com.openai.codex")
+        let prefs = try h.fx.file(h.fx.home("Library/Preferences/com.openai.sky.CUAService.cli.plist"))
+        // zap에 없지만 같은 BID로 묶이는 항목
+        let cache = try h.fx.dir(h.fx.home("Library/Caches/com.openai.sky.CUAService.cli"))
+        // 설치되지 않은 cask(ChatGPT Classic, com.openai.chat)의 데이터는 남는다
+        let classic = try h.fx.dir(h.fx.home("Library/Application Support/com.openai.chat"))
+        let report = try await h.scan()
+        #expect(!report.contains(prefs))
+        #expect(!report.contains(cache))
+        #expect(report.contains(classic))
+    }
+
+    @Test func folderNamedAfterBundleIDOfInstalledAppIsNotOrphan() async throws {
+        // 표시 이름은 ChatGPT, BID는 com.openai.codex — cask 데이터가 없어도 `Codex`·`~/.codex`는 그 앱 것
+        let h = try OrphanHarness()
+        try h.fx.makeApp(name: "ChatGPT", bundleID: "com.openai.codex")
+        let support = try h.fx.dir(h.fx.home("Library/Application Support/Codex"))
+        let dotfile = try h.fx.dir(h.fx.home(".codex"))
+        let other = try h.fx.dir(h.fx.home("Library/Application Support/Sora"))
+        let rules = RuleData(version: "test", commonNames: [], exclusions: OrphanExclusions(), casks: [])
+        let report = try await h.scan(options: OrphanScanOptions(includeDotfiles: true), rules: rules)
+        #expect(!report.contains(support))
+        #expect(!report.contains(dotfile))
+        #expect(report.contains(other))
+    }
+
+    @Test func electronUpdaterCacheOfInstalledAppIsNotOrphan() async throws {
+        let h = try OrphanHarness()
+        try h.fx.makeApp(name: "Orca", bundleID: "com.example.orca")
+        let orca = try h.fx.dir(h.fx.home("Library/Caches/orca-updater"))
+        let gone = try h.fx.dir(h.fx.home("Library/Caches/gone-updater"))
+        let report = try await h.scan()
+        #expect(!report.contains(orca))
+        #expect(report.contains(gone))
+    }
+
     @Test func recentlyModifiedItemIsDemoted() async throws {
         let h = try OrphanHarness()
         let container = try h.fx.makeContainer(bundleID: "com.example.active")
@@ -251,11 +331,14 @@ import CleanerTestSupport
         let code = try h.fx.dir(h.fx.home("Library/Application Support/Code"))
         let vscode = try h.fx.dir(h.fx.home("Library/Application Support/Visual Studio Code"))
         let discord = try h.fx.dir(h.fx.home("Library/Application Support/discord"))
+        let kit = try h.fx.dir(h.fx.home("Library/Application Support/Kit"))
         let report = try await h.scan()
         #expect(!report.contains(vscode))
         #expect(!report.contains(discord))
-        // "Code"는 설치 앱 이름이 아니므로 남지만 Low + 흔한 이름 경고, 미선택
-        let item = try #require(report.item(code))
+        // "Code"는 앱 이름이 아니지만 설치된 VS Code cask의 zap 경로
+        #expect(!report.contains(code))
+        // 설치 앱과 무관한 짧은 이름은 남지만 Low + 흔한 이름 경고, 미선택
+        let item = try #require(report.item(kit))
         #expect(item.confidence == .low)
         #expect(!item.isSelected)
         #expect(item.notes.contains(EngineText(.commonName)))

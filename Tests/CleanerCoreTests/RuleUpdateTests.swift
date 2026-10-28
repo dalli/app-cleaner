@@ -292,6 +292,19 @@ final class RuleUpdateFakeServer: @unchecked Sendable {
         #expect(Set(base.alwaysExcludedPaths).isSubset(of: Set(merged2.alwaysExcludedPaths)))
         #expect(Set(base.securityDotfiles).isSubset(of: Set(merged2.securityDotfiles)))
         #expect(merged2.appleSystemNames.count == base.appleSystemNames.count)
+        // 도구 데이터 소유 명령도 추가만: 기존 키의 명령은 남고 새 명령·새 키가 더해진다
+        let tools = base.addingOnly(OrphanExclusions(toolDataOwners: ["Homebrew": ["brew2"], "newtool": ["nt"]])).toolDataOwners
+        #expect(tools?["Homebrew"] == ["brew", "brew2"])
+        #expect(tools?["newtool"] == ["nt"])
+        #expect(base.addingOnly(OrphanExclusions()).toolDataOwners == base.toolDataOwners)
+    }
+
+    @Test func exclusionsWithoutToolDataOwnersStillDecode() throws {
+        // `toolDataOwners`가 생기기 전의 원격 규칙 데이터도 읽을 수 있어야 한다
+        let json = Data(#"{"appleSystemNames":[],"alwaysExcludedPaths":[],"vendorFolders":[],"securityDotfiles":[],"nonAppBundleIDPrefixes":[]}"#.utf8)
+        let decoded = try JSONDecoder().decode(OrphanExclusions.self, from: json)
+        #expect(decoded.toolDataOwners == nil)
+        #expect(BundledRuleData.load().exclusions.toolDataOwners?["Homebrew"] == ["brew"])
     }
 
     @Test func signScriptFormatMatchesVerifier() throws {

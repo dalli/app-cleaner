@@ -290,6 +290,8 @@ Spotlight 상태 검사: 인벤토리가 Spotlight에 의존하므로, 색인이
 | **iCloud 데이터** | `~/Library/Mobile Documents/*` | **항상 제외** — 삭제가 다른 기기로 동기화됨 (5.1절) |
 | 공용 벤더 폴더 | `Adobe`, `Google`, `Microsoft`, `JetBrains` 등 | Low + 경고 |
 | CLI·런타임 데이터 | `~/.npm`, `~/.cargo`, `~/.pyenv`, `~/.ssh`, `~/.gnupg`, `~/.config/*` 등 dotfile 전체 | **고아 스캔에서 기본 제외**. "고급: dotfile 포함" 옵션을 켤 때만 Low로 표시 (`~/.ssh`, `~/.gnupg` 등 보안 폴더는 옵션과 무관하게 제외) <br>설치된 CLI 도구 자체와 그 데이터·캐시 정리는 고아 스캔이 아니라 `appcleaner packages`에서 한다 ([packages.md](packages.md)) |
+| 설치된 CLI 도구의 데이터 | `~/.npm`(npm), `~/.cache/uv`(uv), `Caches/pip`(pip3), `Caches/go-build`(go), `~/.nvm`, `Caches/Homebrew`(brew) | **제외** (dotfile 옵션과 무관, `Caches`·`Application Support`의 이름 기반 항목 포함). 사용자 명령 폴더(Homebrew, `~/.local/bin`, `~/.cargo/bin`, nvm 버전별 bin, `/etc/paths.d` 등)와 `/usr/bin`의 실행 파일로 판정: 이름이 같거나 버전 숫자만 다름, 사용자 설치 명령 + 구분자(`go-build`), 명령의 실제 위치(링크 대상)가 항목 안, 실행 파일이 있는 설치 스크립트 도구의 데이터 폴더(`standalone-tools.json`), 이름이 다른 도구 데이터(`orphan-exclusions.json`의 `toolDataOwners`) |
+| 설치된 앱의 데이터 (이름이 다른 경우) | ChatGPT.app(`com.openai.codex`)의 `Codex`·`~/.codex`, `<앱>-updater` 캐시 | **제외**. BID의 앱 구성요소(`codex`)와 electron-updater 캐시 이름(`orca-updater` → Orca)도 앱 이름으로 본다. 앱이 설치된 Homebrew cask의 zap 경로·BID로 묶인 그룹 전체도 제외 (앱 없는 cask는 `brew list --cask`에 있으면 설치로 봄) |
 
 #### 4.5.6 4단계 — 앱 단위 그룹화
 파일 목록을 그대로 보여주지 않고 **"어떤 앱의 잔여물인지"** 단위로 묶는다. 예: `Slack (삭제됨) — 1.2 GB, 9개 항목, 마지막 수정 2025-03-02`.
